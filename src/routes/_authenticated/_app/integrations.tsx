@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/app/PageHeader";
 import { useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
-import { sarvamStatus } from "@/server/ai.functions";
+import { sarvamStatus } from "@/lib/functions/ai.functions";
 
 export const Route = createFileRoute("/_authenticated/_app/integrations")({
   head: () => pageHead("Integrations", "Connect Sarvam voice agents and other services."),

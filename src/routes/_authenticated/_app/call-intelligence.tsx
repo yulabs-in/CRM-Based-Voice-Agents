@@ -11,7 +11,7 @@ import { StatusBadge } from "@/components/app/StatusBadge";
 import { canWrite, useOrg } from "@/lib/org";
 import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
-import { analyzeCall } from "@/server/ai.functions";
+import { analyzeCall } from "@/lib/functions/ai.functions";
 
 export const Route = createFileRoute("/_authenticated/_app/call-intelligence")({
   head: () => pageHead("Call Intelligence", "AI summaries, sentiment and outcomes for every call."),
