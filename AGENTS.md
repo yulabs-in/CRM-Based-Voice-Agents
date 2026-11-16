@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+<!-- AGENT-MEMORY:BEGIN -->
+- Every tenant table carries organization_id; RLS uses is_org_member / can_write_org / has_org_role security-definer helpers — never rely on client filtering.
+- Current org lives in OrgProvider (src/lib/org.tsx); signed-in app pages live under src/routes/_authenticated/_app/ which loads memberships and redirects to /onboarding when none.
+- Generic CRUD list pages use src/components/app/EntityPage.tsx with field/column configs.
+- tsconfig relaxes noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess, exactOptionalPropertyTypes to keep config-driven pages readable.
+<!-- AGENT-MEMORY:END -->
