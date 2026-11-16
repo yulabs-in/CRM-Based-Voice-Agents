@@ -15,30 +15,39 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedAppActivityTimelineRouteImport } from './routes/_authenticated/_app/activity-timeline'
+import { Route as AuthenticatedAppCallAnalyticsRouteImport } from './routes/_authenticated/_app/call-analytics'
 import { Route as AuthenticatedAppCallCampaignsRouteImport } from './routes/_authenticated/_app/call-campaigns'
 import { Route as AuthenticatedAppCallHistoryRouteImport } from './routes/_authenticated/_app/call-history'
+import { Route as AuthenticatedAppCallIntelligenceRouteImport } from './routes/_authenticated/_app/call-intelligence'
 import { Route as AuthenticatedAppCallRecordingsRouteImport } from './routes/_authenticated/_app/call-recordings'
+import { Route as AuthenticatedAppCampaignAnalyticsRouteImport } from './routes/_authenticated/_app/campaign-analytics'
 import { Route as AuthenticatedAppCompaniesRouteImport } from './routes/_authenticated/_app/companies'
 import { Route as AuthenticatedAppContactsRouteImport } from './routes/_authenticated/_app/contacts'
+import { Route as AuthenticatedAppCustomReportsRouteImport } from './routes/_authenticated/_app/custom-reports'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppDealsRouteImport } from './routes/_authenticated/_app/deals'
 import { Route as AuthenticatedAppEmailRouteImport } from './routes/_authenticated/_app/email'
+import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/_app/integrations'
 import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/_app/leads'
 import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
 import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
 import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
+import { Route as AuthenticatedAppSalesAnalyticsRouteImport } from './routes/_authenticated/_app/sales-analytics'
 import { Route as AuthenticatedAppScheduledActionsRouteImport } from './routes/_authenticated/_app/scheduled-actions'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/_app/settings'
 import { Route as AuthenticatedAppSmsRouteImport } from './routes/_authenticated/_app/sms'
 import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/_app/tasks'
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/_app/team'
+import { Route as AuthenticatedAppTeamPerformanceRouteImport } from './routes/_authenticated/_app/team-performance'
 import { Route as AuthenticatedAppTranscriptsRouteImport } from './routes/_authenticated/_app/transcripts'
 import { Route as AuthenticatedAppTriggersRouteImport } from './routes/_authenticated/_app/triggers'
 import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authenticated/_app/voice-agents'
 import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
+import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -68,6 +77,18 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppActivityTimelineRoute =
+  AuthenticatedAppActivityTimelineRouteImport.update({
+    id: '/activity-timeline',
+    path: '/activity-timeline',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCallAnalyticsRoute =
+  AuthenticatedAppCallAnalyticsRouteImport.update({
+    id: '/call-analytics',
+    path: '/call-analytics',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCallCampaignsRoute =
   AuthenticatedAppCallCampaignsRouteImport.update({
     id: '/call-campaigns',
@@ -80,10 +101,22 @@ const AuthenticatedAppCallHistoryRoute =
     path: '/call-history',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppCallIntelligenceRoute =
+  AuthenticatedAppCallIntelligenceRouteImport.update({
+    id: '/call-intelligence',
+    path: '/call-intelligence',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCallRecordingsRoute =
   AuthenticatedAppCallRecordingsRouteImport.update({
     id: '/call-recordings',
     path: '/call-recordings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCampaignAnalyticsRoute =
+  AuthenticatedAppCampaignAnalyticsRouteImport.update({
+    id: '/campaign-analytics',
+    path: '/campaign-analytics',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppCompaniesRoute =
@@ -96,6 +129,12 @@ const AuthenticatedAppContactsRoute =
   AuthenticatedAppContactsRouteImport.update({
     id: '/contacts',
     path: '/contacts',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCustomReportsRoute =
+  AuthenticatedAppCustomReportsRouteImport.update({
+    id: '/custom-reports',
+    path: '/custom-reports',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppDashboardRoute =
@@ -114,6 +153,12 @@ const AuthenticatedAppEmailRoute = AuthenticatedAppEmailRouteImport.update({
   path: '/email',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppIntegrationsRoute =
+  AuthenticatedAppIntegrationsRouteImport.update({
+    id: '/integrations',
+    path: '/integrations',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppLeadsRoute = AuthenticatedAppLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -142,6 +187,12 @@ const AuthenticatedAppRulesRoute = AuthenticatedAppRulesRouteImport.update({
   path: '/rules',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSalesAnalyticsRoute =
+  AuthenticatedAppSalesAnalyticsRouteImport.update({
+    id: '/sales-analytics',
+    path: '/sales-analytics',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppScheduledActionsRoute =
   AuthenticatedAppScheduledActionsRouteImport.update({
     id: '/scheduled-actions',
@@ -169,6 +220,12 @@ const AuthenticatedAppTeamRoute = AuthenticatedAppTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppTeamPerformanceRoute =
+  AuthenticatedAppTeamPerformanceRouteImport.update({
+    id: '/team-performance',
+    path: '/team-performance',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppTranscriptsRoute =
   AuthenticatedAppTranscriptsRouteImport.update({
     id: '/transcripts',
@@ -205,66 +262,89 @@ const AuthenticatedInviteTokenRoute =
     path: '/invite/$token',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSarvamWebhookRoute = ApiPublicSarvamWebhookRouteImport.update({
+  id: '/api/public/sarvam-webhook',
+  path: '/api/public/sarvam-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
+  '/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
   '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
+  '/campaign-analytics': typeof AuthenticatedAppCampaignAnalyticsRoute
   '/companies': typeof AuthenticatedAppCompaniesRoute
   '/contacts': typeof AuthenticatedAppContactsRoute
+  '/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
   '/email': typeof AuthenticatedAppEmailRoute
+  '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
   '/rules': typeof AuthenticatedAppRulesRoute
+  '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
+  '/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
+  '/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
   '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
+  '/campaign-analytics': typeof AuthenticatedAppCampaignAnalyticsRoute
   '/companies': typeof AuthenticatedAppCompaniesRoute
   '/contacts': typeof AuthenticatedAppContactsRoute
+  '/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
   '/email': typeof AuthenticatedAppEmailRoute
+  '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
   '/rules': typeof AuthenticatedAppRulesRoute
+  '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
+  '/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -274,30 +354,39 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/_app/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
+  '/_authenticated/_app/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
   '/_authenticated/_app/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/_authenticated/_app/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/_authenticated/_app/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/_authenticated/_app/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
+  '/_authenticated/_app/campaign-analytics': typeof AuthenticatedAppCampaignAnalyticsRoute
   '/_authenticated/_app/companies': typeof AuthenticatedAppCompaniesRoute
   '/_authenticated/_app/contacts': typeof AuthenticatedAppContactsRoute
+  '/_authenticated/_app/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/deals': typeof AuthenticatedAppDealsRoute
   '/_authenticated/_app/email': typeof AuthenticatedAppEmailRoute
+  '/_authenticated/_app/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/_authenticated/_app/leads': typeof AuthenticatedAppLeadsRoute
   '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
+  '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRoute
   '/_authenticated/_app/sms': typeof AuthenticatedAppSmsRoute
   '/_authenticated/_app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/_app/team': typeof AuthenticatedAppTeamRoute
+  '/_authenticated/_app/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/_authenticated/_app/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/_authenticated/_app/triggers': typeof AuthenticatedAppTriggersRoute
   '/_authenticated/_app/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -306,60 +395,78 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/onboarding'
+    | '/activity-timeline'
+    | '/call-analytics'
     | '/call-campaigns'
     | '/call-history'
+    | '/call-intelligence'
     | '/call-recordings'
+    | '/campaign-analytics'
     | '/companies'
     | '/contacts'
+    | '/custom-reports'
     | '/dashboard'
     | '/deals'
     | '/email'
+    | '/integrations'
     | '/leads'
     | '/live-calls'
     | '/meetings'
     | '/pipeline'
     | '/rules'
+    | '/sales-analytics'
     | '/scheduled-actions'
     | '/settings'
     | '/sms'
     | '/tasks'
     | '/team'
+    | '/team-performance'
     | '/transcripts'
     | '/triggers'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/sarvam-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/reset-password'
     | '/onboarding'
+    | '/activity-timeline'
+    | '/call-analytics'
     | '/call-campaigns'
     | '/call-history'
+    | '/call-intelligence'
     | '/call-recordings'
+    | '/campaign-analytics'
     | '/companies'
     | '/contacts'
+    | '/custom-reports'
     | '/dashboard'
     | '/deals'
     | '/email'
+    | '/integrations'
     | '/leads'
     | '/live-calls'
     | '/meetings'
     | '/pipeline'
     | '/rules'
+    | '/sales-analytics'
     | '/scheduled-actions'
     | '/settings'
     | '/sms'
     | '/tasks'
     | '/team'
+    | '/team-performance'
     | '/transcripts'
     | '/triggers'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/sarvam-webhook'
   id:
     | '__root__'
     | '/'
@@ -368,30 +475,39 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
+    | '/_authenticated/_app/activity-timeline'
+    | '/_authenticated/_app/call-analytics'
     | '/_authenticated/_app/call-campaigns'
     | '/_authenticated/_app/call-history'
+    | '/_authenticated/_app/call-intelligence'
     | '/_authenticated/_app/call-recordings'
+    | '/_authenticated/_app/campaign-analytics'
     | '/_authenticated/_app/companies'
     | '/_authenticated/_app/contacts'
+    | '/_authenticated/_app/custom-reports'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/deals'
     | '/_authenticated/_app/email'
+    | '/_authenticated/_app/integrations'
     | '/_authenticated/_app/leads'
     | '/_authenticated/_app/live-calls'
     | '/_authenticated/_app/meetings'
     | '/_authenticated/_app/pipeline'
     | '/_authenticated/_app/rules'
+    | '/_authenticated/_app/sales-analytics'
     | '/_authenticated/_app/scheduled-actions'
     | '/_authenticated/_app/settings'
     | '/_authenticated/_app/sms'
     | '/_authenticated/_app/tasks'
     | '/_authenticated/_app/team'
+    | '/_authenticated/_app/team-performance'
     | '/_authenticated/_app/transcripts'
     | '/_authenticated/_app/triggers'
     | '/_authenticated/_app/voice-agents'
     | '/_authenticated/_app/whatsapp'
     | '/_authenticated/_app/workflows'
     | '/_authenticated/invite/$token'
+    | '/api/public/sarvam-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -399,6 +515,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -445,6 +562,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/_app/activity-timeline': {
+      id: '/_authenticated/_app/activity-timeline'
+      path: '/activity-timeline'
+      fullPath: '/activity-timeline'
+      preLoaderRoute: typeof AuthenticatedAppActivityTimelineRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/call-analytics': {
+      id: '/_authenticated/_app/call-analytics'
+      path: '/call-analytics'
+      fullPath: '/call-analytics'
+      preLoaderRoute: typeof AuthenticatedAppCallAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/call-campaigns': {
       id: '/_authenticated/_app/call-campaigns'
       path: '/call-campaigns'
@@ -459,11 +590,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCallHistoryRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/call-intelligence': {
+      id: '/_authenticated/_app/call-intelligence'
+      path: '/call-intelligence'
+      fullPath: '/call-intelligence'
+      preLoaderRoute: typeof AuthenticatedAppCallIntelligenceRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/call-recordings': {
       id: '/_authenticated/_app/call-recordings'
       path: '/call-recordings'
       fullPath: '/call-recordings'
       preLoaderRoute: typeof AuthenticatedAppCallRecordingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/campaign-analytics': {
+      id: '/_authenticated/_app/campaign-analytics'
+      path: '/campaign-analytics'
+      fullPath: '/campaign-analytics'
+      preLoaderRoute: typeof AuthenticatedAppCampaignAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/companies': {
@@ -478,6 +623,13 @@ declare module '@tanstack/react-router' {
       path: '/contacts'
       fullPath: '/contacts'
       preLoaderRoute: typeof AuthenticatedAppContactsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/custom-reports': {
+      id: '/_authenticated/_app/custom-reports'
+      path: '/custom-reports'
+      fullPath: '/custom-reports'
+      preLoaderRoute: typeof AuthenticatedAppCustomReportsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/dashboard': {
@@ -499,6 +651,13 @@ declare module '@tanstack/react-router' {
       path: '/email'
       fullPath: '/email'
       preLoaderRoute: typeof AuthenticatedAppEmailRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/integrations': {
+      id: '/_authenticated/_app/integrations'
+      path: '/integrations'
+      fullPath: '/integrations'
+      preLoaderRoute: typeof AuthenticatedAppIntegrationsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/leads': {
@@ -536,6 +695,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRulesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/sales-analytics': {
+      id: '/_authenticated/_app/sales-analytics'
+      path: '/sales-analytics'
+      fullPath: '/sales-analytics'
+      preLoaderRoute: typeof AuthenticatedAppSalesAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/scheduled-actions': {
       id: '/_authenticated/_app/scheduled-actions'
       path: '/scheduled-actions'
@@ -569,6 +735,13 @@ declare module '@tanstack/react-router' {
       path: '/team'
       fullPath: '/team'
       preLoaderRoute: typeof AuthenticatedAppTeamRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/team-performance': {
+      id: '/_authenticated/_app/team-performance'
+      path: '/team-performance'
+      fullPath: '/team-performance'
+      preLoaderRoute: typeof AuthenticatedAppTeamPerformanceRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/transcripts': {
@@ -613,28 +786,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInviteTokenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/sarvam-webhook': {
+      id: '/api/public/sarvam-webhook'
+      path: '/api/public/sarvam-webhook'
+      fullPath: '/api/public/sarvam-webhook'
+      preLoaderRoute: typeof ApiPublicSarvamWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppActivityTimelineRoute: typeof AuthenticatedAppActivityTimelineRoute
+  AuthenticatedAppCallAnalyticsRoute: typeof AuthenticatedAppCallAnalyticsRoute
   AuthenticatedAppCallCampaignsRoute: typeof AuthenticatedAppCallCampaignsRoute
   AuthenticatedAppCallHistoryRoute: typeof AuthenticatedAppCallHistoryRoute
+  AuthenticatedAppCallIntelligenceRoute: typeof AuthenticatedAppCallIntelligenceRoute
   AuthenticatedAppCallRecordingsRoute: typeof AuthenticatedAppCallRecordingsRoute
+  AuthenticatedAppCampaignAnalyticsRoute: typeof AuthenticatedAppCampaignAnalyticsRoute
   AuthenticatedAppCompaniesRoute: typeof AuthenticatedAppCompaniesRoute
   AuthenticatedAppContactsRoute: typeof AuthenticatedAppContactsRoute
+  AuthenticatedAppCustomReportsRoute: typeof AuthenticatedAppCustomReportsRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppDealsRoute: typeof AuthenticatedAppDealsRoute
   AuthenticatedAppEmailRoute: typeof AuthenticatedAppEmailRoute
+  AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRoute
   AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
   AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
   AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
+  AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
   AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
   AuthenticatedAppSmsRoute: typeof AuthenticatedAppSmsRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
+  AuthenticatedAppTeamPerformanceRoute: typeof AuthenticatedAppTeamPerformanceRoute
   AuthenticatedAppTranscriptsRoute: typeof AuthenticatedAppTranscriptsRoute
   AuthenticatedAppTriggersRoute: typeof AuthenticatedAppTriggersRoute
   AuthenticatedAppVoiceAgentsRoute: typeof AuthenticatedAppVoiceAgentsRoute
@@ -643,24 +831,33 @@ interface AuthenticatedAppRouteChildren {
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppActivityTimelineRoute: AuthenticatedAppActivityTimelineRoute,
+  AuthenticatedAppCallAnalyticsRoute: AuthenticatedAppCallAnalyticsRoute,
   AuthenticatedAppCallCampaignsRoute: AuthenticatedAppCallCampaignsRoute,
   AuthenticatedAppCallHistoryRoute: AuthenticatedAppCallHistoryRoute,
+  AuthenticatedAppCallIntelligenceRoute: AuthenticatedAppCallIntelligenceRoute,
   AuthenticatedAppCallRecordingsRoute: AuthenticatedAppCallRecordingsRoute,
+  AuthenticatedAppCampaignAnalyticsRoute:
+    AuthenticatedAppCampaignAnalyticsRoute,
   AuthenticatedAppCompaniesRoute: AuthenticatedAppCompaniesRoute,
   AuthenticatedAppContactsRoute: AuthenticatedAppContactsRoute,
+  AuthenticatedAppCustomReportsRoute: AuthenticatedAppCustomReportsRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppDealsRoute: AuthenticatedAppDealsRoute,
   AuthenticatedAppEmailRoute: AuthenticatedAppEmailRoute,
+  AuthenticatedAppIntegrationsRoute: AuthenticatedAppIntegrationsRoute,
   AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
   AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
   AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
+  AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
   AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
   AuthenticatedAppSmsRoute: AuthenticatedAppSmsRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
+  AuthenticatedAppTeamPerformanceRoute: AuthenticatedAppTeamPerformanceRoute,
   AuthenticatedAppTranscriptsRoute: AuthenticatedAppTranscriptsRoute,
   AuthenticatedAppTriggersRoute: AuthenticatedAppTriggersRoute,
   AuthenticatedAppVoiceAgentsRoute: AuthenticatedAppVoiceAgentsRoute,
@@ -691,6 +888,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

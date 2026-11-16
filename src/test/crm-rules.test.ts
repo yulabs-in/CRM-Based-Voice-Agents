@@ -17,3 +17,16 @@ describe("roles", () => {
   it("read-only and analysts cannot edit", () => { expect(canWrite("read_only")).toBe(false); expect(canWrite("analyst")).toBe(false); expect(canWrite("sales_rep")).toBe(true); });
   it("only owners, admins and sales managers delete", () => { expect(canDelete("sales_rep")).toBe(false); expect(canDelete("sales_manager")).toBe(true); });
 });
+
+import { buildAnalytics } from "@/lib/analytics";
+describe("analytics", () => {
+  const base = { deals: [], leads: [], calls: [], campaigns: [], tasks: [], members: [], profiles: [] };
+  it("win rate counts only closed deals", () => {
+    const a = buildAnalytics("sales", { ...base, deals: [{ stage: "won", value: 100 }, { stage: "lost", value: 50 }, { stage: "proposal", value: 10 }] });
+    expect(a.kpis.find((k) => k.label === "Win rate")?.value).toBe("50%");
+  });
+  it("answered rate uses completed calls", () => {
+    const a = buildAnalytics("calls", { ...base, calls: [{ status: "completed", duration_seconds: 120 }, { status: "no_answer", duration_seconds: 0 }] });
+    expect(a.kpis.find((k) => k.label === "Answered rate")?.value).toBe("50%");
+  });
+});
