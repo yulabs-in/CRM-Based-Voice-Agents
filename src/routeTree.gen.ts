@@ -15,15 +15,29 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_app'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedAppCallCampaignsRouteImport } from './routes/_authenticated/_app/call-campaigns'
+import { Route as AuthenticatedAppCallHistoryRouteImport } from './routes/_authenticated/_app/call-history'
+import { Route as AuthenticatedAppCallRecordingsRouteImport } from './routes/_authenticated/_app/call-recordings'
 import { Route as AuthenticatedAppCompaniesRouteImport } from './routes/_authenticated/_app/companies'
 import { Route as AuthenticatedAppContactsRouteImport } from './routes/_authenticated/_app/contacts'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppDealsRouteImport } from './routes/_authenticated/_app/deals'
+import { Route as AuthenticatedAppEmailRouteImport } from './routes/_authenticated/_app/email'
 import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/_app/leads'
+import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
+import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
+import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
+import { Route as AuthenticatedAppScheduledActionsRouteImport } from './routes/_authenticated/_app/scheduled-actions'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/_app/settings'
+import { Route as AuthenticatedAppSmsRouteImport } from './routes/_authenticated/_app/sms'
 import { Route as AuthenticatedAppTasksRouteImport } from './routes/_authenticated/_app/tasks'
 import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticated/_app/team'
+import { Route as AuthenticatedAppTranscriptsRouteImport } from './routes/_authenticated/_app/transcripts'
+import { Route as AuthenticatedAppTriggersRouteImport } from './routes/_authenticated/_app/triggers'
+import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authenticated/_app/voice-agents'
+import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
+import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -54,6 +68,24 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppCallCampaignsRoute =
+  AuthenticatedAppCallCampaignsRouteImport.update({
+    id: '/call-campaigns',
+    path: '/call-campaigns',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCallHistoryRoute =
+  AuthenticatedAppCallHistoryRouteImport.update({
+    id: '/call-history',
+    path: '/call-history',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCallRecordingsRoute =
+  AuthenticatedAppCallRecordingsRouteImport.update({
+    id: '/call-recordings',
+    path: '/call-recordings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCompaniesRoute =
   AuthenticatedAppCompaniesRouteImport.update({
     id: '/companies',
@@ -77,15 +109,43 @@ const AuthenticatedAppDealsRoute = AuthenticatedAppDealsRouteImport.update({
   path: '/deals',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppEmailRoute = AuthenticatedAppEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppLeadsRoute = AuthenticatedAppLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppLiveCallsRoute =
+  AuthenticatedAppLiveCallsRouteImport.update({
+    id: '/live-calls',
+    path: '/live-calls',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppMeetingsRoute =
+  AuthenticatedAppMeetingsRouteImport.update({
+    id: '/meetings',
+    path: '/meetings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPipelineRoute =
   AuthenticatedAppPipelineRouteImport.update({
     id: '/pipeline',
     path: '/pipeline',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppRulesRoute = AuthenticatedAppRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppScheduledActionsRoute =
+  AuthenticatedAppScheduledActionsRouteImport.update({
+    id: '/scheduled-actions',
+    path: '/scheduled-actions',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppSettingsRoute =
@@ -94,6 +154,11 @@ const AuthenticatedAppSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppSmsRoute = AuthenticatedAppSmsRouteImport.update({
+  id: '/sms',
+  path: '/sms',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppTasksRoute = AuthenticatedAppTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -104,6 +169,36 @@ const AuthenticatedAppTeamRoute = AuthenticatedAppTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppTranscriptsRoute =
+  AuthenticatedAppTranscriptsRouteImport.update({
+    id: '/transcripts',
+    path: '/transcripts',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppTriggersRoute =
+  AuthenticatedAppTriggersRouteImport.update({
+    id: '/triggers',
+    path: '/triggers',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppVoiceAgentsRoute =
+  AuthenticatedAppVoiceAgentsRouteImport.update({
+    id: '/voice-agents',
+    path: '/voice-agents',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppWhatsappRoute =
+  AuthenticatedAppWhatsappRouteImport.update({
+    id: '/whatsapp',
+    path: '/whatsapp',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppWorkflowsRoute =
+  AuthenticatedAppWorkflowsRouteImport.update({
+    id: '/workflows',
+    path: '/workflows',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedInviteTokenRoute =
   AuthenticatedInviteTokenRouteImport.update({
     id: '/invite/$token',
@@ -116,15 +211,29 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
+  '/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
   '/companies': typeof AuthenticatedAppCompaniesRoute
   '/contacts': typeof AuthenticatedAppContactsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
+  '/email': typeof AuthenticatedAppEmailRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
+  '/live-calls': typeof AuthenticatedAppLiveCallsRoute
+  '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/rules': typeof AuthenticatedAppRulesRoute
+  '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
+  '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
+  '/transcripts': typeof AuthenticatedAppTranscriptsRoute
+  '/triggers': typeof AuthenticatedAppTriggersRoute
+  '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
+  '/whatsapp': typeof AuthenticatedAppWhatsappRoute
+  '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
 }
 export interface FileRoutesByTo {
@@ -132,15 +241,29 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
+  '/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
   '/companies': typeof AuthenticatedAppCompaniesRoute
   '/contacts': typeof AuthenticatedAppContactsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
+  '/email': typeof AuthenticatedAppEmailRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
+  '/live-calls': typeof AuthenticatedAppLiveCallsRoute
+  '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/rules': typeof AuthenticatedAppRulesRoute
+  '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
+  '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
+  '/transcripts': typeof AuthenticatedAppTranscriptsRoute
+  '/triggers': typeof AuthenticatedAppTriggersRoute
+  '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
+  '/whatsapp': typeof AuthenticatedAppWhatsappRoute
+  '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
 }
 export interface FileRoutesById {
@@ -151,15 +274,29 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/_app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/_app/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
+  '/_authenticated/_app/call-history': typeof AuthenticatedAppCallHistoryRoute
+  '/_authenticated/_app/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
   '/_authenticated/_app/companies': typeof AuthenticatedAppCompaniesRoute
   '/_authenticated/_app/contacts': typeof AuthenticatedAppContactsRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/deals': typeof AuthenticatedAppDealsRoute
+  '/_authenticated/_app/email': typeof AuthenticatedAppEmailRoute
   '/_authenticated/_app/leads': typeof AuthenticatedAppLeadsRoute
+  '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
+  '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
+  '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRoute
+  '/_authenticated/_app/sms': typeof AuthenticatedAppSmsRoute
   '/_authenticated/_app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/_app/team': typeof AuthenticatedAppTeamRoute
+  '/_authenticated/_app/transcripts': typeof AuthenticatedAppTranscriptsRoute
+  '/_authenticated/_app/triggers': typeof AuthenticatedAppTriggersRoute
+  '/_authenticated/_app/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
+  '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
+  '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
 }
 export interface FileRouteTypes {
@@ -169,15 +306,29 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/onboarding'
+    | '/call-campaigns'
+    | '/call-history'
+    | '/call-recordings'
     | '/companies'
     | '/contacts'
     | '/dashboard'
     | '/deals'
+    | '/email'
     | '/leads'
+    | '/live-calls'
+    | '/meetings'
     | '/pipeline'
+    | '/rules'
+    | '/scheduled-actions'
     | '/settings'
+    | '/sms'
     | '/tasks'
     | '/team'
+    | '/transcripts'
+    | '/triggers'
+    | '/voice-agents'
+    | '/whatsapp'
+    | '/workflows'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -185,15 +336,29 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/onboarding'
+    | '/call-campaigns'
+    | '/call-history'
+    | '/call-recordings'
     | '/companies'
     | '/contacts'
     | '/dashboard'
     | '/deals'
+    | '/email'
     | '/leads'
+    | '/live-calls'
+    | '/meetings'
     | '/pipeline'
+    | '/rules'
+    | '/scheduled-actions'
     | '/settings'
+    | '/sms'
     | '/tasks'
     | '/team'
+    | '/transcripts'
+    | '/triggers'
+    | '/voice-agents'
+    | '/whatsapp'
+    | '/workflows'
     | '/invite/$token'
   id:
     | '__root__'
@@ -203,15 +368,29 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/_app'
     | '/_authenticated/onboarding'
+    | '/_authenticated/_app/call-campaigns'
+    | '/_authenticated/_app/call-history'
+    | '/_authenticated/_app/call-recordings'
     | '/_authenticated/_app/companies'
     | '/_authenticated/_app/contacts'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/deals'
+    | '/_authenticated/_app/email'
     | '/_authenticated/_app/leads'
+    | '/_authenticated/_app/live-calls'
+    | '/_authenticated/_app/meetings'
     | '/_authenticated/_app/pipeline'
+    | '/_authenticated/_app/rules'
+    | '/_authenticated/_app/scheduled-actions'
     | '/_authenticated/_app/settings'
+    | '/_authenticated/_app/sms'
     | '/_authenticated/_app/tasks'
     | '/_authenticated/_app/team'
+    | '/_authenticated/_app/transcripts'
+    | '/_authenticated/_app/triggers'
+    | '/_authenticated/_app/voice-agents'
+    | '/_authenticated/_app/whatsapp'
+    | '/_authenticated/_app/workflows'
     | '/_authenticated/invite/$token'
   fileRoutesById: FileRoutesById
 }
@@ -266,6 +445,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/_app/call-campaigns': {
+      id: '/_authenticated/_app/call-campaigns'
+      path: '/call-campaigns'
+      fullPath: '/call-campaigns'
+      preLoaderRoute: typeof AuthenticatedAppCallCampaignsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/call-history': {
+      id: '/_authenticated/_app/call-history'
+      path: '/call-history'
+      fullPath: '/call-history'
+      preLoaderRoute: typeof AuthenticatedAppCallHistoryRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/call-recordings': {
+      id: '/_authenticated/_app/call-recordings'
+      path: '/call-recordings'
+      fullPath: '/call-recordings'
+      preLoaderRoute: typeof AuthenticatedAppCallRecordingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/companies': {
       id: '/_authenticated/_app/companies'
       path: '/companies'
@@ -294,11 +494,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppDealsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/email': {
+      id: '/_authenticated/_app/email'
+      path: '/email'
+      fullPath: '/email'
+      preLoaderRoute: typeof AuthenticatedAppEmailRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/leads': {
       id: '/_authenticated/_app/leads'
       path: '/leads'
       fullPath: '/leads'
       preLoaderRoute: typeof AuthenticatedAppLeadsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/live-calls': {
+      id: '/_authenticated/_app/live-calls'
+      path: '/live-calls'
+      fullPath: '/live-calls'
+      preLoaderRoute: typeof AuthenticatedAppLiveCallsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/meetings': {
+      id: '/_authenticated/_app/meetings'
+      path: '/meetings'
+      fullPath: '/meetings'
+      preLoaderRoute: typeof AuthenticatedAppMeetingsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/pipeline': {
@@ -308,11 +529,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/rules': {
+      id: '/_authenticated/_app/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof AuthenticatedAppRulesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/scheduled-actions': {
+      id: '/_authenticated/_app/scheduled-actions'
+      path: '/scheduled-actions'
+      fullPath: '/scheduled-actions'
+      preLoaderRoute: typeof AuthenticatedAppScheduledActionsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/settings': {
       id: '/_authenticated/_app/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/sms': {
+      id: '/_authenticated/_app/sms'
+      path: '/sms'
+      fullPath: '/sms'
+      preLoaderRoute: typeof AuthenticatedAppSmsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/tasks': {
@@ -329,6 +571,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppTeamRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/transcripts': {
+      id: '/_authenticated/_app/transcripts'
+      path: '/transcripts'
+      fullPath: '/transcripts'
+      preLoaderRoute: typeof AuthenticatedAppTranscriptsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/triggers': {
+      id: '/_authenticated/_app/triggers'
+      path: '/triggers'
+      fullPath: '/triggers'
+      preLoaderRoute: typeof AuthenticatedAppTriggersRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/voice-agents': {
+      id: '/_authenticated/_app/voice-agents'
+      path: '/voice-agents'
+      fullPath: '/voice-agents'
+      preLoaderRoute: typeof AuthenticatedAppVoiceAgentsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/whatsapp': {
+      id: '/_authenticated/_app/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/whatsapp'
+      preLoaderRoute: typeof AuthenticatedAppWhatsappRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/workflows': {
+      id: '/_authenticated/_app/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof AuthenticatedAppWorkflowsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/invite/$token': {
       id: '/_authenticated/invite/$token'
       path: '/invite/$token'
@@ -340,27 +617,55 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppCallCampaignsRoute: typeof AuthenticatedAppCallCampaignsRoute
+  AuthenticatedAppCallHistoryRoute: typeof AuthenticatedAppCallHistoryRoute
+  AuthenticatedAppCallRecordingsRoute: typeof AuthenticatedAppCallRecordingsRoute
   AuthenticatedAppCompaniesRoute: typeof AuthenticatedAppCompaniesRoute
   AuthenticatedAppContactsRoute: typeof AuthenticatedAppContactsRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppDealsRoute: typeof AuthenticatedAppDealsRoute
+  AuthenticatedAppEmailRoute: typeof AuthenticatedAppEmailRoute
   AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
+  AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
+  AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
+  AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
+  AuthenticatedAppSmsRoute: typeof AuthenticatedAppSmsRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
+  AuthenticatedAppTranscriptsRoute: typeof AuthenticatedAppTranscriptsRoute
+  AuthenticatedAppTriggersRoute: typeof AuthenticatedAppTriggersRoute
+  AuthenticatedAppVoiceAgentsRoute: typeof AuthenticatedAppVoiceAgentsRoute
+  AuthenticatedAppWhatsappRoute: typeof AuthenticatedAppWhatsappRoute
+  AuthenticatedAppWorkflowsRoute: typeof AuthenticatedAppWorkflowsRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppCallCampaignsRoute: AuthenticatedAppCallCampaignsRoute,
+  AuthenticatedAppCallHistoryRoute: AuthenticatedAppCallHistoryRoute,
+  AuthenticatedAppCallRecordingsRoute: AuthenticatedAppCallRecordingsRoute,
   AuthenticatedAppCompaniesRoute: AuthenticatedAppCompaniesRoute,
   AuthenticatedAppContactsRoute: AuthenticatedAppContactsRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppDealsRoute: AuthenticatedAppDealsRoute,
+  AuthenticatedAppEmailRoute: AuthenticatedAppEmailRoute,
   AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
+  AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
+  AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
+  AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
+  AuthenticatedAppSmsRoute: AuthenticatedAppSmsRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
+  AuthenticatedAppTranscriptsRoute: AuthenticatedAppTranscriptsRoute,
+  AuthenticatedAppTriggersRoute: AuthenticatedAppTriggersRoute,
+  AuthenticatedAppVoiceAgentsRoute: AuthenticatedAppVoiceAgentsRoute,
+  AuthenticatedAppWhatsappRoute: AuthenticatedAppWhatsappRoute,
+  AuthenticatedAppWorkflowsRoute: AuthenticatedAppWorkflowsRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =

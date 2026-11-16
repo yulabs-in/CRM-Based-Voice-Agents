@@ -18,16 +18,17 @@ import { PageHeader } from "./PageHeader";
 export type Row = Record<string, unknown> & { id: string };
 export type Field = {
   key: string; label: string; type?: "text" | "email" | "number" | "date" | "datetime" | "textarea" | "select" | "ref";
-  options?: { value: string; label: string }[]; required?: boolean; refTable?: "contacts" | "companies" | "deals"; full?: boolean;
+  options?: { value: string; label: string }[]; required?: boolean; refTable?: RefTable; full?: boolean;
 };
 export type Column = { key: string; label: string; render?: (r: Row, refs: Refs) => React.ReactNode; className?: string };
 type Refs = Record<string, Map<string, string>>;
-type Table = "contacts" | "companies" | "leads" | "deals" | "tasks";
+export type RefTable = "contacts" | "companies" | "deals" | "voice_agents" | "call_campaigns";
+type Table = "contacts" | "companies" | "leads" | "deals" | "tasks" | "voice_agents" | "call_campaigns" | "calls" | "workflows" | "messages" | "meetings";
 
 const refLabel = (t: string, r: Record<string, unknown>) =>
   t === "contacts" ? `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() : String(r.name ?? r.title ?? "");
 
-export function useRefs(tables: ("contacts" | "companies" | "deals")[]) {
+export function useRefs(tables: RefTable[]) {
   const { org } = useOrg();
   return useQuery({
     queryKey: ["refs", org.id, tables.join()],
@@ -35,7 +36,7 @@ export function useRefs(tables: ("contacts" | "companies" | "deals")[]) {
     queryFn: async () => {
       const out: Refs = {};
       for (const t of tables) {
-        const cols = t === "contacts" ? "id, first_name, last_name" : t === "companies" ? "id, name" : "id, title";
+        const cols = t === "contacts" ? "id, first_name, last_name" : t === "deals" ? "id, title" : "id, name";
         const { data } = await supabase.from(t).select(cols).eq("organization_id", org.id).limit(1000);
         out[t] = new Map(((data ?? []) as unknown as Record<string, unknown>[]).map((r) => [String(r.id), refLabel(t, r)]));
       }
@@ -47,21 +48,24 @@ export function useRefs(tables: ("contacts" | "companies" | "deals")[]) {
 export function EntityPage(props: {
   table: Table; title: string; description: string; singular: string; icon: LucideIcon;
   fields: Field[]; columns: Column[]; searchKeys: string[]; defaults?: Record<string, unknown>;
-  openNew?: boolean; onCloseNew?: () => void; order?: string;
+  openNew?: boolean; onCloseNew?: () => void; order?: string; filter?: Record<string, string>; readOnly?: boolean;
 }) {
-  const { org, role } = useOrg();
+  const { org, role: realRole } = useOrg();
+  const role = props.readOnly ? "read_only" : realRole;
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
   const [creating, setCreating] = useState(!!props.openNew && canWrite(role));
   const refTables = [...new Set(props.fields.filter((f) => f.refTable).map((f) => f.refTable!))];
   const refs = useRefs(refTables);
-  const key = [props.table, org.id];
+  const key = [props.table, org.id, JSON.stringify(props.filter ?? {})];
 
   const list = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from(props.table).select("*").eq("organization_id", org.id).order(props.order ?? "created_at", { ascending: false }).limit(1000);
+      let qb = supabase.from(props.table).select("*").eq("organization_id", org.id);
+      for (const [k, v] of Object.entries(props.filter ?? {})) qb = qb.eq(k as never, v as never);
+      const { data, error } = await qb.order(props.order ?? "created_at", { ascending: false }).limit(1000);
       if (error) throw error;
       return data as unknown as Row[];
     },
@@ -69,7 +73,7 @@ export function EntityPage(props: {
 
   const save = useMutation({
     mutationFn: async (vals: Record<string, unknown>) => {
-      const payload = { ...vals, organization_id: org.id };
+      const payload = { ...(editing ? {} : props.filter), ...vals, organization_id: org.id };
       const res = editing
         ? await supabase.from(props.table).update(payload as never).eq("id", editing.id)
         : await supabase.from(props.table).insert(payload as never);

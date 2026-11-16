@@ -8,6 +8,13 @@
       "when": 1794822326131,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794823238939,
+      "tag": "0001_voice_automation_comms",
+      "breakpoints": true
     }
   ]
 }

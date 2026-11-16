@@ -14,6 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_campaigns: {
+        Row: {
+          agent_id: string | null
+          audience: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          starts_at: string | null
+          status: string
+          target_count: number
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          audience?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          starts_at?: string | null
+          status?: string
+          target_count?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          audience?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          starts_at?: string | null
+          status?: string
+          target_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_campaigns_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calls: {
+        Row: {
+          agent_id: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string
+          direction: string
+          duration_seconds: number
+          external_id: string | null
+          id: string
+          organization_id: string
+          outcome: string | null
+          phone: string | null
+          recording_url: string | null
+          sentiment: string | null
+          started_at: string | null
+          status: string
+          summary: string | null
+          transcript: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number
+          external_id?: string | null
+          id?: string
+          organization_id: string
+          outcome?: string | null
+          phone?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          direction?: string
+          duration_seconds?: number
+          external_id?: string | null
+          id?: string
+          organization_id?: string
+          outcome?: string | null
+          phone?: string | null
+          recording_url?: string | null
+          sentiment?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           city: string | null
@@ -307,6 +459,66 @@ export type Database = {
           },
         ]
       }
+      meetings: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          starts_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          starts_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          starts_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           created_at: string
@@ -332,6 +544,66 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "memberships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string | null
+          channel: string
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          direction: string
+          id: string
+          organization_id: string
+          recipient: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          id?: string
+          organization_id: string
+          recipient?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          channel?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          direction?: string
+          id?: string
+          organization_id?: string
+          recipient?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -495,6 +767,118 @@ export type Database = {
           },
           {
             foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_agents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          greeting: string | null
+          id: string
+          instructions: string | null
+          language: string
+          name: string
+          organization_id: string
+          purpose: string | null
+          sarvam_agent_id: string | null
+          status: string
+          updated_at: string
+          voice: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          greeting?: string | null
+          id?: string
+          instructions?: string | null
+          language?: string
+          name: string
+          organization_id: string
+          purpose?: string | null
+          sarvam_agent_id?: string | null
+          status?: string
+          updated_at?: string
+          voice?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          greeting?: string | null
+          id?: string
+          instructions?: string | null
+          language?: string
+          name?: string
+          organization_id?: string
+          purpose?: string | null
+          sarvam_agent_id?: string | null
+          status?: string
+          updated_at?: string
+          voice?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_agents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          action: string | null
+          condition: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          name: string
+          notes: string | null
+          organization_id: string
+          schedule_at: string | null
+          status: string
+          trigger_event: string | null
+          updated_at: string
+        }
+        Insert: {
+          action?: string | null
+          condition?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          schedule_at?: string | null
+          status?: string
+          trigger_event?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action?: string | null
+          condition?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          schedule_at?: string | null
+          status?: string
+          trigger_event?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
