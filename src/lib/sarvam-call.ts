@@ -1,0 +1,22 @@
+export type SarvamAttemptStatus = "connected" | "no_answer" | "busy" | "failed";
+
+export function normalizePhoneNumber(input: string): string | null {
+  const compact = input.trim().replace(/[\s()-]/g, "");
+  if (/^\+[1-9]\d{7,14}$/.test(compact)) return compact;
+  const digits = compact.replace(/\D/g, "");
+  if (/^[6-9]\d{9}$/.test(digits)) return `+91${digits}`;
+  return null;
+}
+
+export function mapSarvamStatus(status: SarvamAttemptStatus): "completed" | "no_answer" | "failed" {
+  if (status === "connected") return "completed";
+  if (status === "no_answer") return "no_answer";
+  return "failed";
+}
+
+export function formatSarvamTranscript(turns: Array<{ role: string; en_text: string }>): string {
+  return turns
+    .map((turn) => `${turn.role === "agent" ? "Agent" : "Customer"}: ${turn.en_text.trim()}`)
+    .filter((turn) => !turn.endsWith(": "))
+    .join("\n");
+}

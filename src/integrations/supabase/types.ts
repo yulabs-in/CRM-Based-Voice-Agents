@@ -88,12 +88,16 @@ export type Database = {
           outcome: string | null
           phone: string | null
           recording_url: string | null
+          sarvam_failure_reason: string | null
+          sarvam_interaction_id: string | null
+          sarvam_status: string | null
           sentiment: string | null
           started_at: string | null
           status: string
           summary: string | null
           transcript: string | null
           updated_at: string
+          webhook_token_hash: string | null
         }
         Insert: {
           agent_id?: string | null
@@ -108,12 +112,16 @@ export type Database = {
           outcome?: string | null
           phone?: string | null
           recording_url?: string | null
+          sarvam_failure_reason?: string | null
+          sarvam_interaction_id?: string | null
+          sarvam_status?: string | null
           sentiment?: string | null
           started_at?: string | null
           status?: string
           summary?: string | null
           transcript?: string | null
           updated_at?: string
+          webhook_token_hash?: string | null
         }
         Update: {
           agent_id?: string | null
@@ -128,12 +136,16 @@ export type Database = {
           outcome?: string | null
           phone?: string | null
           recording_url?: string | null
+          sarvam_failure_reason?: string | null
+          sarvam_interaction_id?: string | null
+          sarvam_status?: string | null
           sentiment?: string | null
           started_at?: string | null
           status?: string
           summary?: string | null
           transcript?: string | null
           updated_at?: string
+          webhook_token_hash?: string | null
         }
         Relationships: [
           {
@@ -623,6 +635,8 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_step: number
           phone: string | null
+          sarvam_organization_id: string | null
+          sarvam_workspace_id: string | null
           slug: string | null
           timezone: string | null
           updated_at: string
@@ -639,6 +653,8 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
+          sarvam_organization_id?: string | null
+          sarvam_workspace_id?: string | null
           slug?: string | null
           timezone?: string | null
           updated_at?: string
@@ -655,6 +671,8 @@ export type Database = {
           onboarding_completed?: boolean
           onboarding_step?: number
           phone?: string | null
+          sarvam_organization_id?: string | null
+          sarvam_workspace_id?: string | null
           slug?: string | null
           timezone?: string | null
           updated_at?: string
@@ -786,6 +804,9 @@ export type Database = {
           organization_id: string
           purpose: string | null
           sarvam_agent_id: string | null
+          sarvam_agent_phone_number: string | null
+          sarvam_app_version: number
+          sarvam_connection_id: string | null
           status: string
           updated_at: string
           voice: string | null
@@ -801,6 +822,9 @@ export type Database = {
           organization_id: string
           purpose?: string | null
           sarvam_agent_id?: string | null
+          sarvam_agent_phone_number?: string | null
+          sarvam_app_version?: number
+          sarvam_connection_id?: string | null
           status?: string
           updated_at?: string
           voice?: string | null
@@ -816,6 +840,9 @@ export type Database = {
           organization_id?: string
           purpose?: string | null
           sarvam_agent_id?: string | null
+          sarvam_agent_phone_number?: string | null
+          sarvam_app_version?: number
+          sarvam_connection_id?: string | null
           status?: string
           updated_at?: string
           voice?: string | null

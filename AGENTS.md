@@ -34,4 +34,5 @@ use the editor.
 - Current org lives in OrgProvider (src/lib/org.tsx); signed-in app pages live under src/routes/_authenticated/_app/ which loads memberships and redirects to /onboarding when none.
 - Generic CRUD list pages use src/components/app/EntityPage.tsx with field/column configs.
 - tsconfig relaxes noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess, exactOptionalPropertyTypes to keep config-driven pages readable.
+- Sarvam dialing stays in authenticated TanStack server functions; per-attempt callback tokens are stored hashed because Sarvam callbacks do not support custom auth headers.
 <!-- AGENT-MEMORY:END -->
