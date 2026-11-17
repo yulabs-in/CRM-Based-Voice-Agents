@@ -91,7 +91,7 @@ export function SupportCallTest() {
         {canWrite(role) && (
           <Button
             variant="hero"
-            disabled={call.isPending || agents.isLoading || !normalizedPhone || !agentId || !consentConfirmed}
+            disabled={call.isPending || agents.isLoading || !normalizedPhone || !agentId || !ready || !consentConfirmed}
             onClick={() => call.mutate()}
           >
             {call.isPending ? <Loader2 className="animate-spin" /> : <PhoneCall />}

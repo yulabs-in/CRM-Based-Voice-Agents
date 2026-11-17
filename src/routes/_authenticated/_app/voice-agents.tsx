@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Bot } from "lucide-react";
 import { EntityPage } from "@/components/app/EntityPage";
+import { SupportCallTest } from "@/components/app/SupportCallTest";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { pageHead, opts, fmtDuration } from "@/lib/seo";
 import { shortDate } from "@/lib/format";
@@ -13,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/_app/voice-agents")({
 function Page() {
   void StatusBadge; void opts; void fmtDuration; void shortDate;
   return (
+    <div className="space-y-5">
+    <SupportCallTest />
     <EntityPage table="voice_agents" title="Voice Agents" singular="Agent" icon={Bot} description="Configure the AI voices that call and answer for you."
       searchKeys={["name", "purpose", "language"]}
       fields={[
@@ -34,5 +37,6 @@ function Page() {
         { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
       ]}
     />
+    </div>
   );
 }

@@ -47,6 +47,7 @@ import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
+import { Route as ApiPublicSarvamCallWebhookRouteImport } from './routes/api/public/sarvam-call-webhook'
 import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -262,6 +263,12 @@ const AuthenticatedInviteTokenRoute =
     path: '/invite/$token',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSarvamCallWebhookRoute =
+  ApiPublicSarvamCallWebhookRouteImport.update({
+    id: '/api/public/sarvam-call-webhook',
+    path: '/api/public/sarvam-call-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSarvamWebhookRoute = ApiPublicSarvamWebhookRouteImport.update({
   id: '/api/public/sarvam-webhook',
   path: '/api/public/sarvam-webhook',
@@ -305,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -344,6 +352,7 @@ export interface FileRoutesByTo {
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRoutesById {
@@ -386,6 +395,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
 }
 export interface FileRouteTypes {
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -466,6 +477,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-webhook'
   id:
     | '__root__'
@@ -507,6 +519,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/whatsapp'
     | '/_authenticated/_app/workflows'
     | '/_authenticated/invite/$token'
+    | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-webhook'
   fileRoutesById: FileRoutesById
 }
@@ -515,6 +528,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicSarvamCallWebhookRoute: typeof ApiPublicSarvamCallWebhookRoute
   ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
 }
 
@@ -786,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInviteTokenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/sarvam-call-webhook': {
+      id: '/api/public/sarvam-call-webhook'
+      path: '/api/public/sarvam-call-webhook'
+      fullPath: '/api/public/sarvam-call-webhook'
+      preLoaderRoute: typeof ApiPublicSarvamCallWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sarvam-webhook': {
       id: '/api/public/sarvam-webhook'
       path: '/api/public/sarvam-webhook'
@@ -888,6 +909,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicSarvamCallWebhookRoute: ApiPublicSarvamCallWebhookRoute,
   ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,
 }
 export const routeTree = rootRouteImport
