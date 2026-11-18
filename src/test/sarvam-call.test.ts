@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSarvamTranscript, mapSarvamStatus, normalizePhoneNumber } from "@/lib/sarvam-call";
+import { formatSarvamTranscript, isValidCallbackToken, mapSarvamStatus, normalizePhoneNumber } from "@/lib/sarvam-call";
 
 describe("Sarvam support call handling", () => {
   it("normalizes the supplied Indian mobile number for Sarvam", () => {
@@ -18,5 +18,11 @@ describe("Sarvam support call handling", () => {
       { role: "agent", en_text: "How can I help?" },
       { role: "user", en_text: "I need support." },
     ])).toBe("Agent: How can I help?\nCustomer: I need support.");
+  });
+
+  it("accepts only the exact callback token hash for the matching call", () => {
+    expect(isValidCallbackToken("abc123", "abc123")).toBe(true);
+    expect(isValidCallbackToken("abc123", "different")).toBe(false);
+    expect(isValidCallbackToken("abc123", null)).toBe(false);
   });
 });

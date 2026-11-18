@@ -29,7 +29,7 @@ function Page() {
         { key: "status", label: "Status", type: "select", options: opts(["active", "inactive"]) },
         { key: "greeting", label: "Opening line", type: "textarea", full: true }, { key: "instructions", label: "Instructions", type: "textarea", full: true },
       ]}
-      defaults={{ language: "hi-IN", status: "active", purpose: "sales" }}
+      defaults={{ language: "hi-IN", status: "active", purpose: "sales", sarvam_app_version: 1 }}
       columns={[
         { key: "name", label: "Agent", render: (r) => <div><p className="font-semibold">{String(r.name)}</p><p className="text-xs text-muted-foreground">{String(r.purpose ?? "")}</p></div> },
         { key: "language", label: "Language" }, { key: "voice", label: "Voice" }, { key: "sarvam_agent_id", label: "Sarvam ID" },

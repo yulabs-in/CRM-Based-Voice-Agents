@@ -14,6 +14,10 @@ export function mapSarvamStatus(status: SarvamAttemptStatus): "completed" | "no_
   return "failed";
 }
 
+export function isValidCallbackToken(providedHash: string, storedHash: string | null): boolean {
+  return storedHash !== null && providedHash.length === storedHash.length && providedHash === storedHash;
+}
+
 export function formatSarvamTranscript(turns: Array<{ role: string; en_text: string }>): string {
   return turns
     .map((turn) => `${turn.role === "agent" ? "Agent" : "Customer"}: ${turn.en_text.trim()}`)

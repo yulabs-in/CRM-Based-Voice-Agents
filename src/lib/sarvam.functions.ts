@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
@@ -8,7 +9,11 @@ type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: str
 
 export const saveSarvamWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { organizationId: string; sarvamOrganizationId: string; sarvamWorkspaceId: string }) => input)
+  .inputValidator((input: unknown) => z.object({
+    organizationId: z.string().uuid(),
+    sarvamOrganizationId: z.string().trim().max(200),
+    sarvamWorkspaceId: z.string().trim().max(200),
+  }).parse(input))
   .handler(async ({ data, context }) => {
     const organizationId = data.organizationId.trim();
     const sarvamOrganizationId = data.sarvamOrganizationId.trim();
@@ -27,7 +32,12 @@ export const saveSarvamWorkspace = createServerFn({ method: "POST" })
 
 export const startSarvamSupportCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { organizationId: string; agentId: string; phone: string; consentConfirmed: boolean }) => input)
+  .inputValidator((input: unknown) => z.object({
+    organizationId: z.string().uuid(),
+    agentId: z.string().uuid(),
+    phone: z.string().trim().min(8).max(40),
+    consentConfirmed: z.literal(true),
+  }).parse(input))
   .handler(async ({ data, context }) => {
     if (!data.consentConfirmed) throw new Error("Confirm the recipient agreed to this test call first");
     const phone = normalizePhoneNumber(data.phone);

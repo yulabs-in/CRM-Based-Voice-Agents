@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { constantTimeStringEqual, hashCallbackToken } from "@/lib/sarvam-auth.server";
-import { formatSarvamTranscript, mapSarvamStatus } from "@/lib/sarvam-call";
+import { hashCallbackToken } from "@/lib/sarvam-auth.server";
+import { formatSarvamTranscript, isValidCallbackToken, mapSarvamStatus } from "@/lib/sarvam-call";
 
 const Payload = z.object({
   attempt_id: z.string().min(1).max(200),
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
         const { data: call, error: lookupError } = await supabaseAdmin.from("calls")
           .select("id, organization_id, webhook_token_hash, agent_id")
           .eq("id", metadata.call_id).maybeSingle();
-        if (lookupError || !call?.webhook_token_hash || !constantTimeStringEqual(call.webhook_token_hash, providedHash)) {
+        if (lookupError || !isValidCallbackToken(providedHash, call?.webhook_token_hash ?? null)) {
           return new Response("Unauthorized", { status: 401 });
         }
 

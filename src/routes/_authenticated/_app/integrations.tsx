@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/app/PageHeader";
-import { canWrite, useOrg } from "@/lib/org";
+import { isAdmin, useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
 import { sarvamStatus } from "@/lib/functions/ai.functions";
 import { saveSarvamWorkspace } from "@/lib/sarvam.functions";
@@ -59,7 +59,7 @@ function Page() {
           <div className="space-y-2"><Label htmlFor="sarvam-org-id">Sarvam organization ID</Label><Input id="sarvam-org-id" value={sarvamOrgId} onChange={(event) => setSarvamOrgId(event.target.value)} placeholder="From your Sarvam workspace" /></div>
           <div className="space-y-2"><Label htmlFor="sarvam-workspace-id">Sarvam workspace ID</Label><Input id="sarvam-workspace-id" value={sarvamWorkspaceId} onChange={(event) => setSarvamWorkspaceId(event.target.value)} placeholder="From your Sarvam workspace" /></div>
         </div>
-        {canWrite(role) && <Button variant="outline" onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : <Save />} Save workspace details</Button>}
+        {isAdmin(role) && <Button variant="outline" onClick={handleSave} disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : <Save />} Save workspace details</Button>}
 
         <div className="space-y-2 border-t pt-4 text-sm">
           <p className="font-semibold">Call result callback</p>
