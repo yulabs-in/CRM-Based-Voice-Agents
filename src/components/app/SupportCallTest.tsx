@@ -30,7 +30,9 @@ export function SupportCallTest() {
       if (error) throw error;
       return data;
     },
+    refetchInterval: (query) => query.state.data?.length ? false : 5000,
   });
+  const hasSupportAgents = (agents.data?.length ?? 0) > 0;
   const selectedAgent = useMemo(() => agents.data?.find((agent) => agent.id === agentId), [agents.data, agentId]);
   const normalizedPhone = normalizePhoneNumber(phone);
   const ready = Boolean(selectedAgent?.sarvam_agent_id && selectedAgent.sarvam_connection_id && selectedAgent.sarvam_agent_phone_number);
@@ -72,7 +74,7 @@ export function SupportCallTest() {
               {agents.data?.map((agent) => <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          {agents.data?.length === 0 && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
+      {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading support agents…</p> : !hasSupportAgents && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
         </div>
       </div>
 

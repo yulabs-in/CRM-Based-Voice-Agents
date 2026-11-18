@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
         const { data: call, error: lookupError } = await supabaseAdmin.from("calls")
           .select("id, organization_id, webhook_token_hash, agent_id")
           .eq("id", metadata.call_id).maybeSingle();
-        if (lookupError || !isValidCallbackToken(providedHash, call?.webhook_token_hash ?? null)) {
+        if (lookupError || !call || !isValidCallbackToken(providedHash, call.webhook_token_hash)) {
           return new Response("Unauthorized", { status: 401 });
         }
 
