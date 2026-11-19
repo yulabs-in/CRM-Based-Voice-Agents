@@ -43,8 +43,9 @@ export function SupportCallTest() {
     queryKey: ["sarvam-test-call-used", org.id, normalizedPhone],
     enabled: Boolean(normalizedPhone),
     queryFn: async () => {
+      if (!normalizedPhone) return false;
       const { data, error } = await supabase.from("calls").select("id").eq("organization_id", org.id)
-        .eq("phone", normalizedPhone as string).eq("is_test_call", true).limit(1).maybeSingle();
+        .eq("phone", normalizedPhone).eq("is_test_call", true).limit(1).maybeSingle();
       if (error) throw error;
       return Boolean(data);
     },
@@ -71,7 +72,7 @@ export function SupportCallTest() {
             <p className="mt-1 text-sm text-muted-foreground">Place a single Sarvam call, then track its transcript and result in Call History.</p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> One number · one call per request</span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> Approved number · one call total</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -89,6 +90,7 @@ export function SupportCallTest() {
             </SelectContent>
           </Select>
           {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading support agents…</p> : !hasSupportAgents && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
+          {agents.isError && <p className="text-xs text-destructive">Could not load support agents. Refresh and try again.</p>}
         </div>
       </div>
 

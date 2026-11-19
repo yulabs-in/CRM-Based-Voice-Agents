@@ -7,6 +7,7 @@
 - [x] Phase 6: AI call summaries, qualification, sentiment
 - [x] Phase 7: analytics, reports, workflows, integrations, meetings, communication (actual email/WhatsApp/SMS sending not wired; notifications pending)
 - [x] Support-call demo company, contact, and agent instructions prepared for 8019628820
+- [x] One-time approved-number safeguard, transcript callback, and private recording storage/playback capture
 - [ ] End-to-end Sarvam support call and transcript test (waiting for Sarvam Voice Agents organization/workspace IDs, agent ID/version, and telephony connection ID/number)
 - [ ] Phase 8: platform admin, usage/subscriptions, audit logs
 - [ ] Phase 9: QA, accessibility, performance

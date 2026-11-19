@@ -52,7 +52,8 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
             const transcriptResponse = await fetch(transcriptUrl, { headers: { "X-API-Key": apiKey } }).catch(() => null);
             if (transcriptResponse?.ok) {
               const transcriptData = await transcriptResponse.json().catch(() => null) as { messages?: Array<{ role: string; content: string }> } | null;
-              transcript = (transcriptData?.messages ?? []).map((message) => `${message.role === "assistant" ? "Agent" : "Customer"}: ${message.content.trim()}`).filter((line) => !line.endsWith(": ")).join("\n");
+              const fetchedTranscript = (transcriptData?.messages ?? []).map((message) => `${message.role === "assistant" ? "Agent" : "Customer"}: ${message.content.trim()}`).filter((line) => !line.endsWith(": ")).join("\n");
+              if (fetchedTranscript) transcript = fetchedTranscript;
             }
             const recordingResponse = await fetch(`${analyticsBase}/recordings/${interactionPath}`, {
               headers: { "X-API-Key": apiKey },

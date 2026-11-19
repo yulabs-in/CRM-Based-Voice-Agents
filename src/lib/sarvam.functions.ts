@@ -18,7 +18,7 @@ export const saveSarvamWorkspace = createServerFn({ method: "POST" })
     const organizationId = data.organizationId.trim();
     const sarvamOrganizationId = data.sarvamOrganizationId.trim();
     const sarvamWorkspaceId = data.sarvamWorkspaceId.trim();
-    if (!organizationId || sarvamOrganizationId.length > 200 || sarvamWorkspaceId.length > 200) throw new Error("Enter valid Sarvam organization and workspace IDs");
+    if (!organizationId || !sarvamOrganizationId || !sarvamWorkspaceId || sarvamOrganizationId.length > 200 || sarvamWorkspaceId.length > 200) throw new Error("Enter valid Sarvam organization and workspace IDs");
     const { data: membership, error: membershipError } = await context.supabase
       .from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
     if (membershipError || !membership || !["owner", "admin"].includes(membership.role)) throw new Error("Only organization owners and admins can update Sarvam settings");

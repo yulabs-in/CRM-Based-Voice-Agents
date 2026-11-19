@@ -4,6 +4,7 @@ import { EntityPage } from "@/components/app/EntityPage";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { pageHead, opts, fmtDuration } from "@/lib/seo";
 import { shortDate } from "@/lib/format";
+import { CallRecordingPlayer } from "@/components/app/CallRecordingPlayer";
 
 export const Route = createFileRoute("/_authenticated/_app/call-recordings")({
   head: () => pageHead("Call Recordings", "Listen back to recorded calls."),
@@ -26,9 +27,10 @@ function Page() {
       ]}
       defaults={{ direction: "outbound", status: "queued", duration_seconds: 0 }}
       columns={[
-        { key: "phone", label: "Number" }, { key: "started_at", label: "Date", render: (r) => shortDate(r.started_at) },
+        { key: "phone", label: "Number" }, { key: "status", label: "Result", render: (r) => <StatusBadge value={r.status} /> },
+        { key: "started_at", label: "Date", render: (r) => shortDate(r.started_at) },
         { key: "duration_seconds", label: "Length", render: (r) => fmtDuration(r.duration_seconds) },
-        { key: "recording_url", label: "Recording", render: (r) => r.recording_url ? <audio controls preload="none" src={String(r.recording_url)} className="h-8 w-64" /> : <span className="text-muted-foreground">No recording</span> },]}
+        { key: "recording_url", label: "Recording", render: (r) => r.recording_url ? <CallRecordingPlayer callId={r.id} /> : <span className="text-muted-foreground">No recording</span> },]}
     />
   );
 }
