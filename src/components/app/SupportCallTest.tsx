@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { canWrite, useOrg } from "@/lib/org";
 import { isApprovedSupportTestPhone, normalizePhoneNumber } from "@/lib/sarvam-call";
 import { startSarvamSupportCall } from "@/lib/sarvam.functions";
+import { SarvamSetupForm } from "@/components/app/SarvamSetupForm";
 
 export function SupportCallTest() {
   const { org, role } = useOrg();
@@ -25,7 +26,7 @@ export function SupportCallTest() {
     queryKey: ["support-call-agents", org.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("voice_agents")
-        .select("id, name, purpose, status, sarvam_agent_id, sarvam_connection_id, sarvam_agent_phone_number")
+        .select("id, name, purpose, status, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")
         .eq("organization_id", org.id).eq("purpose", "support").eq("status", "active").order("created_at");
       if (error) throw error;
       return data;
@@ -120,9 +121,10 @@ export function SupportCallTest() {
 
       {selectedAgent && !ready && (
         <p className="border-t pt-3 text-sm text-warning">
-          Add the Sarvam agent ID, telephony connection ID, and connected caller number before calling.
+          Add the Sarvam agent ID, telephony connection ID, and connected caller number below before calling.
         </p>
       )}
+      {canWrite(role) && <SarvamSetupForm agent={selectedAgent} />}
       {usedTestCall.data && <p className="border-t pt-3 text-sm text-warning">The one allowed test call for this number has already been used.</p>}
       {attemptId && <p role="status" className="text-sm text-success">Call request accepted · {attemptId}</p>}
     </section>
