@@ -36,7 +36,9 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
         }
 
         let transcript = formatSarvamTranscript(body.data.interaction_transcript ?? []);
-        if (!transcript && body.data.interaction_id && call.agent_id) {
+        let recordingUrl: string | null = null;
+        let recordingFailureReason: string | null = null;
+        if (body.data.interaction_id && call.agent_id) {
           const { data: agent } = await supabaseAdmin.from("voice_agents").select("sarvam_agent_id").eq("id", call.agent_id).maybeSingle();
           const { data: organization } = await supabaseAdmin.from("organizations").select("sarvam_organization_id, sarvam_workspace_id").eq("id", call.organization_id).maybeSingle();
           const apiKey = process.env["SARVAM_API_KEY"];
@@ -44,11 +46,34 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
           const sarvamOrg = organization?.sarvam_organization_id?.trim();
           const workspace = organization?.sarvam_workspace_id?.trim();
           if (apiKey && appId && sarvamOrg && workspace) {
-            const transcriptUrl = `https://apps.sarvam.ai/api/analytics/v1/${encodeURIComponent(sarvamOrg)}/${encodeURIComponent(workspace)}/${encodeURIComponent(appId)}/transcripts/${body.data.interaction_id.split("/").map(encodeURIComponent).join("%2F")}`;
+            const analyticsBase = `https://apps.sarvam.ai/api/analytics/v1/${encodeURIComponent(sarvamOrg)}/${encodeURIComponent(workspace)}/${encodeURIComponent(appId)}`;
+            const interactionPath = body.data.interaction_id.split("/").map(encodeURIComponent).join("%2F");
+            const transcriptUrl = `${analyticsBase}/transcripts/${interactionPath}`;
             const transcriptResponse = await fetch(transcriptUrl, { headers: { "X-API-Key": apiKey } }).catch(() => null);
             if (transcriptResponse?.ok) {
               const transcriptData = await transcriptResponse.json().catch(() => null) as { messages?: Array<{ role: string; content: string }> } | null;
               transcript = (transcriptData?.messages ?? []).map((message) => `${message.role === "assistant" ? "Agent" : "Customer"}: ${message.content.trim()}`).filter((line) => !line.endsWith(": ")).join("\n");
+            }
+            const recordingResponse = await fetch(`${analyticsBase}/recordings/${interactionPath}`, {
+              headers: { "X-API-Key": apiKey },
+            }).catch(() => null);
+            if (recordingResponse?.ok) {
+              const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+              const recordingBlob = await recordingResponse.blob();
+              const recordingPath = `${call.organization_id}/${call.id}.wav`;
+              const { error: uploadError } = await supabaseAdmin.storage.from("call-recordings").upload(recordingPath, recordingBlob, {
+                contentType: "audio/wav",
+                upsert: true,
+              });
+              if (!uploadError) {
+                const { data: signedUrl, error: signedUrlError } = await supabaseAdmin.storage.from("call-recordings").createSignedUrl(recordingPath, 60 * 60 * 24 * 7);
+                if (!signedUrlError) recordingUrl = signedUrl.signedUrl;
+                else recordingFailureReason = "Recording was received but could not be made available for playback";
+              } else {
+                recordingFailureReason = "Recording was received but could not be saved";
+              }
+            } else if (recordingResponse && recordingResponse.status !== 404) {
+              recordingFailureReason = "Sarvam recording could not be retrieved";
             }
           }
         }
@@ -58,10 +83,11 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
           external_id: body.data.attempt_id,
           sarvam_status: sarvamStatus,
           sarvam_interaction_id: body.data.interaction_id ?? null,
-          sarvam_failure_reason: body.data.failure_reason ?? null,
           status: mapSarvamStatus(sarvamStatus),
           duration_seconds: Math.min(86400, Math.max(0, Math.floor(body.data.duration ?? 0))),
           transcript: transcript || null,
+          recording_url: recordingUrl,
+          sarvam_failure_reason: body.data.failure_reason ?? recordingFailureReason,
           updated_at: new Date().toISOString(),
         };
         const { error: updateError } = await supabaseAdmin.from("calls").update(update).eq("id", call.id);

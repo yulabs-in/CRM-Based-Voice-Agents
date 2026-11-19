@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Bot, Loader2, PhoneCall, ShieldCheck } from "lucide-react";
@@ -10,13 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { canWrite, useOrg } from "@/lib/org";
-import { normalizePhoneNumber } from "@/lib/sarvam-call";
+import { isApprovedSupportTestPhone, normalizePhoneNumber } from "@/lib/sarvam-call";
 import { startSarvamSupportCall } from "@/lib/sarvam.functions";
 
 export function SupportCallTest() {
   const { org, role } = useOrg();
   const queryClient = useQueryClient();
-  const [phone, setPhone] = useState("8019628820");
+  const phone = "8019628820";
   const [agentId, setAgentId] = useState("");
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [attemptId, setAttemptId] = useState<string | null>(null);
@@ -32,10 +32,23 @@ export function SupportCallTest() {
     },
     refetchInterval: (query) => query.state.data?.length ? false : 5000,
   });
+  useEffect(() => {
+    if (!agentId && agents.data?.length) setAgentId(agents.data[0].id);
+  }, [agentId, agents.data]);
   const hasSupportAgents = (agents.data?.length ?? 0) > 0;
   const selectedAgent = useMemo(() => agents.data?.find((agent) => agent.id === agentId), [agents.data, agentId]);
   const normalizedPhone = normalizePhoneNumber(phone);
   const ready = Boolean(selectedAgent?.sarvam_agent_id && selectedAgent.sarvam_connection_id && selectedAgent.sarvam_agent_phone_number);
+  const usedTestCall = useQuery({
+    queryKey: ["sarvam-test-call-used", org.id, normalizedPhone],
+    enabled: Boolean(normalizedPhone),
+    queryFn: async () => {
+      const { data, error } = await supabase.from("calls").select("id").eq("organization_id", org.id)
+        .eq("phone", normalizedPhone as string).eq("is_test_call", true).limit(1).maybeSingle();
+      if (error) throw error;
+      return Boolean(data);
+    },
+  });
   const call = useMutation({
     mutationFn: () => dial({ data: { organizationId: org.id, agentId, phone, consentConfirmed } }),
     onSuccess: (result) => {
@@ -43,6 +56,7 @@ export function SupportCallTest() {
       setConsentConfirmed(false);
       toast.success("Sarvam accepted the support test call");
       void queryClient.invalidateQueries({ queryKey: ["calls"] });
+      void queryClient.invalidateQueries({ queryKey: ["sarvam-test-call-used", org.id] });
     },
     onError: (error) => toast.error(error.message),
   });
@@ -63,7 +77,7 @@ export function SupportCallTest() {
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="space-y-2">
           <Label htmlFor="support-test-phone">Recipient number</Label>
-          <Input id="support-test-phone" inputMode="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <Input id="support-test-phone" inputMode="tel" autoComplete="tel" value={phone} readOnly />
           <p className="text-xs text-muted-foreground">{normalizedPhone ? `Will call ${normalizedPhone}` : "Enter a valid mobile number."}</p>
         </div>
         <div className="space-y-2">
@@ -74,7 +88,7 @@ export function SupportCallTest() {
               {agents.data?.map((agent) => <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>)}
             </SelectContent>
           </Select>
-      {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading support agents…</p> : !hasSupportAgents && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
+          {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading support agents…</p> : !hasSupportAgents && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
         </div>
       </div>
 
@@ -93,7 +107,7 @@ export function SupportCallTest() {
         {canWrite(role) && (
           <Button
             variant="hero"
-            disabled={call.isPending || agents.isLoading || !normalizedPhone || !agentId || !ready || !consentConfirmed}
+            disabled={call.isPending || agents.isLoading || usedTestCall.isLoading || usedTestCall.data || !isApprovedSupportTestPhone(phone) || !normalizedPhone || !agentId || !ready || !consentConfirmed}
             onClick={() => call.mutate()}
           >
             {call.isPending ? <Loader2 className="animate-spin" /> : <PhoneCall />}
@@ -107,6 +121,7 @@ export function SupportCallTest() {
           Add the Sarvam agent ID, telephony connection ID, and connected caller number before calling.
         </p>
       )}
+      {usedTestCall.data && <p className="border-t pt-3 text-sm text-warning">The one allowed test call for this number has already been used.</p>}
       {attemptId && <p role="status" className="text-sm text-success">Call request accepted · {attemptId}</p>}
     </section>
   );

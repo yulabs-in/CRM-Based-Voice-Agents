@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { formatSarvamTranscript, isValidCallbackToken, mapSarvamStatus, normalizePhoneNumber } from "@/lib/sarvam-call";
+import { formatSarvamTranscript, isApprovedSupportTestPhone, isValidCallbackToken, mapSarvamStatus, normalizePhoneNumber } from "@/lib/sarvam-call";
 
 describe("Sarvam support call handling", () => {
   it("normalizes the supplied Indian mobile number for Sarvam", () => {
     expect(normalizePhoneNumber("8019628820")).toBe("+918019628820");
+  });
+
+  it("allows only the specifically approved test number", () => {
+    expect(isApprovedSupportTestPhone("8019628820")).toBe(true);
+    expect(isApprovedSupportTestPhone("+918019628820")).toBe(true);
+    expect(isApprovedSupportTestPhone("8019628821")).toBe(false);
   });
 
   it("maps every Sarvam attempt result to a CRM call status", () => {

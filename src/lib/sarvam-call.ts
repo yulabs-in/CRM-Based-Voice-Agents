@@ -1,4 +1,5 @@
 export type SarvamAttemptStatus = "connected" | "no_answer" | "busy" | "failed";
+export const SARVAM_TEST_PHONE = "+918019628820";
 
 export function normalizePhoneNumber(input: string): string | null {
   const compact = input.trim().replace(/[\s()-]/g, "");
@@ -6,6 +7,10 @@ export function normalizePhoneNumber(input: string): string | null {
   const digits = compact.replace(/\D/g, "");
   if (/^[6-9]\d{9}$/.test(digits)) return `+91${digits}`;
   return null;
+}
+
+export function isApprovedSupportTestPhone(input: string): boolean {
+  return normalizePhoneNumber(input) === SARVAM_TEST_PHONE;
 }
 
 export function mapSarvamStatus(status: SarvamAttemptStatus): "completed" | "no_answer" | "failed" {

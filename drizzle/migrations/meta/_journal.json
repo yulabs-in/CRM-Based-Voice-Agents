@@ -22,6 +22,20 @@
       "when": 1794824779849,
       "tag": "0002_sarvam_test_call_setup",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795079181880,
+      "tag": "0003_one_time_sarvam_support_test",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795079405168,
+      "tag": "0004_private_call_recordings_access",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,7 @@ function Page() {
         { key: "status", label: "Status", type: "select", options: opts(["queued", "in_progress", "completed", "failed", "no_answer"]) },
         { key: "started_at", label: "Started", type: "datetime" }, { key: "duration_seconds", label: "Duration (seconds)", type: "number" },
         { key: "outcome", label: "Outcome" }, { key: "recording_url", label: "Recording link" },
+        { key: "sarvam_failure_reason", label: "Call issue", type: "textarea", full: true },
         { key: "transcript", label: "Transcript", type: "textarea", full: true },
       ]}
       defaults={{ direction: "outbound", status: "queued", duration_seconds: 0 }}
@@ -29,6 +30,8 @@ function Page() {
         { key: "phone", label: "Number" }, { key: "agent_id", label: "Agent", render: (r, m) => m.voice_agents?.get(String(r.agent_id)) ?? "—" },
         { key: "direction", label: "Direction", render: (r) => <StatusBadge value={r.direction} /> },
         { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
+        { key: "outcome", label: "Outcome" },
+        { key: "sarvam_failure_reason", label: "Call issue", render: (r) => <span className="max-w-64 text-xs text-destructive">{String(r.sarvam_failure_reason ?? "—")}</span> },
         { key: "duration_seconds", label: "Duration", render: (r) => fmtDuration(r.duration_seconds) },
         { key: "started_at", label: "Started", render: (r) => shortDate(r.started_at) },]}
     />

@@ -3,7 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
-import { normalizePhoneNumber } from "@/lib/sarvam-call";
+import { isApprovedSupportTestPhone, normalizePhoneNumber } from "@/lib/sarvam-call";
 
 type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: string };
 
@@ -42,6 +42,7 @@ export const startSarvamSupportCall = createServerFn({ method: "POST" })
     if (!data.consentConfirmed) throw new Error("Confirm the recipient agreed to this test call first");
     const phone = normalizePhoneNumber(data.phone);
     if (!phone) throw new Error("Enter a valid mobile number");
+    if (!isApprovedSupportTestPhone(phone)) throw new Error("This one-time test is approved only for 8019628820");
 
     const { data: organization, error: organizationError } = await context.supabase
       .from("organizations").select("id, sarvam_organization_id, sarvam_workspace_id")
@@ -70,6 +71,12 @@ export const startSarvamSupportCall = createServerFn({ method: "POST" })
     if (previousCallError) throw new Error("Could not check for an active call");
     if (previousCall) throw new Error("A call to this number is already in progress");
 
+    const { data: previousTestCall, error: previousTestCallError } = await context.supabase
+      .from("calls").select("id").eq("organization_id", organization.id).eq("phone", phone)
+      .eq("is_test_call", true).limit(1).maybeSingle();
+    if (previousTestCallError) throw new Error("Could not check whether the one-time test call was already used");
+    if (previousTestCall) throw new Error("The one-time support test call for this number has already been used");
+
     const callbackToken = makeCallbackToken();
     const callbackTokenHash = await hashCallbackToken(callbackToken);
     const { data: contact } = await context.supabase.from("contacts").select("id")
@@ -83,8 +90,12 @@ export const startSarvamSupportCall = createServerFn({ method: "POST" })
       status: "queued",
       sarvam_status: "queued",
       webhook_token_hash: callbackTokenHash,
+      is_test_call: true,
     }).select("id").single();
-    if (insertError || !call) throw new Error("Could not create the test call record");
+    if (insertError || !call) {
+      if (insertError?.code === "23505") throw new Error("The one-time support test call for this number has already been used");
+      throw new Error("Could not create the test call record");
+    }
 
     const origin = new URL(getRequest().url).origin;
     const webhookUrl = `${origin}/api/public/sarvam-call-webhook`;

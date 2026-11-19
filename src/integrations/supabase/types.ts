@@ -84,6 +84,7 @@ export type Database = {
           duration_seconds: number
           external_id: string | null
           id: string
+          is_test_call: boolean
           organization_id: string
           outcome: string | null
           phone: string | null
@@ -108,6 +109,7 @@ export type Database = {
           duration_seconds?: number
           external_id?: string | null
           id?: string
+          is_test_call?: boolean
           organization_id: string
           outcome?: string | null
           phone?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           duration_seconds?: number
           external_id?: string | null
           id?: string
+          is_test_call?: boolean
           organization_id?: string
           outcome?: string | null
           phone?: string | null
