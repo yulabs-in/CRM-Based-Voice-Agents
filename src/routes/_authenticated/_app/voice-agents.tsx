@@ -5,6 +5,7 @@ import { SupportCallTest } from "@/components/app/SupportCallTest";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { pageHead, opts, fmtDuration } from "@/lib/seo";
 import { shortDate } from "@/lib/format";
+import { DEFAULT_AGENT } from "@/lib/sarvam-defaults";
 
 export const Route = createFileRoute("/_authenticated/_app/voice-agents")({
   head: () => pageHead("Voice Agents", "Configure Sarvam AI voice agents for your calls."),
@@ -27,9 +28,9 @@ function Page() {
         { key: "sarvam_connection_id", label: "Telephony connection ID" },
         { key: "sarvam_agent_phone_number", label: "Connected caller number" },
         { key: "status", label: "Status", type: "select", options: opts(["active", "inactive"]) },
-        { key: "greeting", label: "Opening line", type: "textarea", full: true }, { key: "instructions", label: "Instructions", type: "textarea", full: true },
+        { key: "greeting", label: "Opening line (sent per call — use {customer_name}, {first_name}, {city} or any imported column like {renewal_date})", type: "textarea", full: true }, { key: "instructions", label: "Instructions", type: "textarea", full: true },
       ]}
-      defaults={{ language: "hi-IN", status: "active", purpose: "sales", sarvam_app_version: 1 }}
+      defaults={{ language: DEFAULT_AGENT.language, status: "active", purpose: "sales", sarvam_app_version: DEFAULT_AGENT.sarvam_app_version, sarvam_agent_id: DEFAULT_AGENT.sarvam_agent_id, sarvam_connection_id: DEFAULT_AGENT.sarvam_connection_id, sarvam_agent_phone_number: DEFAULT_AGENT.sarvam_agent_phone_number }}
       columns={[
         { key: "name", label: "Agent", render: (r) => <div><p className="font-semibold">{String(r.name)}</p><p className="text-xs text-muted-foreground">{String(r.purpose ?? "")}</p></div> },
         { key: "language", label: "Language" }, { key: "voice", label: "Voice" }, { key: "sarvam_agent_id", label: "Sarvam ID" },
