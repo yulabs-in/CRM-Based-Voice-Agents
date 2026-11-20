@@ -5,9 +5,11 @@ const tone: Record<string, string> = {
   info: "bg-accent text-accent-foreground", muted: "bg-muted text-muted-foreground",
 };
 const map: Record<string, keyof typeof tone> = {
-  active: "good", won: "good", done: "good", qualified: "good", converted: "good",
-  new: "info", qualification: "info", open: "info", contacted: "info", proposal: "warn", negotiation: "warn",
-  high: "bad", lost: "bad", unqualified: "bad", inactive: "muted", medium: "warn", low: "muted", in_progress: "warn",
+  active: "good", won: "good", done: "good", qualified: "good", converted: "good", completed: "good", positive: "good", running: "good", connected: "good",
+  new: "info", qualification: "info", open: "info", contacted: "info", queued: "info", scheduled: "info", pending: "info", processing: "info", outbound: "info", inbound: "info", calling: "info",
+  proposal: "warn", negotiation: "warn", medium: "warn", in_progress: "warn", retrying: "warn", paused: "warn", no_answer: "warn", busy: "warn", neutral: "warn", launching: "warn",
+  high: "bad", lost: "bad", unqualified: "bad", failed: "bad", negative: "bad", cancelled: "bad",
+  inactive: "muted", low: "muted", draft: "muted", archived: "muted", excluded: "muted", ended: "muted",
 };
 
 export function StatusBadge({ value }: { value?: unknown }) {
