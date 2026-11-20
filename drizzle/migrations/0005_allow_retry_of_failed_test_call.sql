@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS public.calls_one_test_call_per_number;
+CREATE UNIQUE INDEX calls_one_test_call_per_number ON public.calls (organization_id, phone) WHERE is_test_call = true AND status <> 'failed';

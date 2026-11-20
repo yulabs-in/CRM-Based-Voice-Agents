@@ -73,7 +73,7 @@ export const startSarvamSupportCall = createServerFn({ method: "POST" })
 
     const { data: previousTestCall, error: previousTestCallError } = await context.supabase
       .from("calls").select("id").eq("organization_id", organization.id).eq("phone", phone)
-      .eq("is_test_call", true).limit(1).maybeSingle();
+      .eq("is_test_call", true).neq("status", "failed").limit(1).maybeSingle();
     if (previousTestCallError) throw new Error("Could not check whether the one-time test call was already used");
     if (previousTestCall) throw new Error("The one-time support test call for this number has already been used");
 

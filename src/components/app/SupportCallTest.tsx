@@ -46,7 +46,7 @@ export function SupportCallTest() {
     queryFn: async () => {
       if (!normalizedPhone) return false;
       const { data, error } = await supabase.from("calls").select("id").eq("organization_id", org.id)
-        .eq("phone", normalizedPhone).eq("is_test_call", true).limit(1).maybeSingle();
+        .eq("phone", normalizedPhone).eq("is_test_call", true).neq("status", "failed").limit(1).maybeSingle();
       if (error) throw error;
       return Boolean(data);
     },
