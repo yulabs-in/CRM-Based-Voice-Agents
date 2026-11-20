@@ -10,97 +10,97 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { canWrite, useOrg } from "@/lib/org";
-import { isApprovedSupportTestPhone, normalizePhoneNumber } from "@/lib/sarvam-call";
-import { startSarvamSupportCall } from "@/lib/sarvam.functions";
+import { normalizePhoneNumber } from "@/lib/sarvam-call";
+import { startSarvamCall } from "@/lib/sarvam.functions";
 import { SarvamSetupForm } from "@/components/app/SarvamSetupForm";
 
+/** Place a single Sarvam call to any number — use it to try an agent before launching a project campaign. */
 export function SupportCallTest() {
   const { org, role } = useOrg();
   const queryClient = useQueryClient();
-  const phone = "8019628820";
+  const [phone, setPhone] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [agentId, setAgentId] = useState("");
   const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [attemptId, setAttemptId] = useState<string | null>(null);
-  const dial = useServerFn(startSarvamSupportCall);
+  const dial = useServerFn(startSarvamCall);
   const agents = useQuery({
-    queryKey: ["support-call-agents", org.id],
+    queryKey: ["call-agents", org.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("voice_agents")
         .select("id, name, purpose, status, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")
-        .eq("organization_id", org.id).eq("purpose", "support").eq("status", "active").order("created_at");
+        .eq("organization_id", org.id).eq("status", "active").order("created_at");
       if (error) throw error;
       return data;
     },
-    refetchInterval: (query) => query.state.data?.length ? false : 5000,
   });
   useEffect(() => {
-    if (!agentId && agents.data?.length) setAgentId(agents.data[0].id);
+    if (!agentId && agents.data?.length) setAgentId(agents.data[0]!.id);
   }, [agentId, agents.data]);
-  const hasSupportAgents = (agents.data?.length ?? 0) > 0;
   const selectedAgent = useMemo(() => agents.data?.find((agent) => agent.id === agentId), [agents.data, agentId]);
-  const normalizedPhone = normalizePhoneNumber(phone);
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : null;
   const ready = Boolean(selectedAgent?.sarvam_agent_id && selectedAgent.sarvam_connection_id && selectedAgent.sarvam_agent_phone_number);
   const call = useMutation({
-    mutationFn: () => dial({ data: { organizationId: org.id, agentId, phone, consentConfirmed } }),
+    mutationFn: () => dial({ data: { organizationId: org.id, agentId, phone, consentConfirmed: true, customerName: customerName || undefined, isTest: true } }),
     onSuccess: (result) => {
       setAttemptId(result.attemptId);
       setConsentConfirmed(false);
-      toast.success("Sarvam accepted the support test call");
+      toast.success("Sarvam is placing the call — results appear in Call History");
       void queryClient.invalidateQueries({ queryKey: ["calls"] });
     },
     onError: (error) => toast.error(error.message),
   });
 
   return (
-    <section className="space-y-4 border-y py-5" aria-labelledby="support-call-test-title">
+    <section className="space-y-4 border-y py-5" aria-labelledby="test-call-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground"><PhoneCall className="size-5" /></span>
           <div>
-            <h2 id="support-call-test-title" className="font-semibold">Support call test</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Place a Sarvam call, then track its transcript and result in Call History.</p>
+            <h2 id="test-call-title" className="font-semibold">Test call</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Call one number with an agent before running it on a whole project. The answers, transcript and recording land in Call History.</p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> Approved number</span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> Consent required</span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="support-test-phone">Recipient number</Label>
-          <Input id="support-test-phone" inputMode="tel" autoComplete="tel" value={phone} readOnly />
-          <p className="text-xs text-muted-foreground">{normalizedPhone ? `Will call ${normalizedPhone}` : "Enter a valid mobile number."}</p>
+          <Label htmlFor="test-call-phone">Recipient number</Label>
+          <Input id="test-call-phone" inputMode="tel" autoComplete="tel" placeholder="98765 43210" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          <p className="text-xs text-muted-foreground">{!phone ? "Indian numbers get +91 automatically." : normalizedPhone ? `Will call ${normalizedPhone}` : "Enter a valid mobile number."}</p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="support-test-agent">Support agent</Label>
+          <Label htmlFor="test-call-name">Customer name (optional)</Label>
+          <Input id="test-call-name" value={customerName} maxLength={120} onChange={(event) => setCustomerName(event.target.value)} placeholder="Passed to the agent as customer_name" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="test-call-agent">Voice agent</Label>
           <Select value={agentId || "__none"} onValueChange={(value) => setAgentId(value === "__none" ? "" : value)}>
-            <SelectTrigger id="support-test-agent"><SelectValue placeholder="Choose an active support agent" /></SelectTrigger>
+            <SelectTrigger id="test-call-agent"><SelectValue placeholder="Choose an active agent" /></SelectTrigger>
             <SelectContent>
               {agents.data?.map((agent) => <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading support agents…</p> : !hasSupportAgents && <p className="text-xs text-muted-foreground">Create an active support agent to begin.</p>}
-          {agents.isError && <p className="text-xs text-destructive">Could not load support agents. Refresh and try again.</p>}
+          {agents.isLoading ? <p className="text-xs text-muted-foreground">Loading agents…</p> : !agents.data?.length && <p className="text-xs text-muted-foreground">Create an active voice agent above to begin.</p>}
+          {agents.isError && <p className="text-xs text-destructive">Could not load voice agents. Refresh and try again.</p>}
         </div>
       </div>
 
       <div className="flex items-start gap-2 border-l-2 border-primary pl-3 text-sm text-muted-foreground">
         <Bot className="mt-0.5 size-4 shrink-0" />
-        <p>The agent will identify itself as AI and say the call may be recorded and transcribed. Do not share passwords or payment details.</p>
+        <p>The agent should identify itself as AI and say the call may be recorded and transcribed.</p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2">
-          <Checkbox id="support-test-consent" checked={consentConfirmed} onCheckedChange={(checked) => setConsentConfirmed(checked === true)} />
-          <Label htmlFor="support-test-consent" className="cursor-pointer text-sm font-normal leading-5">
-            I confirm the recipient agreed to receive this test call and recording/transcription notice.
+          <Checkbox id="test-call-consent" checked={consentConfirmed} onCheckedChange={(checked) => setConsentConfirmed(checked === true)} />
+          <Label htmlFor="test-call-consent" className="cursor-pointer text-sm font-normal leading-5">
+            I confirm the recipient agreed to receive this call and the recording/transcription notice.
           </Label>
         </div>
         {canWrite(role) && (
-          <Button
-            variant="hero"
-            disabled={call.isPending || agents.isLoading || !isApprovedSupportTestPhone(phone) || !normalizedPhone || !agentId || !ready || !consentConfirmed}
-            onClick={() => call.mutate()}
-          >
+          <Button variant="hero" disabled={call.isPending || !normalizedPhone || !agentId || !ready || !consentConfirmed} onClick={() => call.mutate()}>
             {call.isPending ? <Loader2 className="animate-spin" /> : <PhoneCall />}
             {call.isPending ? "Starting call…" : "Call now"}
           </Button>
@@ -108,9 +108,7 @@ export function SupportCallTest() {
       </div>
 
       {selectedAgent && !ready && (
-        <p className="border-t pt-3 text-sm text-warning">
-          Add the Sarvam agent ID, telephony connection ID, and connected caller number below before calling.
-        </p>
+        <p className="border-t pt-3 text-sm text-warning">Add the Sarvam agent ID, telephony connection ID, and connected caller number below before calling.</p>
       )}
       {canWrite(role) && <SarvamSetupForm agent={selectedAgent} />}
       {attemptId && <p role="status" className="text-sm text-success">Call request accepted · {attemptId}</p>}

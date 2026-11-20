@@ -8,11 +8,24 @@
 // hosting already compresses at the edge.
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { loadEnv } from "vite";
+
+// The Lovable config only exposes VITE_* variables. Load server-side settings from .env / .env.local
+// (SUPABASE_SERVICE_ROLE_KEY, SARVAM_API_KEY, PUBLIC_APP_URL…) into process.env for local dev and builds.
+// Real environment variables (e.g. host secrets) always win.
+const fileEnv = loadEnv(process.env.NODE_ENV === "production" ? "production" : "development", process.cwd(), "");
+for (const [key, value] of Object.entries(fileEnv)) {
+  if (process.env[key] === undefined) process.env[key] = value;
+}
 
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    // Let Sarvam reach the local dev server through a Cloudflare quick tunnel (PUBLIC_APP_URL).
+    server: { allowedHosts: [".trycloudflare.com"] },
   },
 });
