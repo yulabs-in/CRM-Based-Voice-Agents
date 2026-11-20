@@ -43,6 +43,13 @@
       "when": 1795174868153,
       "tag": "0005_allow_retry_of_failed_test_call",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795176564765,
+      "tag": "0006_allow_repeated_test_calls",
+      "breakpoints": true
     }
   ]
 }

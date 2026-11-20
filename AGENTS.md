@@ -35,5 +35,5 @@ use the editor.
 - Generic CRUD list pages use src/components/app/EntityPage.tsx with field/column configs.
 - tsconfig relaxes noPropertyAccessFromIndexSignature, noUncheckedIndexedAccess, exactOptionalPropertyTypes to keep config-driven pages readable.
 - Sarvam dialing stays in authenticated TanStack server functions; per-attempt callback tokens are stored hashed because Sarvam callbacks do not support custom auth headers.
-- One-time test calls use a database-enforced organization/number limit, and audio recordings are stored privately with organization-scoped access.
+- Test calls are limited to the approved number (repeat calls allowed, only one in progress at a time), and audio recordings are stored privately with organization-scoped access.
 <!-- AGENT-MEMORY:END -->

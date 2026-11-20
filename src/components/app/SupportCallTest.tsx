@@ -40,17 +40,6 @@ export function SupportCallTest() {
   const selectedAgent = useMemo(() => agents.data?.find((agent) => agent.id === agentId), [agents.data, agentId]);
   const normalizedPhone = normalizePhoneNumber(phone);
   const ready = Boolean(selectedAgent?.sarvam_agent_id && selectedAgent.sarvam_connection_id && selectedAgent.sarvam_agent_phone_number);
-  const usedTestCall = useQuery({
-    queryKey: ["sarvam-test-call-used", org.id, normalizedPhone],
-    enabled: Boolean(normalizedPhone),
-    queryFn: async () => {
-      if (!normalizedPhone) return false;
-      const { data, error } = await supabase.from("calls").select("id").eq("organization_id", org.id)
-        .eq("phone", normalizedPhone).eq("is_test_call", true).neq("status", "failed").limit(1).maybeSingle();
-      if (error) throw error;
-      return Boolean(data);
-    },
-  });
   const call = useMutation({
     mutationFn: () => dial({ data: { organizationId: org.id, agentId, phone, consentConfirmed } }),
     onSuccess: (result) => {
@@ -58,7 +47,6 @@ export function SupportCallTest() {
       setConsentConfirmed(false);
       toast.success("Sarvam accepted the support test call");
       void queryClient.invalidateQueries({ queryKey: ["calls"] });
-      void queryClient.invalidateQueries({ queryKey: ["sarvam-test-call-used", org.id] });
     },
     onError: (error) => toast.error(error.message),
   });
@@ -69,11 +57,11 @@ export function SupportCallTest() {
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-md bg-accent text-accent-foreground"><PhoneCall className="size-5" /></span>
           <div>
-            <h2 id="support-call-test-title" className="font-semibold">One-time support call test</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Place a single Sarvam call, then track its transcript and result in Call History.</p>
+            <h2 id="support-call-test-title" className="font-semibold">Support call test</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Place a Sarvam call, then track its transcript and result in Call History.</p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> Approved number · one call total</span>
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> Approved number</span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -104,17 +92,17 @@ export function SupportCallTest() {
         <div className="flex items-start gap-2">
           <Checkbox id="support-test-consent" checked={consentConfirmed} onCheckedChange={(checked) => setConsentConfirmed(checked === true)} />
           <Label htmlFor="support-test-consent" className="cursor-pointer text-sm font-normal leading-5">
-            I confirm the recipient agreed to receive this one test call and recording/transcription notice.
+            I confirm the recipient agreed to receive this test call and recording/transcription notice.
           </Label>
         </div>
         {canWrite(role) && (
           <Button
             variant="hero"
-            disabled={call.isPending || agents.isLoading || usedTestCall.isLoading || usedTestCall.data || !isApprovedSupportTestPhone(phone) || !normalizedPhone || !agentId || !ready || !consentConfirmed}
+            disabled={call.isPending || agents.isLoading || !isApprovedSupportTestPhone(phone) || !normalizedPhone || !agentId || !ready || !consentConfirmed}
             onClick={() => call.mutate()}
           >
             {call.isPending ? <Loader2 className="animate-spin" /> : <PhoneCall />}
-            {call.isPending ? "Starting call…" : "Call once"}
+            {call.isPending ? "Starting call…" : "Call now"}
           </Button>
         )}
       </div>
@@ -125,7 +113,6 @@ export function SupportCallTest() {
         </p>
       )}
       {canWrite(role) && <SarvamSetupForm agent={selectedAgent} />}
-      {usedTestCall.data && <p className="border-t pt-3 text-sm text-warning">The one allowed test call for this number has already been used.</p>}
       {attemptId && <p role="status" className="text-sm text-success">Call request accepted · {attemptId}</p>}
     </section>
   );

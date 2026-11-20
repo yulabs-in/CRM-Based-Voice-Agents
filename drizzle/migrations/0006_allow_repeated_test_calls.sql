@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.calls_one_test_call_per_number;
