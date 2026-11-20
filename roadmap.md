@@ -2,12 +2,16 @@
 - [x] Phase 1: design system, auth (email + Google), onboarding, app shell
 - [x] Phase 2: organizations, memberships, 8 roles, invitations, RLS tenant isolation
 - [x] Phase 3: contacts, companies, leads, deals, pipeline, tasks, overview dashboard
-- [x] Phase 4: Sarvam integration page, call sync address, call history (live check waits on Sarvam API key)
+- [x] Phase 4: Sarvam integration page, call sync address, call history
 - [x] Phase 5: voice agents, campaigns, recordings, transcripts
-- [x] Phase 6: AI call summaries, qualification, sentiment
+- [x] Phase 6: call summaries, qualification, sentiment (now derived from Sarvam agent answers)
 - [x] Phase 7: analytics, reports, workflows, integrations, meetings, communication (actual email/WhatsApp/SMS sending not wired; notifications pending)
-- [x] Support-call demo company, contact, and agent instructions prepared for 8019628820
-- [x] One-time approved-number safeguard, transcript callback, and private recording storage/playback capture
-- [ ] End-to-end Sarvam support call and transcript test (waiting for Sarvam Voice Agents organization/workspace IDs, agent ID/version, and telephony connection ID/number)
+- [x] Moved off Lovable to own Supabase project (yulabs-crm)
+- [x] Sarvam fixes: any-number test calls, PUBLIC_APP_URL callbacks, recordings stored + playable, answers captured
+- [x] Projects with CSV/Excel import (custom fields, original file kept)
+- [x] Project campaigns on Sarvam Campaigns API (cohort streaming, retries, calling hours, pause/resume/cancel)
+- [x] Advanced analytics: funnels, best call hours, answer breakdowns, agent/campaign/project leaderboards
+- [ ] End-to-end live Sarvam campaign test (needs SARVAM_API_KEY, SUPABASE_SERVICE_ROLE_KEY, PUBLIC_APP_URL, agent IDs)
+- [ ] Optional LLM summaries for calls without agent output variables
 - [ ] Phase 8: platform admin, usage/subscriptions, audit logs
 - [ ] Phase 9: QA, accessibility, performance

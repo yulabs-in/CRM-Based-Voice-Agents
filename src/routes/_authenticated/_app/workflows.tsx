@@ -1,35 +1,53 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Workflow } from "lucide-react";
-import { EntityPage } from "@/components/app/EntityPage";
-import { StatusBadge } from "@/components/app/StatusBadge";
-import { pageHead, opts, fmtDuration } from "@/lib/seo";
-import { shortDate } from "@/lib/format";
+import { Plus, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/app/PageHeader";
+import { EMPTY_WORKFLOW, WorkflowBuilder, type WorkflowDraft } from "@/components/app/WorkflowBuilder";
+import { RunLog, TEMPLATES, WorkflowList } from "@/components/app/AutomationViews";
+import { canWrite, useOrg } from "@/lib/org";
+import { pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/_app/workflows")({
-  head: () => pageHead("Workflows", "Multi-step automations across your CRM."),
+  head: () => pageHead("Workflows", "Automations that run when calls finish, campaigns complete or contacts are imported."),
   component: Page,
 });
 
 function Page() {
-  void StatusBadge; void opts; void fmtDuration; void shortDate;
+  const { role } = useOrg();
+  const [draft, setDraft] = useState<WorkflowDraft | null>(null);
   return (
-    <EntityPage table="workflows" filter={{ kind: "workflow" }} title="Workflows" singular="Workflow" icon={Workflow} description="Multi-step automations across your CRM."
-      searchKeys={["name", "trigger_event", "action"]}
-      fields={[
-        { key: "name", label: "Name", required: true },
-        { key: "trigger_event", label: "When", type: "select", options: opts(["lead_created", "deal_stage_changed", "call_completed", "call_missed", "task_overdue", "meeting_booked"]) },
-        { key: "condition", label: "Only if (condition)" }, { key: "action", label: "Then", type: "select", options: opts(["create_task", "assign_owner", "start_ai_call", "send_email", "send_whatsapp", "send_sms", "update_status"]) },
-        { key: "schedule_at", label: "Run at", type: "datetime" }, { key: "status", label: "Status", type: "select", options: opts(["active", "inactive"]) },
-        { key: "notes", label: "Notes", type: "textarea", full: true },
-      ]}
-      defaults={{ status: "active" }}
-      columns={[
-        { key: "name", label: "Name", render: (r) => <span className="font-semibold">{String(r.name)}</span> },
-        { key: "trigger_event", label: "When", render: (r) => String(r.trigger_event ?? "—").replace(/_/g, " ") },
-        { key: "action", label: "Then", render: (r) => String(r.action ?? "—").replace(/_/g, " ") },
-        { key: "schedule_at", label: "Runs", render: (r) => shortDate(r.schedule_at) },
-        { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
-      ]}
-    />
+    <div className="animate-rise space-y-6">
+      <PageHeader title="Workflows" description="WHEN something happens → IF your rules match → THEN do actions. Runs on the server the moment Sarvam reports a result.">
+        {canWrite(role) && <Button variant="hero" onClick={() => setDraft(EMPTY_WORKFLOW)}><Plus /> New workflow</Button>}
+      </PageHeader>
+
+      {canWrite(role) && (
+        <section className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4 text-primary" /> Start from a template</h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {TEMPLATES.map((template) => (
+              <button key={template.title} type="button" onClick={() => setDraft({ ...template.draft, active: true })}
+                className="rounded-2xl border bg-card p-4 text-left shadow-soft transition-colors hover:border-primary/50">
+                <p className="font-semibold">{template.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{template.help}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">Your workflows</h2>
+        <WorkflowList emptyText="No workflows yet — pick a template above or create one." onNew={setDraft} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold">Recent runs</h2>
+        <RunLog />
+      </section>
+
+      <WorkflowBuilder open={!!draft} onOpenChange={(open) => !open && setDraft(null)} initial={draft ?? EMPTY_WORKFLOW} />
+    </div>
   );
 }

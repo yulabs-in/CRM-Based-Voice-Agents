@@ -1,54 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { asAnswers, summarizeAnswers } from "@/lib/sarvam-call";
 
+/**
+ * Rebuilds a call's summary, sentiment and outcome from the answers the Sarvam agent collected.
+ * (No external AI: the agent's own extracted variables are the source of truth.)
+ */
 export const analyzeCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { callId: string }) => i)
+  .inputValidator((input: unknown) => z.object({ callId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call, error } = await context.supabase.from("calls").select("id, transcript").eq("id", data.callId).single();
+    const { data: call, error } = await context.supabase.from("calls").select("id, answers, transcript").eq("id", data.callId).single();
     if (error || !call) throw new Error("Call not found");
-    if (!call.transcript) throw new Error("This call has no transcript to analyze");
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) throw new Error("AI is not configured");
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-      method: "POST",
-      headers: { "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra", stream: true, store: false, reasoning: { effort: "low" },
-        instructions: "You analyze sales/support call transcripts (may be in Indian languages). Give a 2-3 sentence English summary, the customer's sentiment, and a short outcome like 'Interested', 'Callback requested' or 'Not interested'.",
-        input: call.transcript.slice(0, 20000),
-        text: { format: { type: "json_schema", name: "call_analysis", strict: true, schema: {
-          type: "object", additionalProperties: false, required: ["summary", "sentiment", "outcome"],
-          properties: { summary: { type: "string" }, sentiment: { type: "string", enum: ["positive", "neutral", "negative"] }, outcome: { type: "string" } },
-        } } },
-      }),
-    });
-    if (res.status === 429) throw new Error("Too many requests, try again shortly");
-    if (res.status === 402) throw new Error("AI credits exhausted");
-    if (!res.ok || !res.body) throw new Error("AI analysis failed");
-    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = ""; let text = "";
-    for (;;) {
-      const { done, value } = await reader.read(); if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n"); buf = lines.pop() ?? "";
-      for (const l of lines) {
-        if (!l.startsWith("data:")) continue;
-        try { const ev = JSON.parse(l.slice(5).trim()); if (ev.type === "response.output_text.delta") text += ev.delta; } catch { /* keep-alive */ }
-      }
+    const answers = asAnswers(call.answers);
+    if (!Object.keys(answers).length) {
+      throw new Error(call.transcript
+        ? "This call has a transcript but the agent captured no answers. Add output variables (e.g. disposition, interested) to your Sarvam agent."
+        : "This call has no answers or transcript yet");
     }
-    const out = JSON.parse(text || "{}") as { summary?: string; sentiment?: string; outcome?: string };
-    const { error: ue } = await context.supabase.from("calls").update({ summary: out.summary ?? null, sentiment: out.sentiment ?? null, outcome: out.outcome ?? null }).eq("id", call.id);
-    if (ue) throw new Error(ue.message);
-    return out;
+    const insight = summarizeAnswers(answers);
+    const { error: updateError } = await context.supabase.from("calls")
+      .update({ summary: insight.summary, sentiment: insight.sentiment, outcome: insight.outcome }).eq("id", call.id);
+    if (updateError) throw new Error(updateError.message);
+    return insight;
   });
 
-export const sarvamStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const key = process.env["SARVAM_API_KEY"];
-    if (!key) return { connected: false, message: "No Sarvam API key saved yet" };
-    // Lightweight authenticated check: language identification on a short text.
-    const r = await fetch("https://api.sarvam.ai/text-lid", { method: "POST", headers: { "api-subscription-key": key, "Content-Type": "application/json" }, body: JSON.stringify({ input: "Namaste" }) });
-    if (r.status === 401 || r.status === 403) return { connected: false, message: "Sarvam rejected the API key" };
-    return { connected: r.ok, message: r.ok ? "Connected to Sarvam" : `Sarvam returned an error (${r.status})` };
-  });
+export { checkSarvamConnection as sarvamStatus } from "@/lib/sarvam.functions";

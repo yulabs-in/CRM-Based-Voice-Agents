@@ -12,6 +12,7 @@ import { isAdmin, useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
 import { sarvamStatus } from "@/lib/functions/ai.functions";
 import { saveSarvamWorkspace } from "@/lib/sarvam.functions";
+import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
 export const Route = createFileRoute("/_authenticated/_app/integrations")({
   head: () => pageHead("Integrations", "Connect Sarvam voice agents and other services."),
@@ -22,10 +23,10 @@ function Page() {
   const { org, role } = useOrg();
   const check = useServerFn(sarvamStatus);
   const saveWorkspace = useServerFn(saveSarvamWorkspace);
-  const [sarvamOrgId, setSarvamOrgId] = useState(org.sarvam_organization_id ?? "");
-  const [sarvamWorkspaceId, setSarvamWorkspaceId] = useState(org.sarvam_workspace_id ?? "");
+  const [sarvamOrgId, setSarvamOrgId] = useState(org.sarvam_organization_id?.trim() || SARVAM_DEFAULTS.organizationId);
+  const [sarvamWorkspaceId, setSarvamWorkspaceId] = useState(org.sarvam_workspace_id?.trim() || SARVAM_DEFAULTS.workspaceId);
   const [saving, setSaving] = useState(false);
-  const s = useQuery({ queryKey: ["sarvam-status"], queryFn: () => check() });
+  const s = useQuery({ queryKey: ["sarvam-status", org.id], queryFn: () => check({ data: { organizationId: org.id } }) });
   const webhook = typeof window === "undefined" ? "" : `${window.location.origin}/api/public/sarvam-call-webhook`;
   const copy = (text: string) => { void navigator.clipboard.writeText(text); toast.success("Copied"); };
 
@@ -34,6 +35,7 @@ function Page() {
     try {
       await saveWorkspace({ data: { organizationId: org.id, sarvamOrganizationId: sarvamOrgId, sarvamWorkspaceId } });
       toast.success("Sarvam workspace saved");
+      void s.refetch();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save Sarvam workspace");
     } finally {
@@ -63,7 +65,7 @@ function Page() {
 
         <div className="space-y-2 border-t pt-4 text-sm">
           <p className="font-semibold">Call result callback</p>
-          <p className="text-muted-foreground">Call outcomes and transcripts are matched to the original call using a private, one-time callback token.</p>
+          <p className="text-muted-foreground">The CRM sends this address to Sarvam with every call and campaign automatically, using the server's <code>PUBLIC_APP_URL</code> (it must be a public https address — not localhost). Results are matched with private per-call and per-campaign tokens.</p>
           <div className="flex min-w-0 items-center gap-2"><code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1">{webhook}</code><Button size="icon" variant="ghost" aria-label="Copy call result callback address" onClick={() => copy(webhook)}><Copy /></Button></div>
         </div>
       </section>

@@ -17,7 +17,6 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/_a
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppActivityTimelineRouteImport } from './routes/_authenticated/_app/activity-timeline'
 import { Route as AuthenticatedAppCallAnalyticsRouteImport } from './routes/_authenticated/_app/call-analytics'
-import { Route as AuthenticatedAppCallCampaignsRouteImport } from './routes/_authenticated/_app/call-campaigns'
 import { Route as AuthenticatedAppCallHistoryRouteImport } from './routes/_authenticated/_app/call-history'
 import { Route as AuthenticatedAppCallIntelligenceRouteImport } from './routes/_authenticated/_app/call-intelligence'
 import { Route as AuthenticatedAppCallRecordingsRouteImport } from './routes/_authenticated/_app/call-recordings'
@@ -48,7 +47,12 @@ import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
 import { Route as ApiPublicSarvamCallWebhookRouteImport } from './routes/api/public/sarvam-call-webhook'
+import { Route as ApiPublicSarvamCampaignWebhookRouteImport } from './routes/api/public/sarvam-campaign-webhook'
 import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
+import { Route as AuthenticatedAppCallCampaignsIndexRouteImport } from './routes/_authenticated/_app/call-campaigns.index'
+import { Route as AuthenticatedAppCallCampaignsCampaignIdRouteImport } from './routes/_authenticated/_app/call-campaigns.$campaignId'
+import { Route as AuthenticatedAppProjectsIndexRouteImport } from './routes/_authenticated/_app/projects.index'
+import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/_app/projects.$projectId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,12 +92,6 @@ const AuthenticatedAppCallAnalyticsRoute =
   AuthenticatedAppCallAnalyticsRouteImport.update({
     id: '/call-analytics',
     path: '/call-analytics',
-    getParentRoute: () => AuthenticatedAppRoute,
-  } as any)
-const AuthenticatedAppCallCampaignsRoute =
-  AuthenticatedAppCallCampaignsRouteImport.update({
-    id: '/call-campaigns',
-    path: '/call-campaigns',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppCallHistoryRoute =
@@ -269,11 +267,41 @@ const ApiPublicSarvamCallWebhookRoute =
     path: '/api/public/sarvam-call-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSarvamCampaignWebhookRoute =
+  ApiPublicSarvamCampaignWebhookRouteImport.update({
+    id: '/api/public/sarvam-campaign-webhook',
+    path: '/api/public/sarvam-campaign-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSarvamWebhookRoute = ApiPublicSarvamWebhookRouteImport.update({
   id: '/api/public/sarvam-webhook',
   path: '/api/public/sarvam-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppCallCampaignsIndexRoute =
+  AuthenticatedAppCallCampaignsIndexRouteImport.update({
+    id: '/call-campaigns/',
+    path: '/call-campaigns/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppCallCampaignsCampaignIdRoute =
+  AuthenticatedAppCallCampaignsCampaignIdRouteImport.update({
+    id: '/call-campaigns/$campaignId',
+    path: '/call-campaigns/$campaignId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppProjectsIndexRoute =
+  AuthenticatedAppProjectsIndexRouteImport.update({
+    id: '/projects/',
+    path: '/projects/',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppProjectsProjectIdRoute =
+  AuthenticatedAppProjectsProjectIdRouteImport.update({
+    id: '/projects/$projectId',
+    path: '/projects/$projectId',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -282,7 +310,6 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
   '/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
-  '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/call-history': typeof AuthenticatedAppCallHistoryRoute
   '/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
@@ -313,7 +340,12 @@ export interface FileRoutesByFullPath {
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
+  '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
+  '/projects/': typeof AuthenticatedAppProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -322,7 +354,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
   '/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
-  '/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/call-history': typeof AuthenticatedAppCallHistoryRoute
   '/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
@@ -353,7 +384,12 @@ export interface FileRoutesByTo {
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
+  '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/call-campaigns': typeof AuthenticatedAppCallCampaignsIndexRoute
+  '/projects': typeof AuthenticatedAppProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -365,7 +401,6 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/_app/activity-timeline': typeof AuthenticatedAppActivityTimelineRoute
   '/_authenticated/_app/call-analytics': typeof AuthenticatedAppCallAnalyticsRoute
-  '/_authenticated/_app/call-campaigns': typeof AuthenticatedAppCallCampaignsRoute
   '/_authenticated/_app/call-history': typeof AuthenticatedAppCallHistoryRoute
   '/_authenticated/_app/call-intelligence': typeof AuthenticatedAppCallIntelligenceRoute
   '/_authenticated/_app/call-recordings': typeof AuthenticatedAppCallRecordingsRoute
@@ -396,7 +431,12 @@ export interface FileRoutesById {
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
+  '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/_authenticated/_app/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/_authenticated/_app/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/_authenticated/_app/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
+  '/_authenticated/_app/projects/': typeof AuthenticatedAppProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -407,7 +447,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/activity-timeline'
     | '/call-analytics'
-    | '/call-campaigns'
     | '/call-history'
     | '/call-intelligence'
     | '/call-recordings'
@@ -438,7 +477,12 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/invite/$token'
     | '/api/public/sarvam-call-webhook'
+    | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/call-campaigns/$campaignId'
+    | '/projects/$projectId'
+    | '/call-campaigns/'
+    | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -447,7 +491,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/activity-timeline'
     | '/call-analytics'
-    | '/call-campaigns'
     | '/call-history'
     | '/call-intelligence'
     | '/call-recordings'
@@ -478,7 +521,12 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/invite/$token'
     | '/api/public/sarvam-call-webhook'
+    | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/call-campaigns/$campaignId'
+    | '/projects/$projectId'
+    | '/call-campaigns'
+    | '/projects'
   id:
     | '__root__'
     | '/'
@@ -489,7 +537,6 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/_app/activity-timeline'
     | '/_authenticated/_app/call-analytics'
-    | '/_authenticated/_app/call-campaigns'
     | '/_authenticated/_app/call-history'
     | '/_authenticated/_app/call-intelligence'
     | '/_authenticated/_app/call-recordings'
@@ -520,7 +567,12 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/workflows'
     | '/_authenticated/invite/$token'
     | '/api/public/sarvam-call-webhook'
+    | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/_authenticated/_app/call-campaigns/$campaignId'
+    | '/_authenticated/_app/projects/$projectId'
+    | '/_authenticated/_app/call-campaigns/'
+    | '/_authenticated/_app/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -529,6 +581,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicSarvamCallWebhookRoute: typeof ApiPublicSarvamCallWebhookRoute
+  ApiPublicSarvamCampaignWebhookRoute: typeof ApiPublicSarvamCampaignWebhookRoute
   ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
 }
 
@@ -588,13 +641,6 @@ declare module '@tanstack/react-router' {
       path: '/call-analytics'
       fullPath: '/call-analytics'
       preLoaderRoute: typeof AuthenticatedAppCallAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedAppRoute
-    }
-    '/_authenticated/_app/call-campaigns': {
-      id: '/_authenticated/_app/call-campaigns'
-      path: '/call-campaigns'
-      fullPath: '/call-campaigns'
-      preLoaderRoute: typeof AuthenticatedAppCallCampaignsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/call-history': {
@@ -807,6 +853,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSarvamCallWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sarvam-campaign-webhook': {
+      id: '/api/public/sarvam-campaign-webhook'
+      path: '/api/public/sarvam-campaign-webhook'
+      fullPath: '/api/public/sarvam-campaign-webhook'
+      preLoaderRoute: typeof ApiPublicSarvamCampaignWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sarvam-webhook': {
       id: '/api/public/sarvam-webhook'
       path: '/api/public/sarvam-webhook'
@@ -814,13 +867,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSarvamWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/_app/call-campaigns/': {
+      id: '/_authenticated/_app/call-campaigns/'
+      path: '/call-campaigns'
+      fullPath: '/call-campaigns/'
+      preLoaderRoute: typeof AuthenticatedAppCallCampaignsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/call-campaigns/$campaignId': {
+      id: '/_authenticated/_app/call-campaigns/$campaignId'
+      path: '/call-campaigns/$campaignId'
+      fullPath: '/call-campaigns/$campaignId'
+      preLoaderRoute: typeof AuthenticatedAppCallCampaignsCampaignIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/projects/': {
+      id: '/_authenticated/_app/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthenticatedAppProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/projects/$projectId': {
+      id: '/_authenticated/_app/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof AuthenticatedAppProjectsProjectIdRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppActivityTimelineRoute: typeof AuthenticatedAppActivityTimelineRoute
   AuthenticatedAppCallAnalyticsRoute: typeof AuthenticatedAppCallAnalyticsRoute
-  AuthenticatedAppCallCampaignsRoute: typeof AuthenticatedAppCallCampaignsRoute
   AuthenticatedAppCallHistoryRoute: typeof AuthenticatedAppCallHistoryRoute
   AuthenticatedAppCallIntelligenceRoute: typeof AuthenticatedAppCallIntelligenceRoute
   AuthenticatedAppCallRecordingsRoute: typeof AuthenticatedAppCallRecordingsRoute
@@ -849,12 +929,15 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppVoiceAgentsRoute: typeof AuthenticatedAppVoiceAgentsRoute
   AuthenticatedAppWhatsappRoute: typeof AuthenticatedAppWhatsappRoute
   AuthenticatedAppWorkflowsRoute: typeof AuthenticatedAppWorkflowsRoute
+  AuthenticatedAppCallCampaignsCampaignIdRoute: typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  AuthenticatedAppProjectsProjectIdRoute: typeof AuthenticatedAppProjectsProjectIdRoute
+  AuthenticatedAppCallCampaignsIndexRoute: typeof AuthenticatedAppCallCampaignsIndexRoute
+  AuthenticatedAppProjectsIndexRoute: typeof AuthenticatedAppProjectsIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppActivityTimelineRoute: AuthenticatedAppActivityTimelineRoute,
   AuthenticatedAppCallAnalyticsRoute: AuthenticatedAppCallAnalyticsRoute,
-  AuthenticatedAppCallCampaignsRoute: AuthenticatedAppCallCampaignsRoute,
   AuthenticatedAppCallHistoryRoute: AuthenticatedAppCallHistoryRoute,
   AuthenticatedAppCallIntelligenceRoute: AuthenticatedAppCallIntelligenceRoute,
   AuthenticatedAppCallRecordingsRoute: AuthenticatedAppCallRecordingsRoute,
@@ -884,6 +967,13 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppVoiceAgentsRoute: AuthenticatedAppVoiceAgentsRoute,
   AuthenticatedAppWhatsappRoute: AuthenticatedAppWhatsappRoute,
   AuthenticatedAppWorkflowsRoute: AuthenticatedAppWorkflowsRoute,
+  AuthenticatedAppCallCampaignsCampaignIdRoute:
+    AuthenticatedAppCallCampaignsCampaignIdRoute,
+  AuthenticatedAppProjectsProjectIdRoute:
+    AuthenticatedAppProjectsProjectIdRoute,
+  AuthenticatedAppCallCampaignsIndexRoute:
+    AuthenticatedAppCallCampaignsIndexRoute,
+  AuthenticatedAppProjectsIndexRoute: AuthenticatedAppProjectsIndexRoute,
 }
 
 const AuthenticatedAppRouteWithChildren =
@@ -910,6 +1000,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicSarvamCallWebhookRoute: ApiPublicSarvamCallWebhookRoute,
+  ApiPublicSarvamCampaignWebhookRoute: ApiPublicSarvamCampaignWebhookRoute,
   ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,
 }
 export const routeTree = rootRouteImport

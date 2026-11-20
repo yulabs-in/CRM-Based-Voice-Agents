@@ -1,4 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { PhoneCall } from "lucide-react";
+import { StatusBadge } from "@/components/app/StatusBadge";
+import { ChartCard, KpiGrid, TrendBox } from "@/components/app/charts";
+import { fetchAll } from "@/lib/fetch-all";
+import { callKpis, callsOverTime, duration, type CallRow } from "@/lib/call-insights";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -134,7 +139,62 @@ function Dashboard() {
           ) : <Skeleton className="h-60" />}
         </Card>
       </div>
-      <p className="text-center text-xs text-muted-foreground">Call, campaign and agent charts appear here once voice agents are connected.</p>
+      <VoiceOverview orgId={org.id} start={rangeStart(range)} />
+    </div>
+  );
+}
+
+/** Voice + campaign section: calls, connect rate, answers, live campaigns and top projects. */
+function VoiceOverview({ orgId, start }: { orgId: string; start: Date }) {
+  const data = useQuery({
+    queryKey: ["stats", orgId, "voice"],
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const [calls, campaigns, projects] = await Promise.all([
+        fetchAll<CallRow>((from, to) => supabase.from("calls").select("id, status, duration_seconds, sentiment, outcome, campaign_id, agent_id, contact_id, started_at, created_at, answers, recording_path").eq("organization_id", orgId).range(from, to), 100000),
+        supabase.from("call_campaigns").select("id, name, status, project_id, target_count").eq("organization_id", orgId).in("status", ["running", "launching", "scheduled", "paused"]),
+        supabase.from("projects").select("id, name, contact_count").eq("organization_id", orgId).eq("status", "active").order("contact_count", { ascending: false }).limit(5),
+      ]);
+      return { calls, live: campaigns.data ?? [], projects: projects.data ?? [] };
+    },
+  });
+  if (!data.data) return <Skeleton className="h-40 rounded-2xl" />;
+  const calls = data.data.calls.filter((call) => new Date(call.started_at ?? call.created_at) >= start);
+  const kpi = callKpis(calls);
+  const days = Math.min(90, Math.max(7, Math.ceil((Date.now() - start.getTime()) / 864e5)));
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2"><PhoneCall className="size-4 text-primary" /><h2 className="text-sm font-semibold">AI voice calling</h2></div>
+      <KpiGrid columns={6} items={[
+        { label: "Calls placed", value: kpi.total.toLocaleString() },
+        { label: "Connect rate", value: kpi.connectRate },
+        { label: "Avg. talk time", value: duration(kpi.avgDuration) },
+        { label: "Gave answers", value: kpi.answered.toLocaleString() },
+        { label: "Positive outcomes", value: kpi.positive.toLocaleString() },
+        { label: "Live campaigns", value: data.data.live.length },
+      ]} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ChartCard title="Calls vs connected" className="lg:col-span-2"><TrendBox data={callsOverTime(calls, days)} xKey="day" series={[{ key: "calls", label: "Calls" }, { key: "connected", label: "Connected" }]} height={220} /></ChartCard>
+        <ChartCard title="Live campaigns">
+          {data.data.live.length ? (
+            <ul className="space-y-2">
+              {data.data.live.map((campaign) => (
+                <li key={campaign.id}><Link to="/call-campaigns/$campaignId" params={{ campaignId: campaign.id }} className="flex items-center gap-2 rounded-xl border p-2.5 text-sm hover:border-primary/50">
+                  <span className="min-w-0 flex-1 truncate font-medium">{campaign.name}</span><StatusBadge value={campaign.status} />
+                </Link></li>
+              ))}
+            </ul>
+          ) : <p className="py-8 text-center text-sm text-muted-foreground">No campaigns running. <Link to="/projects" className="text-primary">Pick a project</Link> to start one.</p>}
+          {data.data.projects.length > 0 && (
+            <div className="mt-4 border-t pt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Largest projects</p>
+              <ul className="space-y-1 text-sm">{data.data.projects.map((project) => (
+                <li key={project.id} className="flex justify-between"><Link to="/projects/$projectId" params={{ projectId: project.id }} className="truncate hover:text-primary">{project.name}</Link><span className="tabular-nums text-muted-foreground">{project.contact_count.toLocaleString()}</span></li>
+              ))}</ul>
+            </div>
+          )}
+        </ChartCard>
+      </div>
     </div>
   );
 }

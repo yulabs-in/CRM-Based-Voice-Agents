@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2, type LucideIcon } from "lucide-react";
@@ -22,7 +22,7 @@ export type Field = {
 };
 export type Column = { key: string; label: string; render?: (r: Row, refs: Refs) => React.ReactNode; className?: string };
 type Refs = Record<string, Map<string, string>>;
-export type RefTable = "contacts" | "companies" | "deals" | "voice_agents" | "call_campaigns";
+export type RefTable = "contacts" | "companies" | "deals" | "voice_agents" | "call_campaigns" | "projects";
 type Table = "contacts" | "companies" | "leads" | "deals" | "tasks" | "voice_agents" | "call_campaigns" | "calls" | "workflows" | "messages" | "meetings";
 
 const refLabel = (t: string, r: Record<string, unknown>) =>
@@ -49,6 +49,7 @@ export function EntityPage(props: {
   table: Table; title: string; description: string; singular: string; icon: LucideIcon;
   fields: Field[]; columns: Column[]; searchKeys: string[]; defaults?: Record<string, unknown>;
   openNew?: boolean; onCloseNew?: () => void; order?: string; filter?: Record<string, string>; readOnly?: boolean;
+  actions?: ReactNode; onRowClick?: (row: Row) => void; select?: string;
 }) {
   const { org, role: realRole } = useOrg();
   const role = props.readOnly ? "read_only" : realRole;
@@ -63,7 +64,7 @@ export function EntityPage(props: {
   const list = useQuery({
     queryKey: key,
     queryFn: async () => {
-      let qb = supabase.from(props.table).select("*").eq("organization_id", org.id);
+      let qb = supabase.from(props.table).select(props.select ?? "*").eq("organization_id", org.id);
       for (const [k, v] of Object.entries(props.filter ?? {})) qb = qb.eq(k as never, v as never);
       const { data, error } = await qb.order(props.order ?? "created_at", { ascending: false }).limit(1000);
       if (error) throw error;
@@ -106,6 +107,7 @@ export function EntityPage(props: {
   return (
     <div className="animate-rise space-y-5">
       <PageHeader title={props.title} description={props.description}>
+        {props.actions}
         <Button variant="outline" onClick={() => downloadCsv(`${props.table}.csv`, rows)} disabled={!rows.length}><Download /> Export</Button>
         {canWrite(role) && <Button variant="hero" onClick={() => setCreating(true)}><Plus /> New {props.singular.toLowerCase()}</Button>}
       </PageHeader>
@@ -136,9 +138,9 @@ export function EntityPage(props: {
               </tr></thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b last:border-0 transition-colors hover:bg-muted/60">
+                  <tr key={r.id} className={"border-b last:border-0 transition-colors hover:bg-muted/60" + (props.onRowClick ? " cursor-pointer" : "")} onClick={() => props.onRowClick?.(r)}>
                     {props.columns.map((c) => <td key={c.key} className={c.className ?? "px-4 py-3"}>{c.render ? c.render(r, refMap) : String(r[c.key] ?? "—")}</td>)}
-                    <td className="pr-3">
+                    <td className="pr-3" onClick={(event) => event.stopPropagation()}>
                       {canWrite(role) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal /></Button></DropdownMenuTrigger>
