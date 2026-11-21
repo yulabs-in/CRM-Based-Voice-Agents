@@ -36,14 +36,37 @@ export const refreshCallRecording = createServerFn({ method: "POST" })
     }
   });
 
-/** Safety net: saves recordings for this workspace's recent finished calls that are still missing one. */
+/**
+ * Safety net run in the background while the app is open: syncs unfinished calls from Sarvam
+ * (status, duration, transcript, answers — works even when the webhook never arrived), then saves
+ * recordings for recent finished calls that are still missing one.
+ */
 export const fetchMissingCallRecordings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ organizationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
+    const none = { checked: 0, saved: 0, synced: 0, crm: 0, open: 0 };
     const { data: allowed } = await asApp(context.supabase).rpc("can_write_org", { _org: data.organizationId });
-    if (!allowed) return { checked: 0, saved: 0 };
-    if (!process.env["SARVAM_API_KEY"]) return { checked: 0, saved: 0 };
-    const { fetchMissingRecordings } = await import("@/lib/sarvam.server");
-    return fetchMissingRecordings(data.organizationId);
+    if (!allowed) return none;
+    const { applyPendingCrmOutcomes } = await import("@/lib/crm-sync.server");
+    const openCalls = async () => {
+      const { count } = await asApp(context.supabase).from("calls").select("id", { count: "exact", head: true })
+        .eq("organization_id", data.organizationId).in("status", ["queued", "in_progress"]);
+      return count ?? 0;
+    };
+    if (!process.env["SARVAM_API_KEY"]) {
+      const crm = await applyPendingCrmOutcomes(data.organizationId).catch(() => ({ applied: 0 }));
+      return { ...none, crm: crm.applied, open: await openCalls() };
+    }
+    const { fetchMissingRecordings, syncCallsFromSarvam } = await import("@/lib/sarvam.server");
+    const sync = await syncCallsFromSarvam(data.organizationId).catch((error) => {
+      console.error("[sarvam] call sync failed", error);
+      return { checked: 0, updated: 0 };
+    });
+    const crm = await applyPendingCrmOutcomes(data.organizationId).catch((error) => {
+      console.error("[crm] sweep failed", error);
+      return { applied: 0 };
+    });
+    const recordings = await fetchMissingRecordings(data.organizationId);
+    return { ...recordings, synced: sync.updated, crm: crm.applied, open: await openCalls() };
   });

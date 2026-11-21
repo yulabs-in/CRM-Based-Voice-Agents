@@ -224,3 +224,178 @@ export async function fetchMissingRecordings(organizationId: string, limit = 5):
   }
   return { checked: calls?.length ?? 0, saved };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Pull-based sync. The webhook is the fast path, but it only arrives when PUBLIC_APP_URL is reachable
+// (a stopped tunnel loses every result). Sarvam's Analytics API has the same facts, so the app asks for them.
+// https://docs.sarvam.ai/voice-agents/api/analytics/attempts · .../analytics/interactions
+
+type SarvamAttempt = {
+  attempt_id: string | null;
+  interaction_id: string | null;
+  connectivity_status: string | null;
+  failure_reason: string | null;
+  duration_in_seconds: number | null;
+  start_datetime: string | null;
+  end_datetime: string | null;
+  attempted_at: string | null;
+  agent_variables: Record<string, unknown> | null;
+};
+type SarvamTranscriptEntry = { role: string; text: string };
+type SarvamInteraction = {
+  job_id: string | null;
+  interaction_id: string | null;
+  original_transcript?: SarvamTranscriptEntry[] | null;
+  translate_transcript?: SarvamTranscriptEntry[] | null;
+};
+type Page<T> = { items?: T[]; total?: number };
+type SyncCall = {
+  id: string; agent_id: string | null; contact_id: string | null; campaign_id: string | null; external_id: string | null;
+  status: string; transcript_turns: unknown; created_at: string;
+};
+
+const OPEN_CALL = ["queued", "in_progress"];
+/** Sarvam datetimes are UTC without an offset. */
+const utc = (value: string | null | undefined) => (value ? new Date(/[zZ]$|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`).toISOString() : null);
+
+/** Terminal CRM status for a Sarvam attempt, or null while Sarvam has no final result yet. */
+export function attemptCallStatus(connectivity: string | null | undefined): "completed" | "no_answer" | "failed" | null {
+  if (connectivity === "connected") return "completed";
+  if (connectivity === "no_answer") return "no_answer";
+  if (connectivity === "busy" || connectivity === "failed") return "failed";
+  return null;
+}
+
+async function listAnalytics<T>(config: OrgSarvamConfig, appId: string, kind: "attempts" | "interactions", since: string, extra: Record<string, string> = {}): Promise<T[]> {
+  const items: T[] = [];
+  const limit = 200;
+  for (let offset = 0; offset < 1000; offset += limit) {
+    const query = new URLSearchParams({
+      start_datetime: since, end_datetime: new Date().toISOString(),
+      sort_by: "attempted_at", sort_order: "desc", limit: String(limit), offset: String(offset), ...extra,
+    });
+    const page = await sarvamJson<Page<T>>(`/analytics/v1/${enc(config.sarvamOrg)}/${enc(config.workspace)}/${enc(appId)}/${kind}?${query}`);
+    items.push(...(page.items ?? []));
+    if (!page.items?.length || items.length >= (page.total ?? 0)) break;
+  }
+  return items;
+}
+
+/**
+ * Brings this workspace's unfinished calls up to date from Sarvam: real status, duration, answers, insights,
+ * English transcript, then the recording. Also corrects calls closed with "Stop" that Sarvam actually completed.
+ */
+export async function syncCallsFromSarvam(organizationId: string): Promise<{ checked: number; updated: number }> {
+  const now = Date.now();
+  const openSince = new Date(now - 3 * 24 * 3600 * 1000).toISOString();
+  const stoppedSince = new Date(now - 2 * 24 * 3600 * 1000).toISOString();
+  const { data } = await supabaseAdmin.from("calls")
+    .select("id, agent_id, contact_id, campaign_id, external_id, status, transcript_turns, created_at")
+    .eq("organization_id", organizationId).not("external_id", "is", null).gte("created_at", openSince)
+    .or(`status.in.(${OPEN_CALL.join(",")}),and(sarvam_status.eq.stopped,created_at.gte.${stoppedSince}),and(status.eq.completed,sarvam_interaction_id.is.null)`)
+    .order("created_at", { ascending: true }).limit(100);
+  const calls = (data ?? []) as SyncCall[];
+  if (!calls.length) return { checked: 0, updated: 0 };
+
+  const agentIds = [...new Set(calls.map((call) => call.agent_id).filter((id): id is string => Boolean(id)))];
+  const { data: agents } = agentIds.length
+    ? await supabaseAdmin.from("voice_agents").select("id, sarvam_agent_id, agent_variables").in("id", agentIds)
+    : { data: [] };
+  const agentById = new Map((agents ?? []).map((agent) => [agent.id, agent]));
+  const config = await getOrgSarvamConfig(organizationId);
+
+  // One analytics query per Sarvam agent, covering every call we are waiting on.
+  const groups = new Map<string, SyncCall[]>();
+  for (const call of calls) {
+    const appId = (call.agent_id && agentById.get(call.agent_id)?.sarvam_agent_id?.trim()) || SARVAM_DEFAULTS.agentId;
+    groups.set(appId, [...(groups.get(appId) ?? []), call]);
+  }
+
+  const { extractAnswers, summarizeAnswers } = await import("@/lib/sarvam-call");
+  let updated = 0;
+  for (const [appId, group] of groups) {
+    const since = new Date(new Date(group[0]!.created_at).getTime() - 5 * 60 * 1000).toISOString();
+    const attempts = await listAnalytics<SarvamAttempt>(config, appId, "attempts", since);
+    const byAttempt = new Map(attempts.filter((a) => a.attempt_id).map((a) => [a.attempt_id!, a]));
+
+    // A call Sarvam never heard of is not "dialing" forever.
+    const staleBefore = now - 2 * 3600 * 1000;
+    for (const call of group) {
+      if (OPEN_CALL.includes(call.status) && !byAttempt.has(call.external_id!) && new Date(call.created_at).getTime() < staleBefore) {
+        await supabaseAdmin.from("calls").update({ status: "failed", sarvam_status: "failed", sarvam_failure_reason: "Sarvam has no record of this call", updated_at: new Date().toISOString() } as never)
+          .eq("id", call.id).in("status", OPEN_CALL);
+        updated += 1;
+      }
+    }
+
+    const finished: Array<{ call: SyncCall; attempt: SarvamAttempt }> = [];
+    for (const call of group) {
+      const attempt = byAttempt.get(call.external_id!);
+      if (attempt && attemptCallStatus(attempt.connectivity_status)) finished.push({ call, attempt });
+    }
+    if (!finished.length) continue;
+
+    const transcripts = new Map<string, SarvamInteraction>();
+    if (finished.some(({ attempt }) => attempt.interaction_id)) {
+      const interactions = await listAnalytics<SarvamInteraction>(config, appId, "interactions", since, { include_transcript: "true" })
+        .catch((error) => { console.error("[sarvam] interactions fetch failed", error); return [] as SarvamInteraction[]; });
+      for (const item of interactions) {
+        if (item.job_id) transcripts.set(item.job_id, item);
+        if (item.interaction_id) transcripts.set(item.interaction_id, item);
+      }
+    }
+
+    for (const { call, attempt } of finished) {
+      const status = attemptCallStatus(attempt.connectivity_status)!;
+      // Drop the inputs we passed to the agent; what's left is what it collected.
+      const agentVariables = call.agent_id ? agentById.get(call.agent_id)?.agent_variables : null;
+      const inputs = new Set(Object.keys(agentVariables && typeof agentVariables === "object" ? agentVariables : {}));
+      const collected = Object.fromEntries(Object.entries(attempt.agent_variables ?? {}).filter(([key]) => !inputs.has(key)));
+      const answers = extractAnswers(collected);
+      const insight = summarizeAnswers(answers);
+      const interaction = transcripts.get(attempt.attempt_id!) ?? (attempt.interaction_id ? transcripts.get(attempt.interaction_id) : undefined);
+      const source = interaction?.translate_transcript?.length ? interaction.translate_transcript : interaction?.original_transcript ?? [];
+      const turns = toTranscriptTurns(source.map((entry) => ({ role: entry.role, content: entry.text })));
+      const hasTurns = Array.isArray(call.transcript_turns) && call.transcript_turns.length > 0;
+      const failure = attempt.failure_reason && attempt.failure_reason !== "NO_FAILURE_REASON" ? attempt.failure_reason : null;
+      const durationSeconds = Math.min(86400, Math.max(0, Math.round(attempt.duration_in_seconds ?? 0)));
+
+      const update: Record<string, unknown> = {
+        status,
+        sarvam_status: attempt.connectivity_status,
+        sarvam_interaction_id: attempt.interaction_id ?? null,
+        sarvam_failure_reason: failure,
+        duration_seconds: durationSeconds,
+        ended_at: utc(attempt.end_datetime) ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const startedAt = utc(attempt.start_datetime) ?? utc(attempt.attempted_at);
+      if (startedAt) update.started_at = startedAt;
+      if (Object.keys(answers).length) Object.assign(update, { answers, outcome: insight.outcome, sentiment: insight.sentiment, summary: insight.summary });
+      if (!hasTurns && turns.length) Object.assign(update, { transcript_turns: turns, transcript: formatTranscript(turns) });
+
+      const wasOpen = OPEN_CALL.includes(call.status);
+      // Only one writer finalises an open call, so automations run once even if the webhook lands too.
+      let query = supabaseAdmin.from("calls").update(update as never).eq("id", call.id);
+      if (wasOpen) query = query.in("status", OPEN_CALL);
+      const { data: changed } = await query.select("id");
+      if (!changed?.length) continue;
+      updated += 1;
+
+      if (attempt.interaction_id) await enrichCallFromSarvam(call.id).catch((error) => console.error("[sarvam] enrich after sync failed", error));
+      const { applyCallOutcomeToCrm } = await import("@/lib/crm-sync.server");
+      await applyCallOutcomeToCrm(call.id).catch((error) => console.error("[crm] apply after sync failed", error));
+      if (wasOpen && !call.campaign_id) {
+        const { runAutomations } = await import("@/lib/automation.server");
+        const { eventsForCall } = await import("@/lib/automation");
+        for (const event of eventsForCall(status, true)) {
+          await runAutomations({
+            organizationId, event, callId: call.id, contactId: call.contact_id,
+            facts: { status, sentiment: insight.sentiment, outcome: insight.outcome, duration_seconds: durationSeconds, answers },
+          }).catch((error) => console.error("[sarvam] automations after sync failed", error));
+        }
+      }
+    }
+  }
+  return { checked: calls.length, updated };
+}

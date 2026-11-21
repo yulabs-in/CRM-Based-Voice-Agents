@@ -30,7 +30,7 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
         if (!metadata) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/lib/supabase-admin.server");
         const { data: call, error: lookupError } = await supabaseAdmin.from("calls")
-          .select("id, organization_id, webhook_token_hash, contact_id")
+          .select("id, organization_id, webhook_token_hash, contact_id, status")
           .eq("id", metadata.call_id).maybeSingle();
         if (lookupError || !call || !isValidCallbackToken(await hashCallbackToken(metadata.callback_token), call.webhook_token_hash)) {
           return new Response("Unauthorized", { status: 401 });
@@ -66,7 +66,14 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
           if (!enriched?.recording) scheduleRecordingRetries(call.id);
         }
 
-        // Automations: an instant call's result is always final.
+        // Leads, deals and the sales pipeline follow the call's outcome.
+        {
+          const { applyCallOutcomeToCrm } = await import("@/lib/crm-sync.server");
+          await applyCallOutcomeToCrm(call.id).catch((error) => console.error("[crm] apply failed", error));
+        }
+
+        // Automations: an instant call's result is always final. Skip if the Sarvam sync already finalised this call.
+        if (!["queued", "in_progress"].includes(call.status)) return Response.json({ ok: true });
         const { runAutomations } = await import("@/lib/automation.server");
         const { eventsForCall } = await import("@/lib/automation");
         const callStatus = mapSarvamStatus(body.data.status);

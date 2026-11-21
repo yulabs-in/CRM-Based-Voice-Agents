@@ -115,6 +115,12 @@ export const Route = createFileRoute("/api/public/sarvam-campaign-webhook")({
           // Recordings are usually not ready yet when the result arrives — keep trying in the background.
           if (!enriched?.recording) scheduleRecordingRetries(call.id);
         }
+
+        // Leads, deals and the sales pipeline follow the call's outcome.
+        {
+          const { applyCallOutcomeToCrm } = await import("@/lib/crm-sync.server");
+          await applyCallOutcomeToCrm(call.id).catch((error) => console.error("[crm] apply failed", error));
+        }
         // Automations run once per contact, on the final attempt (no more Sarvam retries coming).
         const { runAutomations } = await import("@/lib/automation.server");
         const { eventsForCall } = await import("@/lib/automation");

@@ -14,6 +14,7 @@ import { ROLE_LABELS, useOrg } from "@/lib/org";
 import { Logo } from "./Logo";
 import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
+import { RealtimeSync } from "./RealtimeSync";
 
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -157,7 +158,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </header>
-            <main className="px-3 py-6 md:px-6">{children}<RecordingAutoFetch /></main>
+            <main className="px-3 py-6 md:px-6">{children}<RecordingAutoFetch /><RealtimeSync /></main>
           </div>
         </div>
 
