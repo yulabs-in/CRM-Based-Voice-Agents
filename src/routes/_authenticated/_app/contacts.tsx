@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EntityPage } from "@/components/app/EntityPage";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { ImportDialog } from "@/components/app/ImportDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canWrite, useOrg } from "@/lib/org";
 import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";

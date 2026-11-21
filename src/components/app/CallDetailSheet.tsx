@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { CallRecordingPlayer } from "@/components/app/CallRecordingPlayer";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canWrite, useOrg } from "@/lib/org";
 import { refreshCallRecording } from "@/lib/recordings.functions";
 import { asAnswers, asTurns, humanize, type TranscriptTurn } from "@/lib/sarvam-call";

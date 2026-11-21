@@ -11,7 +11,7 @@ import { CallDetailSheet } from "@/components/app/CallDetailSheet";
 import { CampaignControls, outsideCallingHours, type ControllableCampaign } from "@/components/app/CampaignControls";
 import { KpiGrid } from "@/components/app/charts";
 import { StopAllCallsButton, StopCallButton } from "@/components/app/StopCallButtons";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
 import { duration, pct } from "@/lib/call-insights";

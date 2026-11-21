@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/app/PageHeader";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { CampaignControls } from "@/components/app/CampaignControls";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
 import { scheduleCalls } from "@/lib/automation.functions";

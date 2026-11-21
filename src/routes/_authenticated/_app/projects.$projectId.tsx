@@ -15,7 +15,7 @@ import { AnswerChips } from "@/components/app/AnswerChips";
 import { CallDetailSheet } from "@/components/app/CallDetailSheet";
 import { CampaignControls, outsideCallingHours } from "@/components/app/CampaignControls";
 import { BarBox, ChartCard, Funnel, KpiGrid, PieBox, TrendBox } from "@/components/app/charts";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canDelete, canWrite, isAdmin, useOrg } from "@/lib/org";
 import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
