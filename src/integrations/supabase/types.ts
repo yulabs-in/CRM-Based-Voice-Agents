@@ -16,6 +16,24 @@ export type Database = {
     Tables: {
       call_campaigns: {
         Row: {
+          contact_ids: string[] | null
+          source: string
+          agent_variables: Json
+          project_id: string | null
+          sarvam_campaign_id: string | null
+          sarvam_cohort_ids: string[]
+          allowed_start_time: string
+          allowed_end_time: string
+          allowed_days: string[]
+          timezone: string
+          max_retries: number
+          retry_interval_minutes: number
+          attempts_per_second: number
+          ends_at: string | null
+          webhook_token_hash: string | null
+          consent_confirmed: boolean
+          launched_at: string | null
+          last_error: string | null
           agent_id: string | null
           audience: string | null
           created_at: string
@@ -30,6 +48,24 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_ids?: string[] | null
+          source?: string
+          agent_variables?: Json
+          project_id?: string | null
+          sarvam_campaign_id?: string | null
+          sarvam_cohort_ids?: string[]
+          allowed_start_time?: string
+          allowed_end_time?: string
+          allowed_days?: string[]
+          timezone?: string
+          max_retries?: number
+          retry_interval_minutes?: number
+          attempts_per_second?: number
+          ends_at?: string | null
+          webhook_token_hash?: string | null
+          consent_confirmed?: boolean
+          launched_at?: string | null
+          last_error?: string | null
           agent_id?: string | null
           audience?: string | null
           created_at?: string
@@ -44,6 +80,24 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_ids?: string[] | null
+          source?: string
+          agent_variables?: Json
+          project_id?: string | null
+          sarvam_campaign_id?: string | null
+          sarvam_cohort_ids?: string[]
+          allowed_start_time?: string
+          allowed_end_time?: string
+          allowed_days?: string[]
+          timezone?: string
+          max_retries?: number
+          retry_interval_minutes?: number
+          attempts_per_second?: number
+          ends_at?: string | null
+          webhook_token_hash?: string | null
+          consent_confirmed?: boolean
+          launched_at?: string | null
+          last_error?: string | null
           agent_id?: string | null
           audience?: string | null
           created_at?: string
@@ -58,6 +112,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "call_campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "call_campaigns_agent_id_fkey"
             columns: ["agent_id"]
@@ -76,6 +137,13 @@ export type Database = {
       }
       calls: {
         Row: {
+          answers: Json
+          transcript_turns: Json | null
+          recording_path: string | null
+          retry_attempt: number
+          sarvam_campaign_id: string | null
+          campaign_target_id: string | null
+          ended_at: string | null
           agent_id: string | null
           campaign_id: string | null
           contact_id: string | null
@@ -101,6 +169,13 @@ export type Database = {
           webhook_token_hash: string | null
         }
         Insert: {
+          answers?: Json
+          transcript_turns?: Json | null
+          recording_path?: string | null
+          retry_attempt?: number
+          sarvam_campaign_id?: string | null
+          campaign_target_id?: string | null
+          ended_at?: string | null
           agent_id?: string | null
           campaign_id?: string | null
           contact_id?: string | null
@@ -126,6 +201,13 @@ export type Database = {
           webhook_token_hash?: string | null
         }
         Update: {
+          answers?: Json
+          transcript_turns?: Json | null
+          recording_path?: string | null
+          retry_attempt?: number
+          sarvam_campaign_id?: string | null
+          campaign_target_id?: string | null
+          ended_at?: string | null
           agent_id?: string | null
           campaign_id?: string | null
           contact_id?: string | null
@@ -152,6 +234,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "calls_campaign_target_id_fkey"
+            columns: ["campaign_target_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_targets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calls_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
@@ -174,6 +263,73 @@ export type Database = {
           },
           {
             foreignKeyName: "calls_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_targets: {
+        Row: {
+          answers: Json
+          attempts: number
+          campaign_id: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_call_id: string | null
+          last_outcome: string | null
+          organization_id: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          attempts?: number
+          campaign_id: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_id?: string | null
+          last_outcome?: string | null
+          organization_id: string
+          phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          attempts?: number
+          campaign_id?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_id?: string | null
+          last_outcome?: string | null
+          organization_id?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_targets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_targets_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_targets_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -233,6 +389,8 @@ export type Database = {
       }
       contacts: {
         Row: {
+          project_id: string | null
+          custom_fields: Json
           city: string | null
           company_id: string | null
           created_at: string
@@ -250,6 +408,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          project_id?: string | null
+          custom_fields?: Json
           city?: string | null
           company_id?: string | null
           created_at?: string
@@ -267,6 +427,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          project_id?: string | null
+          custom_fields?: Json
           city?: string | null
           company_id?: string | null
           created_at?: string
@@ -284,6 +446,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contacts_company_id_fkey"
             columns: ["company_id"]
@@ -363,6 +532,75 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imports: {
+        Row: {
+          column_mapping: Json
+          created_at: string
+          created_by: string | null
+          errors: Json
+          file_name: string
+          file_path: string | null
+          file_type: string
+          id: string
+          inserted: number
+          organization_id: string
+          project_id: string | null
+          skipped: number
+          status: string
+          total_rows: number
+          updated_at: string
+        }
+        Insert: {
+          column_mapping?: Json
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name: string
+          file_path?: string | null
+          file_type: string
+          id?: string
+          inserted?: number
+          organization_id: string
+          project_id?: string | null
+          skipped?: number
+          status?: string
+          total_rows?: number
+          updated_at?: string
+        }
+        Update: {
+          column_mapping?: Json
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name?: string
+          file_path?: string | null
+          file_type?: string
+          id?: string
+          inserted?: number
+          organization_id?: string
+          project_id?: string | null
+          skipped?: number
+          status?: string
+          total_rows?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -725,6 +963,53 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          contact_count: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee_id: string | null
@@ -860,8 +1145,97 @@ export type Database = {
           },
         ]
       }
+      workflow_runs: {
+        Row: {
+          call_id: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string
+          error: string | null
+          event: string
+          id: string
+          matched: boolean
+          organization_id: string
+          results: Json
+          status: string
+          workflow_id: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          error?: string | null
+          event: string
+          id?: string
+          matched?: boolean
+          organization_id: string
+          results?: Json
+          status?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          error?: string | null
+          event?: string
+          id?: string
+          matched?: boolean
+          organization_id?: string
+          results?: Json
+          status?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
+          trigger: Json
+          conditions: Json
+          match: string
+          actions: Json
+          project_id: string | null
+          campaign_id: string | null
+          run_count: number
+          last_run_at: string | null
           action: string | null
           condition: string | null
           created_at: string
@@ -877,6 +1251,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          trigger?: Json
+          conditions?: Json
+          match?: string
+          actions?: Json
+          project_id?: string | null
+          campaign_id?: string | null
+          run_count?: number
+          last_run_at?: string | null
           action?: string | null
           condition?: string | null
           created_at?: string
@@ -892,6 +1274,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          trigger?: Json
+          conditions?: Json
+          match?: string
+          actions?: Json
+          project_id?: string | null
+          campaign_id?: string | null
+          run_count?: number
+          last_run_at?: string | null
           action?: string | null
           condition?: string | null
           created_at?: string
@@ -907,6 +1297,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workflows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workflows_organization_id_fkey"
             columns: ["organization_id"]
@@ -931,6 +1335,10 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      refresh_project_contact_counts: {
+        Args: { _projects: string[] }
+        Returns: undefined
+      }
     }
     Enums: {
       org_role:
