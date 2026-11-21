@@ -7,7 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
-import { fillGreeting, greetingValues } from "@/lib/campaign-vars";
+import { asVariableMap, nameVariables, greetingValues, openingLine, phoneKey, pickContactForPhone, resolveVariables } from "@/lib/campaign-vars";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
 type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: string };
@@ -75,7 +75,7 @@ export const startSarvamCall = createServerFn({ method: "POST" })
     await requireRole(context, data.organizationId, ["owner", "admin", "sales_manager", "sales_rep", "voice_manager", "support_agent"], "You don't have permission to place calls");
 
     const { data: agent, error: agentError } = await asApp(context.supabase).from("voice_agents")
-      .select("id, name, status, greeting, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")
+      .select("id, name, status, greeting, greeting_no_name, agent_variables, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")
       .eq("id", data.agentId).eq("organization_id", data.organizationId).single();
     if (agentError || !agent) throw new Error("Voice agent not found in this organization");
     if (agent.status !== "active") throw new Error("Choose an active voice agent");
@@ -98,14 +98,31 @@ export const startSarvamCall = createServerFn({ method: "POST" })
       .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()).limit(1).maybeSingle();
     if (active) throw new Error("A call to this number is already in progress");
 
-    let contactId = data.contactId ?? null;
-    // Only send customer_name when the user typed it: Sarvam rejects (422) variables the agent doesn't define.
     const customerName = data.customerName?.trim() ?? "";
-    const contactQuery = asApp(context.supabase).from("contacts").select("id, first_name, last_name, email, city, job_title, custom_fields").eq("organization_id", data.organizationId);
-    const { data: contact } = await (contactId ? contactQuery.eq("id", contactId) : contactQuery.eq("phone", phone)).limit(1).maybeSingle();
-    contactId = contact?.id ?? contactId;
-    // The opening line is sent already filled in, so the agent never reads "{customer_name}" aloud.
-    const greeting = fillGreeting(agent.greeting, greetingValues(contact ?? null, customerName ? { customer_name: customerName, full_name: customerName } : {}));
+    const contactColumns = "id, first_name, last_name, email, city, job_title, custom_fields, phone";
+    let sharedBy: string[] = [];
+    let contact: { id: string; first_name: string; last_name: string | null; email: string | null; city: string | null; job_title: string | null; custom_fields: unknown; phone: string | null } | null = null;
+    if (data.contactId) {
+      const { data: row } = await asApp(context.supabase).from("contacts").select(contactColumns).eq("organization_id", data.organizationId).eq("id", data.contactId).maybeSingle();
+      contact = row;
+    } else {
+      // Same number may be saved as +91…, 0… or 10 digits, and by several people. Only personalise when they all agree.
+      const { data: rows } = await asApp(context.supabase).from("contacts").select(contactColumns).eq("organization_id", data.organizationId)
+        .ilike("phone", `%${phoneKey(phone)}`).limit(20);
+      const sameNumber = (rows ?? []).filter((row) => phoneKey(row.phone) === phoneKey(phone));
+      contact = pickContactForPhone(sameNumber);
+      if (!contact && sameNumber.length > 1) sharedBy = sameNumber.map((row) => `${row.first_name} ${row.last_name ?? ""}`.trim());
+    }
+    const contactId = contact?.id ?? data.contactId ?? null;
+    // A typed name always wins over the CRM record.
+    const extra: Record<string, string> = customerName ? { customer_name: customerName, full_name: customerName } : {};
+    // Variables come from the voice agent row in the database — the same list the Sarvam agent defines.
+    const variableMap = asVariableMap(agent.agent_variables);
+    const agentVariables = Object.keys(variableMap).length
+      ? { ...(contact ? resolveVariables(contact, variableMap) : Object.fromEntries(Object.keys(variableMap).map((name) => [name, ""]))), ...(customerName ? Object.fromEntries(nameVariables(variableMap).map((name) => [name, customerName])) : {}) }
+      : customerName ? { customer_name: customerName } : {};
+    // Always a finished sentence: the agent never reads "{customer_name}" aloud or greets a guessed name.
+    const greeting = openingLine(agent.greeting, greetingValues(contact, extra), agent.greeting_no_name);
 
     const callbackToken = makeCallbackToken();
     const { data: call, error: insertError } = await asApp(context.supabase).from("calls").insert({
@@ -129,8 +146,8 @@ export const startSarvamCall = createServerFn({ method: "POST" })
             app_id: appId,
             app_version: agent.sarvam_app_version,
             connection_config: { connection_id: connectionId, agent_phone_number: agentPhoneNumber },
-            ...(customerName ? { agent_variables: { customer_name: customerName } } : {}),
-            ...(greeting ? { app_overrides: { initial_bot_message: greeting } } : {}),
+            ...(Object.keys(agentVariables).length ? { agent_variables: agentVariables } : {}),
+            app_overrides: { initial_bot_message: greeting },
           },
           user_config: { user_phone_number: phone },
           webhook_config: { url: webhookUrl, metadata: { call_id: call.id, callback_token: callbackToken } },
@@ -138,11 +155,11 @@ export const startSarvamCall = createServerFn({ method: "POST" })
       });
       if (!payload.attempt_id) throw new SarvamError("Sarvam did not return a call attempt ID");
       await asApp(context.supabase).from("calls").update({ external_id: payload.attempt_id, status: "in_progress", sarvam_status: "dialing" }).eq("id", call.id);
-      return { callId: call.id, attemptId: payload.attempt_id, phone };
+      return { callId: call.id, attemptId: payload.attempt_id, phone, sharedBy, greeting };
     } catch (error) {
       let reason = error instanceof Error ? error.message : "Could not reach Sarvam";
-      if (error instanceof SarvamError && error.status === 422 && customerName) {
-        reason += " — if your Sarvam agent has no customer_name variable, leave Customer name empty and try again.";
+      if (error instanceof SarvamError && error.status === 422) {
+        reason += " — the Sarvam agent version must define the same variables as this voice agent (" + Object.keys(agentVariables).join(", ") + "). Commit the Sarvam draft or update the agent's version.";
       }
       await asApp(context.supabase).from("calls").update({ status: "failed", sarvam_status: "failed", sarvam_failure_reason: reason }).eq("id", call.id);
       throw new Error(reason);

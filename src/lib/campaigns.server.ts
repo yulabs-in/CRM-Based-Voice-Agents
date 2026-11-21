@@ -5,7 +5,7 @@ import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
-import { chunk, cohortName, fillGreeting, greetingValues, resolveVariables, type CohortContact, type VariableMap } from "@/lib/campaign-vars";
+import { asVariableMap, nameVariables, chunk, cohortName, greetingValues, noNameLine, openingLine, pickContactForPhone, resolveVariables, type CohortContact, type VariableMap } from "@/lib/campaign-vars";
 
 async function loadCampaign(context: { supabase: SupabaseClient<Database> }, campaignId: string) {
   const { data, error } = await asApp(context.supabase).from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
@@ -31,7 +31,7 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
     if (!campaign.agent_id) throw new Error("Choose a voice agent");
 
     const { data: agent } = await client.from("voice_agents")
-      .select("id, status, greeting, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number").eq("id", campaign.agent_id).maybeSingle();
+      .select("id, status, greeting, greeting_no_name, agent_variables, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number").eq("id", campaign.agent_id).maybeSingle();
     const appId = agent?.sarvam_agent_id?.trim() || SARVAM_DEFAULTS.agentId;
     const connectionId = agent?.sarvam_connection_id?.trim() || SARVAM_DEFAULTS.connectionId;
     const agentPhone = normalizePhoneNumber(agent?.sarvam_agent_phone_number?.trim() || SARVAM_DEFAULTS.callerNumber);
@@ -62,13 +62,15 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
       contacts.push(...(page ?? []));
       if (!page || page.length < 1000) break;
     }
-    const seen = new Set<string>();
-    const callable = contacts.flatMap((contact) => {
+    // One call per number. When different people share a number we can't know who answers, so that call
+    // gets no name (neutral greeting, empty customer_name) instead of possibly the wrong one.
+    const byPhone = new Map<string, Array<(typeof contacts)[number]>>();
+    for (const contact of contacts) {
       const phone = normalizePhoneNumber(contact.phone ?? "");
-      if (!phone || seen.has(phone)) return [];
-      seen.add(phone);
-      return [{ ...contact, phone }];
-    });
+      if (!phone) continue;
+      byPhone.set(phone, [...(byPhone.get(phone) ?? []), contact]);
+    }
+    const callable = [...byPhone.entries()].map(([phone, group]) => ({ ...group[0]!, phone, nameConflict: !pickContactForPhone(group) }));
     if (!callable.length) throw new Error("This project has no contacts with a valid phone number");
 
     await client.from("campaign_targets").delete().eq("campaign_id", campaign.id); // relaunch after a failed attempt
@@ -142,7 +144,8 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
     }).eq("id", campaign.id);
 
     // 3. Stream contacts as cohorts.
-    const variables = (campaign.agent_variables ?? {}) as VariableMap;
+    const campaignVariables = asVariableMap(campaign.agent_variables);
+    const variables: VariableMap = Object.keys(campaignVariables).length ? campaignVariables : asVariableMap(agent.agent_variables);
     const cohortIds: string[] = [];
     const errors: string[] = [];
     const parts = chunk(callable, 1000);
@@ -154,12 +157,14 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
             name: cohortName(campaign.name, index + 1),
             users: part.map((contact) => {
               // Personalised opening line per contact (Sarvam supports initial_bot_message as a per-user override).
-              const greeting = fillGreeting(agent.greeting, greetingValues(contact));
+              const greeting = contact.nameConflict ? noNameLine(agent.greeting_no_name) : openingLine(agent.greeting, greetingValues(contact), agent.greeting_no_name);
+              const values = Object.keys(variables).length ? resolveVariables(contact, variables) : null;
+              if (values && contact.nameConflict) for (const name of nameVariables(variables)) values[name] = "";
               return {
                 user_phone_number: contact.phone,
                 user_identifier: targetIds.get(contact.id),
-                ...(Object.keys(variables).length ? { app_variables: resolveVariables(contact, variables) } : {}),
-                ...(greeting ? { app_overrides: { initial_bot_message: greeting } } : {}),
+                ...(values ? { app_variables: values } : {}),
+                app_overrides: { initial_bot_message: greeting },
               };
             }),
           },

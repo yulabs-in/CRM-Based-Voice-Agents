@@ -1085,6 +1085,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           greeting: string | null
+          greeting_no_name: string | null
+          agent_variables: Json
           id: string
           instructions: string | null
           language: string
@@ -1103,6 +1105,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           greeting?: string | null
+          greeting_no_name?: string | null
+          agent_variables?: Json
           id?: string
           instructions?: string | null
           language?: string
@@ -1121,6 +1125,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           greeting?: string | null
+          greeting_no_name?: string | null
+          agent_variables?: Json
           id?: string
           instructions?: string | null
           language?: string

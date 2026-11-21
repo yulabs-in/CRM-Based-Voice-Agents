@@ -84,3 +84,47 @@ export function fillGreeting(template: string | null | undefined, values: Record
   });
   return missing ? null : filled.slice(0, 500);
 }
+
+/** Said when the opening line needs a value we don't have (e.g. no trusted name): no placeholder, no guessed name. */
+export const NEUTRAL_GREETING = "Hello sir, are you interested in a better insurance plan?";
+
+/**
+ * The opening line to send for one call — always a finished sentence. Sending it on every call means Sarvam never
+ * falls back to its own template and reads "customer name" aloud when the variable is empty.
+ */
+export function openingLine(template: string | null | undefined, values: Record<string, string>, noNameGreeting?: string | null): string {
+  return fillGreeting(template, values) ?? noNameLine(noNameGreeting);
+}
+
+/** The agent's own no-name opening line (Voice Agents page), with any leftover {placeholders} removed. */
+export function noNameLine(noNameGreeting?: string | null): string {
+  const text = noNameGreeting?.replace(/\{\{?\s*[A-Za-z_][A-Za-z0-9_]*\s*\}?\}/g, "").replace(/\s+([,.?!])/g, "$1").replace(/\s{2,}/g, " ").trim();
+  return text ? text.slice(0, 500) : NEUTRAL_GREETING;
+}
+
+/** Last 10 digits — matches +91 98765 43210, 098765 43210 and 9876543210 as the same Indian number. */
+export const phoneKey = (phone: string | null | undefined) => (phone ?? "").replace(/\D/g, "").slice(-10);
+
+/**
+ * The contact to personalise a call with, from every contact saved with that number.
+ * Several different people on one number → null, so the agent never greets the wrong name.
+ */
+export function pickContactForPhone<T extends { first_name: string; last_name: string | null }>(matches: T[]): T | null {
+  if (matches.length === 0) return null;
+  const names = new Set(matches.map((contact) => `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim().toLowerCase()));
+  return names.size === 1 ? matches[0]! : null;
+}
+
+/** Variables that carry the person's name (cleared when we can't be sure who answers, overridden by a typed name). */
+export const nameVariables = (map: VariableMap) =>
+  Object.entries(map).filter(([, source]) => source === "full_name" || source === "first_name" || source === "last_name").map(([name]) => name);
+
+/** Agent variables stored on a voice agent (jsonb) → a clean VariableMap. */
+export function asVariableMap(value: unknown): VariableMap {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: VariableMap = {};
+  for (const [name, source] of Object.entries(value as Record<string, unknown>)) {
+    if (isValidVariableName(name) && typeof source === "string" && source) out[name] = source as VariableSource;
+  }
+  return out;
+}

@@ -10,6 +10,7 @@ import { AnswerChips } from "@/components/app/AnswerChips";
 import { CallDetailSheet } from "@/components/app/CallDetailSheet";
 import { CampaignControls, outsideCallingHours, type ControllableCampaign } from "@/components/app/CampaignControls";
 import { KpiGrid } from "@/components/app/charts";
+import { StopAllCallsButton, StopCallButton } from "@/components/app/StopCallButtons";
 import { supabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
@@ -72,6 +73,7 @@ function Page() {
     <div className="animate-rise space-y-5">
       <PageHeader title="Live Calls" description="Running campaigns, calls being dialed and results as they arrive. Updates every 5 seconds.">
         <span className="inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success"><span className="size-2 animate-pulse rounded-full bg-success" /> Live</span>
+        <StopAllCallsButton />
       </PageHeader>
 
       <KpiGrid loading={live.isLoading} items={[
@@ -126,6 +128,7 @@ function Page() {
                   <span className="font-medium">{name(call)}</span>
                   <span className="text-xs text-muted-foreground">{call.phone}</span>
                   <span className="ml-auto text-xs text-muted-foreground">{call.campaign?.name ?? "Test call"} · {call.sarvam_status ?? call.status}</span>
+                  <StopCallButton callId={call.id} campaignName={call.campaign?.name} />
                 </li>
               ))}
             </ul>
