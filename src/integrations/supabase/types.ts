@@ -76,6 +76,7 @@ export type Database = {
       }
       calls: {
         Row: {
+          crm_synced_at: string | null
           agent_id: string | null
           campaign_id: string | null
           contact_id: string | null
@@ -101,6 +102,7 @@ export type Database = {
           webhook_token_hash: string | null
         }
         Insert: {
+          crm_synced_at?: string | null
           agent_id?: string | null
           campaign_id?: string | null
           contact_id?: string | null
@@ -126,6 +128,7 @@ export type Database = {
           webhook_token_hash?: string | null
         }
         Update: {
+          crm_synced_at?: string | null
           agent_id?: string | null
           campaign_id?: string | null
           contact_id?: string | null
@@ -302,6 +305,7 @@ export type Database = {
       }
       deals: {
         Row: {
+          last_call_id: string | null
           company_id: string | null
           contact_id: string | null
           created_at: string
@@ -316,6 +320,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          last_call_id?: string | null
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
@@ -330,6 +335,7 @@ export type Database = {
           value?: number
         }
         Update: {
+          last_call_id?: string | null
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
@@ -410,6 +416,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          last_call_id: string | null
           company_name: string | null
           contact_id: string | null
           created_at: string
@@ -426,6 +433,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          last_call_id?: string | null
           company_name?: string | null
           contact_id?: string | null
           created_at?: string
@@ -442,6 +450,7 @@ export type Database = {
           value?: number
         }
         Update: {
+          last_call_id?: string | null
           company_name?: string | null
           contact_id?: string | null
           created_at?: string

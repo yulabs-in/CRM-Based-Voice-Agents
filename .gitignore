@@ -33,3 +33,6 @@ dist-ssr
 
 # Local backups of env files
 .env.*.bak
+
+# Netlify build output / local state
+.netlify/

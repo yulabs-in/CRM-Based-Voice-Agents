@@ -9,6 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/app/PageHeader";
 import { canWrite, useOrg } from "@/lib/org";
 import { DEAL_STAGES, inr, shortDate } from "@/lib/format";
+
+/** Default win probability per stage (same scale the AI-call sync uses). */
+const STAGE_PROBABILITY: Record<string, number> = { qualification: 20, proposal: 40, negotiation: 60, won: 100, lost: 0 };
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/_app/pipeline")({
@@ -41,8 +44,8 @@ function Pipeline() {
   });
   const move = useMutation({
     mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
-      const probability = stage === "won" ? 100 : stage === "lost" ? 0 : undefined;
-      const { error } = await supabase.from("deals").update({ stage, ...(probability !== undefined && { probability }) }).eq("id", id);
+      const probability = STAGE_PROBABILITY[stage];
+      const { error } = await supabase.from("deals").update({ stage, updated_at: new Date().toISOString(), ...(probability !== undefined && { probability }) }).eq("id", id);
       if (error) throw error;
     },
     onMutate: async ({ id, stage }) => {
