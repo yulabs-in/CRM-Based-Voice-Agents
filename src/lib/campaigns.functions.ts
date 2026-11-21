@@ -1,9 +1,10 @@
+import { asApp } from "@/lib/supabase";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
@@ -12,12 +13,12 @@ import { chunk, cohortName, fillGreeting, greetingValues, mapSarvamCampaignStatu
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
 
 async function requireCampaignRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string) {
-  const { data } = await context.supabase.from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
+  const { data } = await asApp(context.supabase).from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   if (!data || !CAMPAIGN_ROLES.includes(data.role)) throw new Error("Only owners, admins, sales managers and voice managers can run campaigns");
 }
 
 async function loadCampaign(context: { supabase: SupabaseClient<Database> }, campaignId: string) {
-  const { data, error } = await context.supabase.from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
+  const { data, error } = await asApp(context.supabase).from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
   if (error || !data) throw new Error("Campaign not found");
   return data;
 }
@@ -37,7 +38,7 @@ export const launchCampaign = createServerFn({ method: "POST" })
     const campaign = await loadCampaign(context, data.campaignId);
     await requireCampaignRole(context, campaign.organization_id);
     const { runCampaignLaunch } = await import("@/lib/campaigns.server");
-    return runCampaignLaunch(context.supabase, data.campaignId, new URL(getRequest().url).origin);
+    return runCampaignLaunch(asApp(context.supabase), data.campaignId, new URL(getRequest().url).origin);
   });
 
 export const setCampaignStatus = createServerFn({ method: "POST" })
@@ -54,9 +55,9 @@ export const setCampaignStatus = createServerFn({ method: "POST" })
         method: "PUT", body: { action: data.action },
       });
       const status = data.action === "cancel" ? "cancelled" : data.action === "pause" ? "paused" : mapSarvamCampaignStatus(result.status === "paused" ? "active" : result.status);
-      await context.supabase.from("call_campaigns").update({ status, updated_at: new Date().toISOString() }).eq("id", campaign.id);
+      await asApp(context.supabase).from("call_campaigns").update({ status, updated_at: new Date().toISOString() }).eq("id", campaign.id);
       if (data.action === "cancel") {
-        await context.supabase.from("campaign_targets").update({ status: "excluded", updated_at: new Date().toISOString() })
+        await asApp(context.supabase).from("campaign_targets").update({ status: "excluded", updated_at: new Date().toISOString() })
           .eq("campaign_id", campaign.id).in("status", ["pending", "queued", "retrying"]);
       }
       return { status };
@@ -78,7 +79,7 @@ export const syncCampaign = createServerFn({ method: "POST" })
       const remote = await sarvamJson<{ status: string }>(`/scheduling/v1${workspacePath(config.sarvamOrg, config.workspace)}/campaigns/${encodeURIComponent(campaign.sarvam_campaign_id)}`);
       const status = mapSarvamCampaignStatus(remote.status);
       if (status !== campaign.status && !["failed"].includes(campaign.status)) {
-        await context.supabase.from("call_campaigns").update({ status, updated_at: new Date().toISOString() }).eq("id", campaign.id);
+        await asApp(context.supabase).from("call_campaigns").update({ status, updated_at: new Date().toISOString() }).eq("id", campaign.id);
       }
       return { status };
     } catch (error) {
@@ -110,7 +111,7 @@ export const updateCampaignSchedule = createServerFn({ method: "POST" })
     const local = { allowed_start_time: data.allowedStartTime, allowed_end_time: data.allowedEndTime, allowed_days: data.allowedDays, timezone: data.timezone, updated_at: new Date().toISOString() };
 
     if (!campaign.sarvam_campaign_id) {
-      await context.supabase.from("call_campaigns").update(local).eq("id", campaign.id);
+      await asApp(context.supabase).from("call_campaigns").update(local).eq("id", campaign.id);
       return { status: campaign.status, resumed: false };
     }
     if (["completed", "cancelled"].includes(campaign.status)) throw new Error(`This campaign is ${campaign.status}; create a new one instead`);
@@ -125,7 +126,7 @@ export const updateCampaignSchedule = createServerFn({ method: "POST" })
       } finally {
         if (wasActive) await sarvamJson(`${base}/status`, { method: "PUT", body: { action: "resume" } });
       }
-      await context.supabase.from("call_campaigns").update({ ...local, last_error: null }).eq("id", campaign.id);
+      await asApp(context.supabase).from("call_campaigns").update({ ...local, last_error: null }).eq("id", campaign.id);
       return { status: wasActive ? "running" : mapSarvamCampaignStatus(remote.status), resumed: wasActive };
     } catch (error) {
       throw new Error(message(error));

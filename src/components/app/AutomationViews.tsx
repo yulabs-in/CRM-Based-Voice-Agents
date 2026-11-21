@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { EMPTY_WORKFLOW, WorkflowBuilder, type WorkflowDraft } from "@/components/app/WorkflowBuilder";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canDelete, canWrite, useOrg } from "@/lib/org";
 import { describeAction, describeCondition, EVENTS, type Action, type AutomationEvent, type Condition } from "@/lib/automation";
 

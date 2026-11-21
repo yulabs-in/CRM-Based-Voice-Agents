@@ -39,7 +39,7 @@ export const Route = createFileRoute("/api/public/sarvam-campaign-webhook")({
         const token = url.searchParams.get("t") ?? "";
         if (!campaignId.success || token.length < 40) return new Response("Unauthorized", { status: 401 });
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/supabase-admin.server");
         const { data: campaign } = await supabaseAdmin.from("call_campaigns")
           .select("id, organization_id, agent_id, webhook_token_hash, sarvam_campaign_id, status").eq("id", campaignId.data).maybeSingle();
         if (!campaign || !isValidCallbackToken(await hashCallbackToken(token), campaign.webhook_token_hash)) {

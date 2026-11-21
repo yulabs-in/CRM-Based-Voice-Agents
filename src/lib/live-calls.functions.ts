@@ -6,14 +6,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import { asApp, type Database } from "@/lib/supabase";
 
 const STOP_ROLES = ["owner", "admin", "sales_manager", "voice_manager", "sales_rep", "support_agent"];
 const ACTIVE_CAMPAIGN = ["launching", "scheduled", "running", "paused"];
 const OPEN_TARGETS = ["pending", "queued", "calling", "retrying"];
 
-async function requireStopRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string) {
-  const { data } = await context.supabase.from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
+async function requireStopRole(context: { supabase: unknown; userId: string }, organizationId: string) {
+  const { data } = await asApp(context.supabase).from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   if (!data || !STOP_ROLES.includes(data.role)) throw new Error("You don't have permission to stop calls");
 }
 
@@ -40,16 +40,16 @@ export const stopCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ callId: z.string().uuid(), stopCampaign: z.boolean().default(false) }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call, error } = await context.supabase.from("calls").select("id, organization_id, campaign_id, contact_id, status").eq("id", data.callId).maybeSingle();
+    const { data: call, error } = await asApp(context.supabase).from("calls").select("id, organization_id, campaign_id, contact_id, status").eq("id", data.callId).maybeSingle();
     if (error || !call) throw new Error("Call not found");
     await requireStopRole(context, call.organization_id);
     let campaignCancelled = false;
     if (call.campaign_id) {
       if (data.stopCampaign) {
-        const { data: campaign } = await context.supabase.from("call_campaigns").select("id, organization_id, sarvam_campaign_id, status").eq("id", call.campaign_id).maybeSingle();
+        const { data: campaign } = await asApp(context.supabase).from("call_campaigns").select("id, organization_id, sarvam_campaign_id, status").eq("id", call.campaign_id).maybeSingle();
         if (campaign && ACTIVE_CAMPAIGN.includes(campaign.status)) {
           try {
-            await cancelSarvamCampaign(context.supabase, campaign);
+            await cancelSarvamCampaign(asApp(context.supabase), campaign);
             campaignCancelled = true;
           } catch (cause) {
             throw new Error(cause instanceof Error ? cause.message : "Sarvam did not cancel the campaign");
@@ -57,11 +57,11 @@ export const stopCall = createServerFn({ method: "POST" })
         }
       } else if (call.contact_id) {
         // Don't retry this person in the campaign.
-        await context.supabase.from("campaign_targets").update({ status: "excluded", updated_at: new Date().toISOString() })
+        await asApp(context.supabase).from("campaign_targets").update({ status: "excluded", updated_at: new Date().toISOString() })
           .eq("campaign_id", call.campaign_id).eq("contact_id", call.contact_id).in("status", OPEN_TARGETS);
       }
     }
-    await closeCall(context.supabase, [call.id]);
+    await closeCall(asApp(context.supabase), [call.id]);
     return { campaignCancelled };
   });
 
@@ -71,20 +71,20 @@ export const stopAllCalls = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ organizationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await requireStopRole(context, data.organizationId);
-    const { data: campaigns } = await context.supabase.from("call_campaigns").select("id, organization_id, sarvam_campaign_id, status")
+    const { data: campaigns } = await asApp(context.supabase).from("call_campaigns").select("id, organization_id, sarvam_campaign_id, status")
       .eq("organization_id", data.organizationId).in("status", ACTIVE_CAMPAIGN);
     const errors: string[] = [];
     let cancelled = 0;
     for (const campaign of campaigns ?? []) {
       try {
-        await cancelSarvamCampaign(context.supabase, campaign);
+        await cancelSarvamCampaign(asApp(context.supabase), campaign);
         cancelled += 1;
       } catch (cause) {
         errors.push(cause instanceof Error ? cause.message : "Sarvam did not cancel a campaign");
       }
     }
-    const { data: open } = await context.supabase.from("calls").select("id").eq("organization_id", data.organizationId).in("status", ["queued", "in_progress"]);
+    const { data: open } = await asApp(context.supabase).from("calls").select("id").eq("organization_id", data.organizationId).in("status", ["queued", "in_progress"]);
     const ids = (open ?? []).map((row) => row.id);
-    await closeCall(context.supabase, ids);
+    await closeCall(asApp(context.supabase), ids);
     return { campaignsCancelled: cancelled, callsClosed: ids.length, errors };
   });

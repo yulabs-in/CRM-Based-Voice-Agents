@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org";
 import { humanize, asAnswers } from "@/lib/sarvam-call";
 import { asVariableMap, BUILTIN_SOURCES, isValidVariableName, type VariableMap, type VariableSource } from "@/lib/campaign-vars";
