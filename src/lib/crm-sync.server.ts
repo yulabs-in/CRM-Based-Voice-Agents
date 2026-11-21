@@ -4,13 +4,13 @@
 import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
-import { classifyCallOutcome, nextDealStage, nextLeadStatus, type CallVerdict } from "@/lib/crm-outcome";
+import { classifyCallOutcome, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
 
 type CallRow = {
   id: string; organization_id: string; contact_id: string | null; phone: string | null; status: string;
   outcome: string | null; sentiment: string | null; summary: string | null; answers: unknown; crm_synced_at: string | null;
 };
-type LeadRow = { id: string; status: string; score: number; value: number };
+type LeadRow = { id: string; status: string; score: number; value: number; name?: string | null };
 type ContactRow = { id: string; first_name: string; last_name: string | null; phone: string | null; email: string | null; project_id: string | null };
 
 export type CrmSyncResult = { applied: boolean; verdict?: CallVerdict["kind"]; lead?: string; deal?: string; detail: string };
@@ -22,7 +22,7 @@ const CONTACT_COLUMNS = "id, first_name, last_name, phone, email, project_id";
 async function ensureContact(call: CallRow, answers: Record<string, string>): Promise<ContactRow | null> {
   if (call.contact_id) {
     const { data } = await supabaseAdmin.from("contacts").select(CONTACT_COLUMNS).eq("id", call.contact_id).maybeSingle();
-    if (data) return data as ContactRow;
+    if (data) return withSpokenName(data as ContactRow, answers);
   }
   if (!call.phone) return null;
   const key = phoneKey(call.phone);
@@ -30,8 +30,7 @@ async function ensureContact(call: CallRow, answers: Record<string, string>): Pr
     .eq("organization_id", call.organization_id).ilike("phone", `%${key}`).order("created_at", { ascending: true }).limit(20);
   let contact = ((matches ?? []) as ContactRow[]).find((row) => phoneKey(row.phone) === key) ?? null;
   if (!contact) {
-    const spoken = (answers.customer_name || answers.user_name || answers.full_name || answers.name || "").trim();
-    const [first, ...rest] = spoken.split(/\s+/);
+    const [first, ...rest] = (spokenName(answers) ?? "").split(/\s+/);
     const { data: created, error } = await supabaseAdmin.from("contacts").insert({
       organization_id: call.organization_id, first_name: (first || `Caller ${call.phone.slice(-4)}`).slice(0, 80),
       last_name: rest.join(" ").slice(0, 80) || null, phone: call.phone, source: "AI call", status: "active", owner_id: null,
@@ -40,8 +39,20 @@ async function ensureContact(call: CallRow, answers: Record<string, string>): Pr
     contact = created as ContactRow;
   }
   await supabaseAdmin.from("calls").update({ contact_id: contact.id } as never).eq("id", call.id).is("contact_id", null);
-  return contact;
+  return withSpokenName(contact, answers);
 }
+
+/** A placeholder "Caller 1234" contact takes the name the customer gave on the call. Real names are never overwritten. */
+async function withSpokenName(contact: ContactRow, answers: Record<string, string>): Promise<ContactRow> {
+  const spoken = spokenName(answers);
+  if (!spoken || !isPlaceholderName(contact.first_name)) return contact;
+  const [first, ...rest] = spoken.split(/\s+/);
+  const lastName = rest.join(" ").slice(0, 80) || null;
+  await supabaseAdmin.from("contacts").update({ first_name: first!.slice(0, 80), last_name: lastName, updated_at: new Date().toISOString() } as never).eq("id", contact.id);
+  return { ...contact, first_name: first!.slice(0, 80), last_name: lastName };
+}
+
+const isPlaceholderName = (name: string | null | undefined) => !name || /^Caller \d{3,4}$/.test(name.trim());
 
 /** Applies one finished call to the CRM. Safe to call repeatedly: only the first caller does the work. */
 export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResult> {
@@ -74,12 +85,12 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     const displayName = nameOf(contact) || contact.phone || "Lead";
 
     // ---- Lead
-    const { data: leadRows } = await supabaseAdmin.from("leads").select("id, status, score, value")
+    const { data: leadRows } = await supabaseAdmin.from("leads").select("id, status, score, value, name")
       .eq("organization_id", org).eq("contact_id", contact.id).order("created_at", { ascending: false }).limit(1);
     let lead = leadRows?.[0] as LeadRow | undefined;
     if (!lead && contact.phone) {
       const key = phoneKey(contact.phone);
-      const { data: byPhone } = await supabaseAdmin.from("leads").select("id, status, score, value, phone")
+      const { data: byPhone } = await supabaseAdmin.from("leads").select("id, status, score, value, name, phone")
         .eq("organization_id", org).ilike("phone", `%${key}`).limit(10);
       lead = (byPhone ?? []).find((row) => phoneKey(row.phone) === key) as LeadRow | undefined;
     }
@@ -89,8 +100,12 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
       await supabaseAdmin.from("leads").update({
         status, score: verdict.kind === "negative" ? verdict.score : Math.max(lead.score ?? 0, verdict.score),
         contact_id: contact.id, last_call_id: call.id, updated_at: now,
+        ...(isPlaceholderName(lead.name) && !isPlaceholderName(contact.first_name) ? { name: displayName.slice(0, 120) } : {}),
       } as never).eq("id", lead.id);
       leadDetail = lead.status === status ? `Lead stays ${status}` : `Lead ${lead.status} → ${status}`;
+    } else if (verdict.kind === "negative" || verdict.kind === "neutral") {
+      // Leads are people who want insurance. Not interested / no real conversation stays a contact only.
+      leadDetail = "No lead (caller not interested)";
     } else {
       const { data: created, error } = await supabaseAdmin.from("leads").insert({
         organization_id: org, contact_id: contact.id, name: displayName.slice(0, 120), phone: contact.phone, email: contact.email,

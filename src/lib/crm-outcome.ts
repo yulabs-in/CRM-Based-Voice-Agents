@@ -31,7 +31,7 @@ const norm = (text: string) => text.toLowerCase().replace(/[_-]+/g, " ").replace
  * Classifies a finished call. Returns null when the call should not touch the CRM (it never connected).
  * Looks at the agent's disposition first, then the outcome, then sentiment as a last resort.
  */
-export function classifyCallOutcome(input: { status: string | null; outcome?: string | null; sentiment?: string | null; answers?: unknown }): CallVerdict | null {
+export function classifyCallOutcome(input: { status: string | null; outcome?: string | null; sentiment?: string | null; summary?: string | null; answers?: unknown }): CallVerdict | null {
   if (input.status !== "completed") return null;
   const answers = asAnswers(input.answers);
   const raw = answers.disposition || answers.outcome || answers.call_outcome || input.outcome || "";
@@ -49,6 +49,14 @@ export function classifyCallOutcome(input: { status: string | null; outcome?: st
   if (PROPOSAL.test(text)) return { kind: "positive", label, leadStatus: "qualified", dealStage: "proposal", probability: 40, score: 80 };
   if (POSITIVE.test(text)) return { kind: "positive", label, leadStatus: "qualified", dealStage: "qualification", probability: 20, score: 70 };
 
+  // No usable disposition: read the call summary the agent wrote from the transcript.
+  const summary = norm(answers.summary || answers.call_summary || input.summary || "");
+  if (summary) {
+    if (NEGATIVE.test(summary)) return { kind: "negative", label, leadStatus: "unqualified", dealStage: "lost", probability: 0, score: 10 };
+    if (/\b(interested|agreed|callback|call back|looking for)\b/.test(summary)) {
+      return { kind: "positive", label, leadStatus: "qualified", dealStage: "qualification", probability: 20, score: 65 };
+    }
+  }
   if (input.sentiment === "positive") return { kind: "positive", label, leadStatus: "qualified", dealStage: "qualification", probability: 20, score: 65 };
   if (input.sentiment === "negative") return { kind: "negative", label, leadStatus: "unqualified", dealStage: "lost", probability: 0, score: 10 };
   return { kind: "neutral", label, leadStatus: "contacted", dealStage: null, probability: 0, score: 30 };
@@ -70,4 +78,12 @@ export function nextDealStage(current: string, verdict: CallVerdict): DealStage 
   const now = (current in STAGE_RANK ? current : "qualification") as DealStage;
   if (now === "lost") return verdict.dealStage; // they came back
   return STAGE_RANK[verdict.dealStage] > STAGE_RANK[now] ? verdict.dealStage : null;
+}
+
+/** The name the customer gave on the call (agent variables), if any. */
+export function spokenName(answers: unknown): string | null {
+  const a = asAnswers(answers);
+  const name = (a.customer_name || a.user_name || a.full_name || "").trim();
+  if (!name || name.length > 60 || /[{}]|\d{3,}/.test(name)) return null;
+  return name.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyCallOutcome, nextDealStage, nextLeadStatus } from "@/lib/crm-outcome";
+import { classifyCallOutcome, nextDealStage, nextLeadStatus, spokenName } from "@/lib/crm-outcome";
 
 const call = (disposition: string, extra: Partial<{ status: string; sentiment: string }> = {}) =>
   classifyCallOutcome({ status: extra.status ?? "completed", sentiment: extra.sentiment ?? null, answers: { disposition } });
@@ -57,5 +57,28 @@ describe("nextDealStage", () => {
     expect(nextDealStage("negotiation", call("not interested")!)).toBe("lost");
     expect(nextDealStage("won", call("not interested")!)).toBeNull();
     expect(nextDealStage("lost", call("interested")!)).toBe("qualification");
+  });
+});
+
+describe("transcript-based fallbacks", () => {
+  it("uses the call summary when the agent gave no disposition", () => {
+    const base = { status: "completed" as const };
+    expect(classifyCallOutcome({ ...base, summary: "Manish is interested in health insurance and agreed to a callback." })?.kind).toBe("positive");
+    expect(classifyCallOutcome({ ...base, summary: "The customer said they are not looking for any insurance." })?.kind).toBe("negative");
+    expect(classifyCallOutcome({ ...base, answers: { summary: "Customer already has insurance with LIC." } })?.kind).toBe("negative");
+  });
+
+  it("a disposition still wins over the summary", () => {
+    expect(classifyCallOutcome({ status: "completed", answers: { disposition: "not_interested", summary: "was interested at first" } })?.kind).toBe("negative");
+  });
+});
+
+describe("spokenName", () => {
+  it("title-cases the name the customer gave and ignores junk", () => {
+    expect(spokenName({ customer_name: "manish" })).toBe("Manish");
+    expect(spokenName({ customer_name: "", user_name: "ravi kumar" })).toBe("Ravi Kumar");
+    expect(spokenName({ customer_name: "{customer_name}" })).toBeNull();
+    expect(spokenName({ customer_name: "9876543210" })).toBeNull();
+    expect(spokenName({})).toBeNull();
   });
 });

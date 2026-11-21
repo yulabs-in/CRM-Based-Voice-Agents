@@ -351,6 +351,8 @@ export async function syncCallsFromSarvam(organizationId: string): Promise<{ che
       // Drop the inputs we passed to the agent; what's left is what it collected.
       const agentVariables = call.agent_id ? agentById.get(call.agent_id)?.agent_variables : null;
       const inputs = new Set(Object.keys(agentVariables && typeof agentVariables === "object" ? agentVariables : {}));
+      // The name is an input too, but the agent fills it from what the customer says — keep it.
+      for (const key of ["customer_name", "user_name"]) inputs.delete(key);
       const collected = Object.fromEntries(Object.entries(attempt.agent_variables ?? {}).filter(([key]) => !inputs.has(key)));
       const answers = extractAnswers(collected);
       const insight = summarizeAnswers(answers);

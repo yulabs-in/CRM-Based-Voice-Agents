@@ -50,6 +50,11 @@ export function EntityPage(props: {
   fields: Field[]; columns: Column[]; searchKeys: string[]; defaults?: Record<string, unknown>;
   openNew?: boolean; onCloseNew?: () => void; order?: string; filter?: Record<string, string>; readOnly?: boolean;
   actions?: ReactNode; onRowClick?: (row: Row) => void; select?: string;
+  /** Client-side view filter (e.g. a tab) applied before search. */
+  rowFilter?: (row: Row) => boolean;
+  /** Extra controls shown next to the search box. */
+  toolbar?: ReactNode;
+  emptyHint?: string;
 }) {
   const { org, role: realRole } = useOrg();
   const role = props.readOnly ? "read_only" : realRole;
@@ -98,9 +103,10 @@ export function EntityPage(props: {
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return list.data ?? [];
-    return (list.data ?? []).filter((r) => props.searchKeys.some((k) => String(r[k] ?? "").toLowerCase().includes(s)));
-  }, [q, list.data, props.searchKeys]);
+    const base = props.rowFilter ? (list.data ?? []).filter(props.rowFilter) : list.data ?? [];
+    if (!s) return base;
+    return base.filter((r) => props.searchKeys.some((k) => String(r[k] ?? "").toLowerCase().includes(s)));
+  }, [q, list.data, props.searchKeys, props.rowFilter]);
 
   const refMap = refs.data ?? {};
 
@@ -118,6 +124,7 @@ export function EntityPage(props: {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${props.title.toLowerCase()}…`} className="h-9 rounded-xl pl-9" />
           </div>
+          {props.toolbar}
           <span className="ml-auto text-xs text-muted-foreground">{rows.length} {rows.length === 1 ? "record" : "records"}</span>
         </div>
         {list.isLoading ? (
@@ -126,7 +133,7 @@ export function EntityPage(props: {
           <div className="dot-canvas m-3 rounded-xl border border-dashed py-16 text-center">
             <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-accent text-accent-foreground"><props.icon /></span>
             <p className="mt-4 font-semibold">{q ? "No matches" : `No ${props.title.toLowerCase()} yet`}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{q ? "Try a different search." : `Add your first ${props.singular.toLowerCase()} to get started.`}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{q ? "Try a different search." : props.emptyHint ?? `Add your first ${props.singular.toLowerCase()} to get started.`}</p>
             {!q && canWrite(role) && <Button variant="hero" className="mt-5" onClick={() => setCreating(true)}><Plus /> New {props.singular.toLowerCase()}</Button>}
           </div>
         ) : (
