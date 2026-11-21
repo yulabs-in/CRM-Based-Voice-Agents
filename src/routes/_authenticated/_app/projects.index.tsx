@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/app/PageHeader";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { ImportDialog } from "@/components/app/ImportDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canWrite, useOrg } from "@/lib/org";
 import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";

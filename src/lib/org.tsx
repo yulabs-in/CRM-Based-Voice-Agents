@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import { supabase } from "@/lib/supabase";
+import type { Database } from "@/lib/supabase";
 
 export type OrgRole = Database["public"]["Enums"]["org_role"];
 export type Org = Database["public"]["Tables"]["organizations"]["Row"];

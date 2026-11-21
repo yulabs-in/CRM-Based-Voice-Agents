@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canWrite, useOrg } from "@/lib/org";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { startSarvamCall } from "@/lib/sarvam.functions";

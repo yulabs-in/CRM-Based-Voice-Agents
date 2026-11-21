@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/app/StatusBadge";
 import { CampaignBuilder } from "@/components/app/CampaignBuilder";
 import { CampaignControls, outsideCallingHours } from "@/components/app/CampaignControls";
 import { KpiGrid } from "@/components/app/charts";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { canWrite, useOrg } from "@/lib/org";
 import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";

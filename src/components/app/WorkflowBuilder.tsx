@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useOrg } from "@/lib/org";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { ACTIONS, EVENTS, FIELDS, OPERATORS, type Action, type ActionType, type AutomationEvent, type Condition } from "@/lib/automation";

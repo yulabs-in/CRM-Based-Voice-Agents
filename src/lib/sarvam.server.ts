@@ -1,6 +1,6 @@
 // Server-only Sarvam Voice Agents helpers. Import from server handlers only
 // (top-level from other *.server.ts files, or `await import(...)` inside handlers).
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { formatTranscript, toTranscriptTurns, type TranscriptTurn } from "@/lib/sarvam-call";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
