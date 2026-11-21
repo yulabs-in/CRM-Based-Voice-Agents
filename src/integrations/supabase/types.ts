@@ -1094,6 +1094,8 @@ export type Database = {
           sarvam_agent_id: string | null
           sarvam_agent_phone_number: string | null
           sarvam_app_version: number
+          agent_variables: Json
+          greeting_no_name: string | null
           sarvam_connection_id: string | null
           status: string
           updated_at: string
@@ -1112,6 +1114,8 @@ export type Database = {
           sarvam_agent_id?: string | null
           sarvam_agent_phone_number?: string | null
           sarvam_app_version?: number
+          agent_variables?: Json
+          greeting_no_name?: string | null
           sarvam_connection_id?: string | null
           status?: string
           updated_at?: string
@@ -1130,6 +1134,8 @@ export type Database = {
           sarvam_agent_id?: string | null
           sarvam_agent_phone_number?: string | null
           sarvam_app_version?: number
+          agent_variables?: Json
+          greeting_no_name?: string | null
           sarvam_connection_id?: string | null
           status?: string
           updated_at?: string

@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { DEFAULT_AGENT_VARIABLES } from "@/lib/sarvam-defaults";
 import { describeCondition, rulesMatch, type Condition } from "@/lib/automation";
 
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
@@ -64,7 +65,7 @@ export const scheduleCalls = createServerFn({ method: "POST" })
       project_id: data.projectId ?? null, contact_ids: data.contactIds?.length ? data.contactIds : null,
       starts_at: data.startsAt, allowed_start_time: data.allowedStartTime, allowed_end_time: data.allowedEndTime,
       allowed_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-      consent_confirmed: true, agent_variables: { customer_name: "full_name" }, max_retries: 1, retry_interval_minutes: 30,
+      consent_confirmed: true, agent_variables: DEFAULT_AGENT_VARIABLES, max_retries: 1, retry_interval_minutes: 30,
     }).select("id").single();
     if (error || !campaign) throw new Error(error?.message ?? "Could not schedule the calls");
     const { runCampaignLaunch } = await import("@/lib/campaigns.server");

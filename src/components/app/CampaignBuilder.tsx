@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrg } from "@/lib/org";
 import { humanize, asAnswers } from "@/lib/sarvam-call";
-import { BUILTIN_SOURCES, isValidVariableName, type VariableMap, type VariableSource } from "@/lib/campaign-vars";
+import { asVariableMap, BUILTIN_SOURCES, isValidVariableName, type VariableMap, type VariableSource } from "@/lib/campaign-vars";
 import { launchCampaign } from "@/lib/campaigns.functions";
+import { DEFAULT_AGENT_VARIABLES } from "@/lib/sarvam-defaults";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 type VariableRow = { name: string; source: VariableSource };
@@ -29,7 +30,9 @@ export function CampaignBuilder({ open, onOpenChange, projectId, onSaved }: Prop
     name: "", project_id: projectId ?? "", agent_id: "", starts_at: "", allowed_start_time: "09:00", allowed_end_time: "21:00",
     allowed_days: DAYS.slice(0, 6), timezone: org.timezone || "Asia/Kolkata", max_retries: 2, retry_interval_minutes: 60, attempts_per_second: 1, notes: "",
   });
-  const [variables, setVariables] = useState<VariableRow[]>([{ name: "customer_name", source: "full_name" }]);
+  const [variables, setVariables] = useState<VariableRow[]>(
+    Object.entries(DEFAULT_AGENT_VARIABLES).map(([name, source]) => ({ name, source: source as VariableSource })),
+  );
   const [consent, setConsent] = useState(false);
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [key]: value }));
 
@@ -41,7 +44,7 @@ export function CampaignBuilder({ open, onOpenChange, projectId, onSaved }: Prop
     queryFn: async () => {
       const [projects, agents] = await Promise.all([
         supabase.from("projects").select("id, name, contact_count").eq("organization_id", org.id).eq("status", "active").order("created_at", { ascending: false }),
-        supabase.from("voice_agents").select("id, name, sarvam_agent_id, sarvam_connection_id, sarvam_agent_phone_number").eq("organization_id", org.id).eq("status", "active").order("created_at"),
+        supabase.from("voice_agents").select("id, name, agent_variables, sarvam_agent_id, sarvam_connection_id, sarvam_agent_phone_number").eq("organization_id", org.id).eq("status", "active").order("created_at"),
       ]);
       if (projects.error) throw projects.error;
       if (agents.error) throw agents.error;
@@ -66,6 +69,11 @@ export function CampaignBuilder({ open, onOpenChange, projectId, onSaved }: Prop
   }, [options.data, form.agent_id]);
 
   const agent = options.data?.agents.find((item) => item.id === form.agent_id);
+  // The variable list comes from the voice agent in the database, so campaigns match the agent's script.
+  useEffect(() => {
+    const map = asVariableMap(agent?.agent_variables);
+    if (Object.keys(map).length) setVariables(Object.entries(map).map(([name, source]) => ({ name, source })));
+  }, [agent?.id]);
   const agentReady = Boolean(agent?.sarvam_agent_id && agent.sarvam_connection_id && agent.sarvam_agent_phone_number);
   const project = options.data?.projects.find((item) => item.id === form.project_id);
   const variableError = useMemo(() => {
@@ -163,7 +171,7 @@ export function CampaignBuilder({ open, onOpenChange, projectId, onSaved }: Prop
 
           <fieldset className="space-y-3 rounded-xl border p-4">
             <legend className="px-1 text-sm font-semibold">Agent variables</legend>
-            <p className="text-xs text-muted-foreground">Send contact details to the agent (e.g. so it can greet by name). Names must exactly match variables defined on your Sarvam agent — Sarvam rejects unknown ones. Remove all rows if your agent has none.</p>
+            <p className="text-xs text-muted-foreground">Send lead details to the agent. Filled from the selected voice agent (Voice Agents page) so they match its script — file columns like Call Track (A = new enquiry, B = renewal), Interest, Current Insurer, Renewal Date, Vehicle Model and Family Size are picked up automatically; empty ones are skipped by the agent. Names must exactly match variables defined on your Sarvam agent — Sarvam rejects unknown ones. Remove all rows if your agent has none.</p>
             {variables.map((row, index) => (
               <div key={index} className="flex items-center gap-2">
                 <Input aria-label="Agent variable name" value={row.name} placeholder="variable_name" className="rounded-xl font-mono text-sm"
