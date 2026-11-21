@@ -24,7 +24,7 @@ export const Route = createFileRoute("/api/public/sarvam-webhook")({
         if (diff !== 0) return new Response("Unauthorized", { status: 401 });
         const parsed = Body.safeParse(await request.json().catch(() => null));
         if (!parsed.success) return Response.json({ error: "Invalid payload" }, { status: 400 });
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/supabase-admin.server");
         const d = parsed.data;
         const { data: existing } = await supabaseAdmin.from("calls").select("id").eq("organization_id", d.organization_id).eq("external_id", d.external_id).maybeSingle();
         const res = existing

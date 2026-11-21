@@ -1,5 +1,5 @@
 // Server-only automation engine. Runs active workflows for an event with the service client.
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers } from "@/lib/sarvam-call";
 import { callbackTime, rulesMatch, type Action, type AutomationEvent, type Condition, type EventFacts } from "@/lib/automation";
 

@@ -1,9 +1,10 @@
+import { asApp } from "@/lib/supabase";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { fillGreeting, greetingValues } from "@/lib/campaign-vars";
@@ -12,7 +13,7 @@ import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: string };
 
 async function requireRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string, roles: string[], message: string) {
-  const { data, error } = await context.supabase.from("memberships").select("role")
+  const { data, error } = await asApp(context.supabase).from("memberships").select("role")
     .eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   if (error || !data || !roles.includes(data.role)) throw new Error(message);
   return data.role as string;
@@ -27,7 +28,7 @@ export const saveSarvamWorkspace = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await requireRole(context, data.organizationId, ["owner", "admin"], "Only organization owners and admins can update Sarvam settings");
-    const { error } = await context.supabase.from("organizations").update({
+    const { error } = await asApp(context.supabase).from("organizations").update({
       sarvam_organization_id: data.sarvamOrganizationId,
       sarvam_workspace_id: data.sarvamWorkspaceId,
     }).eq("id", data.organizationId);
@@ -42,7 +43,7 @@ export const checkSarvamConnection = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { sarvamJson, workspacePath, SarvamError } = await import("@/lib/sarvam.server");
     if (!process.env["SARVAM_API_KEY"]) return { connected: false, message: "No Sarvam API key on the server yet (SARVAM_API_KEY)" };
-    const { data: org } = await context.supabase.from("organizations")
+    const { data: org } = await asApp(context.supabase).from("organizations")
       .select("sarvam_organization_id, sarvam_workspace_id").eq("id", data.organizationId).maybeSingle();
     const sarvamOrg = org?.sarvam_organization_id?.trim() || SARVAM_DEFAULTS.organizationId;
     const workspace = org?.sarvam_workspace_id?.trim() || SARVAM_DEFAULTS.workspaceId;
@@ -73,7 +74,7 @@ export const startSarvamCall = createServerFn({ method: "POST" })
     if (!phone) throw new Error("Enter a valid mobile number (e.g. 98765 43210 or +91…)");
     await requireRole(context, data.organizationId, ["owner", "admin", "sales_manager", "sales_rep", "voice_manager", "support_agent"], "You don't have permission to place calls");
 
-    const { data: agent, error: agentError } = await context.supabase.from("voice_agents")
+    const { data: agent, error: agentError } = await asApp(context.supabase).from("voice_agents")
       .select("id, name, status, greeting, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")
       .eq("id", data.agentId).eq("organization_id", data.organizationId).single();
     if (agentError || !agent) throw new Error("Voice agent not found in this organization");
@@ -92,7 +93,7 @@ export const startSarvamCall = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Sarvam is not configured");
     }
 
-    const { data: active } = await context.supabase.from("calls").select("id")
+    const { data: active } = await asApp(context.supabase).from("calls").select("id")
       .eq("organization_id", data.organizationId).eq("phone", phone).in("status", ["queued", "in_progress"])
       .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()).limit(1).maybeSingle();
     if (active) throw new Error("A call to this number is already in progress");
@@ -100,14 +101,14 @@ export const startSarvamCall = createServerFn({ method: "POST" })
     let contactId = data.contactId ?? null;
     // Only send customer_name when the user typed it: Sarvam rejects (422) variables the agent doesn't define.
     const customerName = data.customerName?.trim() ?? "";
-    const contactQuery = context.supabase.from("contacts").select("id, first_name, last_name, email, city, job_title, custom_fields").eq("organization_id", data.organizationId);
+    const contactQuery = asApp(context.supabase).from("contacts").select("id, first_name, last_name, email, city, job_title, custom_fields").eq("organization_id", data.organizationId);
     const { data: contact } = await (contactId ? contactQuery.eq("id", contactId) : contactQuery.eq("phone", phone)).limit(1).maybeSingle();
     contactId = contact?.id ?? contactId;
     // The opening line is sent already filled in, so the agent never reads "{customer_name}" aloud.
     const greeting = fillGreeting(agent.greeting, greetingValues(contact ?? null, customerName ? { customer_name: customerName, full_name: customerName } : {}));
 
     const callbackToken = makeCallbackToken();
-    const { data: call, error: insertError } = await context.supabase.from("calls").insert({
+    const { data: call, error: insertError } = await asApp(context.supabase).from("calls").insert({
       organization_id: data.organizationId,
       agent_id: agent.id,
       contact_id: contactId,
@@ -136,14 +137,14 @@ export const startSarvamCall = createServerFn({ method: "POST" })
         },
       });
       if (!payload.attempt_id) throw new SarvamError("Sarvam did not return a call attempt ID");
-      await context.supabase.from("calls").update({ external_id: payload.attempt_id, status: "in_progress", sarvam_status: "dialing" }).eq("id", call.id);
+      await asApp(context.supabase).from("calls").update({ external_id: payload.attempt_id, status: "in_progress", sarvam_status: "dialing" }).eq("id", call.id);
       return { callId: call.id, attemptId: payload.attempt_id, phone };
     } catch (error) {
       let reason = error instanceof Error ? error.message : "Could not reach Sarvam";
       if (error instanceof SarvamError && error.status === 422 && customerName) {
         reason += " — if your Sarvam agent has no customer_name variable, leave Customer name empty and try again.";
       }
-      await context.supabase.from("calls").update({ status: "failed", sarvam_status: "failed", sarvam_failure_reason: reason }).eq("id", call.id);
+      await asApp(context.supabase).from("calls").update({ status: "failed", sarvam_status: "failed", sarvam_failure_reason: reason }).eq("id", call.id);
       throw new Error(reason);
     }
   });

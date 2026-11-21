@@ -1,3 +1,4 @@
+import { asApp } from "@/lib/supabase";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -7,12 +8,12 @@ export const getCallRecordingPlaybackUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ callId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call, error } = await context.supabase.from("calls")
+    const { data: call, error } = await asApp(context.supabase).from("calls")
       .select("id, organization_id, recording_path").eq("id", data.callId).maybeSingle();
     if (error || !call?.recording_path || !call.recording_path.startsWith(`${call.organization_id}/`)) {
       throw new Error("Recording not found");
     }
-    const { data: signed, error: signingError } = await context.supabase.storage
+    const { data: signed, error: signingError } = await asApp(context.supabase).storage
       .from("call-recordings").createSignedUrl(call.recording_path, 60 * 60);
     if (signingError || !signed) throw new Error("Could not open this recording");
     return { url: signed.signedUrl };
@@ -23,9 +24,9 @@ export const refreshCallRecording = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ callId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call, error } = await context.supabase.from("calls").select("id, organization_id").eq("id", data.callId).maybeSingle();
+    const { data: call, error } = await asApp(context.supabase).from("calls").select("id, organization_id").eq("id", data.callId).maybeSingle();
     if (error || !call) throw new Error("Call not found");
-    const { data: allowed } = await context.supabase.rpc("can_write_org", { _org: call.organization_id });
+    const { data: allowed } = await asApp(context.supabase).rpc("can_write_org", { _org: call.organization_id });
     if (!allowed) throw new Error("You don't have permission to update this call");
     const { enrichCallFromSarvam } = await import("@/lib/sarvam.server");
     try {
@@ -40,7 +41,7 @@ export const fetchMissingCallRecordings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ organizationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: allowed } = await context.supabase.rpc("can_write_org", { _org: data.organizationId });
+    const { data: allowed } = await asApp(context.supabase).rpc("can_write_org", { _org: data.organizationId });
     if (!allowed) return { checked: 0, saved: 0 };
     if (!process.env["SARVAM_API_KEY"]) return { checked: 0, saved: 0 };
     const { fetchMissingRecordings } = await import("@/lib/sarvam.server");

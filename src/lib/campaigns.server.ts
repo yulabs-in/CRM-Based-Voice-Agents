@@ -1,13 +1,14 @@
+import { asApp } from "@/lib/supabase";
 // Server-only campaign launch, shared by the "Launch" button (user's RLS client) and automations (service client).
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 import { chunk, cohortName, fillGreeting, greetingValues, resolveVariables, type CohortContact, type VariableMap } from "@/lib/campaign-vars";
 
 async function loadCampaign(context: { supabase: SupabaseClient<Database> }, campaignId: string) {
-  const { data, error } = await context.supabase.from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
+  const { data, error } = await asApp(context.supabase).from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
   if (error || !data) throw new Error("Campaign not found");
   return data;
 }

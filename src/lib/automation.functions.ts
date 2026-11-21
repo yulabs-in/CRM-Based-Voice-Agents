@@ -1,15 +1,16 @@
+import { asApp } from "@/lib/supabase";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/lib/supabase";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { describeCondition, rulesMatch, type Condition } from "@/lib/automation";
 
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
 
 async function roleIn(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string, roles: string[]) {
-  const { data } = await context.supabase.from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
+  const { data } = await asApp(context.supabase).from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   return !!data && roles.includes(data.role);
 }
 
@@ -18,7 +19,7 @@ export const runImportAutomations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ organizationId: z.string().uuid(), projectId: z.string().uuid(), contactIds: z.array(z.string().uuid()).max(50000) }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: allowed } = await context.supabase.rpc("can_write_org", { _org: data.organizationId });
+    const { data: allowed } = await asApp(context.supabase).rpc("can_write_org", { _org: data.organizationId });
     if (!allowed || !data.contactIds.length) return { ran: 0 };
     const { runImportAutomations: run } = await import("@/lib/automation.server");
     return run(data.organizationId, data.projectId, data.contactIds);
@@ -33,7 +34,7 @@ export const testWorkflowOnCall = createServerFn({ method: "POST" })
     match: z.enum(["all", "any"]),
   }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call } = await context.supabase.from("calls").select("status, sentiment, outcome, duration_seconds, answers").eq("id", data.callId).maybeSingle();
+    const { data: call } = await asApp(context.supabase).from("calls").select("status, sentiment, outcome, duration_seconds, answers").eq("id", data.callId).maybeSingle();
     if (!call) throw new Error("Call not found");
     const conditions = data.conditions as Condition[];
     const { conditionMatches } = await import("@/lib/automation");
@@ -59,7 +60,7 @@ export const scheduleCalls = createServerFn({ method: "POST" })
   }).refine((value) => value.projectId || value.contactIds?.length, "Choose contacts or a project").parse(input))
   .handler(async ({ data, context }) => {
     if (!(await roleIn(context, data.organizationId, CAMPAIGN_ROLES))) throw new Error("Only owners, admins, sales managers and voice managers can schedule calls");
-    const { data: campaign, error } = await context.supabase.from("call_campaigns").insert({
+    const { data: campaign, error } = await asApp(context.supabase).from("call_campaigns").insert({
       organization_id: data.organizationId, name: data.name, agent_id: data.agentId, source: "scheduled", status: "draft",
       project_id: data.projectId ?? null, contact_ids: data.contactIds?.length ? data.contactIds : null,
       starts_at: data.startsAt, allowed_start_time: data.allowedStartTime, allowed_end_time: data.allowedEndTime,
@@ -69,7 +70,7 @@ export const scheduleCalls = createServerFn({ method: "POST" })
     if (error || !campaign) throw new Error(error?.message ?? "Could not schedule the calls");
     const { runCampaignLaunch } = await import("@/lib/campaigns.server");
     try {
-      const result = await runCampaignLaunch(context.supabase, campaign.id, new URL(getRequest().url).origin);
+      const result = await runCampaignLaunch(asApp(context.supabase), campaign.id, new URL(getRequest().url).origin);
       return { campaignId: campaign.id, contacts: result.contacts };
     } catch (launchError) {
       throw new Error(launchError instanceof Error ? launchError.message : "Could not schedule on Sarvam");

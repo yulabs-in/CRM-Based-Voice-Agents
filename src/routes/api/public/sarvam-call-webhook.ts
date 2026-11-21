@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
 
         const metadata = body.data.webhook_config?.metadata;
         if (!metadata) return new Response("Unauthorized", { status: 401 });
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin } = await import("@/lib/supabase-admin.server");
         const { data: call, error: lookupError } = await supabaseAdmin.from("calls")
           .select("id, organization_id, webhook_token_hash, contact_id")
           .eq("id", metadata.call_id).maybeSingle();

@@ -1,3 +1,4 @@
+import { asApp } from "@/lib/supabase";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -11,7 +12,7 @@ export const analyzeCall = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ callId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: call, error } = await context.supabase.from("calls").select("id, answers, transcript").eq("id", data.callId).single();
+    const { data: call, error } = await asApp(context.supabase).from("calls").select("id, answers, transcript").eq("id", data.callId).single();
     if (error || !call) throw new Error("Call not found");
     const answers = asAnswers(call.answers);
     if (!Object.keys(answers).length) {
@@ -20,7 +21,7 @@ export const analyzeCall = createServerFn({ method: "POST" })
         : "This call has no answers or transcript yet");
     }
     const insight = summarizeAnswers(answers);
-    const { error: updateError } = await context.supabase.from("calls")
+    const { error: updateError } = await asApp(context.supabase).from("calls")
       .update({ summary: insight.summary, sentiment: insight.sentiment, outcome: insight.outcome }).eq("id", call.id);
     if (updateError) throw new Error(updateError.message);
     return insight;
