@@ -1,0 +1,10 @@
+# Netlify (free tier) — TanStack Start SSR via Nitro's netlify preset.
+# Server secrets (SUPABASE_SERVICE_ROLE_KEY, SARVAM_API_KEY, PUBLIC_APP_URL) live in
+# Netlify → Site configuration → Environment variables, never in this file.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NITRO_PRESET = "netlify"
+  NODE_VERSION = "22"

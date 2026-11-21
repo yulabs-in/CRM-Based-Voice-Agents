@@ -45,9 +45,9 @@ export function SupportCallTest() {
     onSuccess: (result) => {
       setAttemptId(result.attemptId);
       setConsentConfirmed(false);
-      toast.success("Sarvam is placing the call — results appear in Call History", { description: `Opening line: “${result.greeting}”` });
-      if (result.sharedBy?.length) toast.warning(`${result.sharedBy.length} contacts share this number (${result.sharedBy.join(", ")}), so the agent won't guess a name. Type the name above or fix the duplicates.`);
+      // No pop-ups on success: the call appears in Live Calls / Call History on its own. Errors still show.
       void queryClient.invalidateQueries({ queryKey: ["calls"] });
+      void queryClient.invalidateQueries({ queryKey: ["live"] });
     },
     onError: (error) => toast.error(error.message),
   });
@@ -112,7 +112,7 @@ export function SupportCallTest() {
         <p className="border-t pt-3 text-sm text-warning">Add the Sarvam agent ID, telephony connection ID, and connected caller number below before calling.</p>
       )}
       {canWrite(role) && <SarvamSetupForm agent={selectedAgent} />}
-      {attemptId && <p role="status" className="text-sm text-success">Call request accepted · {attemptId}</p>}
+      {attemptId && <p role="status" className="text-sm text-success">Call placed — follow it in Live Calls</p>}
     </section>
   );
 }

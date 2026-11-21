@@ -62,10 +62,11 @@ function describeError(status: number, body: unknown): string {
   const message = sarvamErrorDetails(body);
   if (status === 401) {
     const details = String((body as { error?: { data?: { details?: string } } } | null)?.error?.data?.details ?? "");
-    // Platform keys (sk_…, for api.sarvam.ai speech/text APIs) are not accepted by the Voice Agents API.
-    return /format/i.test(details) || sarvamApiKey().startsWith("sk_")
-      ? "This is a Sarvam platform API key (sk_…). Calls need a Voice Agents workspace API key — create one in Sarvam Voice Agents (Samvaad) → Settings → API keys and set it as SARVAM_API_KEY."
-      : "Sarvam rejected the API key";
+    // Both platform keys and Voice Agents keys start with "sk_", so the prefix proves nothing — only Sarvam's own reason does.
+    if (/format/i.test(details)) {
+      return "Sarvam says this isn't a Voice Agents key. Use the workspace key from Sarvam Voice Agents (Samvaad) → Settings → API keys as SARVAM_API_KEY.";
+    }
+    return `Sarvam rejected SARVAM_API_KEY (HTTP 401). Check the value on this server is the full Voice Agents workspace key${details ? ` — Sarvam says: ${details.slice(0, 200)}` : ""}.`;
   }
   if (status === 403) return "This Sarvam API key has no access to that organization or workspace";
   if (status === 404) return "Sarvam could not find that organization, workspace, agent, or campaign";
