@@ -15,4 +15,5 @@
 - [ ] Optional LLM summaries for calls without agent output variables
 - [ ] Phase 8: platform admin, usage/subscriptions, audit logs
 - [ ] Phase 9: QA, accessibility, performance
-- [ ] Use latest GitHub code/database; update Sarvam Voice Agents key
+- [x] Latest GitHub code in place; Sarvam key + PUBLIC_APP_URL saved
+- [ ] Server admin access to user's own database — blocked: service key cannot be stored here (reserved name)
