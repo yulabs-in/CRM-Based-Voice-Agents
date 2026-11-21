@@ -71,3 +71,30 @@ describe("personalised greeting", async () => {
     expect(fillGreeting("Hello {customer_name}", greetingValues(null, { customer_name: "Rohith" }))).toBe("Hello Rohith");
   });
 });
+
+describe("greeting and duplicate-number safety", () => {
+  it("always returns a finished opening line", async () => {
+    const { openingLine, NEUTRAL_GREETING } = await import("@/lib/campaign-vars");
+    expect(openingLine("Hello, am I speaking with {customer_name}?", { customer_name: "Upender Daram" })).toBe("Hello, am I speaking with Upender Daram?");
+    expect(openingLine("Hello, am I speaking with {customer_name}?", {})).toBe(NEUTRAL_GREETING);
+    expect(openingLine(null, {})).toBe(NEUTRAL_GREETING);
+    expect(openingLine("Hello {customer_name}", {}, "Hello sir, are you interested in health insurance?")).toBe("Hello sir, are you interested in health insurance?");
+    expect(openingLine("Hello {customer_name}", {}, "Hello {customer_name}, are you interested?")).toBe("Hello, are you interested?");
+  });
+
+  it("matches one number across formats and refuses to guess between different people", async () => {
+    const { phoneKey, pickContactForPhone } = await import("@/lib/campaign-vars");
+    expect(phoneKey("+91 80196 28820")).toBe(phoneKey("08019628820"));
+    const yash = { first_name: "Yashwanth", last_name: null };
+    expect(pickContactForPhone([yash])).toBe(yash);
+    expect(pickContactForPhone([yash, { first_name: "yashwanth", last_name: null }])).toBe(yash);
+    expect(pickContactForPhone([yash, { first_name: "Upender", last_name: "Daram" }])).toBeNull();
+    expect(pickContactForPhone([])).toBeNull();
+  });
+
+  it("reads agent variables stored on a voice agent", async () => {
+    const { asVariableMap } = await import("@/lib/campaign-vars");
+    expect(asVariableMap({ customer_name: "full_name", call_track: "custom.call_track", "bad name": "city", n: 5 })).toEqual({ customer_name: "full_name", call_track: "custom.call_track" });
+    expect(asVariableMap(null)).toEqual({});
+  });
+});

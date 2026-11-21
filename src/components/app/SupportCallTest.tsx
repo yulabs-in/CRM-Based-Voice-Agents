@@ -45,7 +45,8 @@ export function SupportCallTest() {
     onSuccess: (result) => {
       setAttemptId(result.attemptId);
       setConsentConfirmed(false);
-      toast.success("Sarvam is placing the call — results appear in Call History");
+      toast.success("Sarvam is placing the call — results appear in Call History", { description: `Opening line: “${result.greeting}”` });
+      if (result.sharedBy?.length) toast.warning(`${result.sharedBy.length} contacts share this number (${result.sharedBy.join(", ")}), so the agent won't guess a name. Type the name above or fix the duplicates.`);
       void queryClient.invalidateQueries({ queryKey: ["calls"] });
     },
     onError: (error) => toast.error(error.message),

@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/app/StatusBadge";
 import { pageHead, opts, fmtDuration } from "@/lib/seo";
 import { shortDate } from "@/lib/format";
 import { DEFAULT_AGENT } from "@/lib/sarvam-defaults";
+import { asVariableMap } from "@/lib/campaign-vars";
 
 export const Route = createFileRoute("/_authenticated/_app/voice-agents")({
   head: () => pageHead("Voice Agents", "Configure Sarvam AI voice agents for your calls."),
@@ -28,13 +29,18 @@ function Page() {
         { key: "sarvam_connection_id", label: "Telephony connection ID" },
         { key: "sarvam_agent_phone_number", label: "Connected caller number" },
         { key: "status", label: "Status", type: "select", options: opts(["active", "inactive"]) },
-        { key: "greeting", label: "Opening line (sent per call — use {customer_name}, {first_name}, {city} or any imported column like {renewal_date})", type: "textarea", full: true }, { key: "instructions", label: "Instructions", type: "textarea", full: true },
+        { key: "greeting", label: "Opening line (sent per call — use {customer_name}, {first_name}, {city} or any imported column like {renewal_date})", type: "textarea", full: true },
+        { key: "greeting_no_name", label: "Opening line when the name is unknown (e.g. Hello sir, are you interested in…)", type: "textarea", full: true }, { key: "instructions", label: "Instructions", type: "textarea", full: true },
       ]}
       defaults={{ language: DEFAULT_AGENT.language, status: "active", purpose: "sales", sarvam_app_version: DEFAULT_AGENT.sarvam_app_version, sarvam_agent_id: DEFAULT_AGENT.sarvam_agent_id, sarvam_connection_id: DEFAULT_AGENT.sarvam_connection_id, sarvam_agent_phone_number: DEFAULT_AGENT.sarvam_agent_phone_number }}
       columns={[
         { key: "name", label: "Agent", render: (r) => <div><p className="font-semibold">{String(r.name)}</p><p className="text-xs text-muted-foreground">{String(r.purpose ?? "")}</p></div> },
         { key: "language", label: "Language" }, { key: "voice", label: "Voice" }, { key: "sarvam_agent_id", label: "Sarvam ID" },
         { key: "sarvam_connection_id", label: "Telephony connection" },
+        { key: "agent_variables", label: "Script variables", render: (r) => {
+          const names = Object.keys(asVariableMap(r.agent_variables));
+          return names.length ? <div className="flex max-w-xs flex-wrap gap-1">{names.map((name) => <code key={name} className="rounded bg-muted px-1.5 py-0.5 text-[11px]">{name}</code>)}</div> : <span className="text-xs text-muted-foreground">none</span>;
+        } },
         { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
       ]}
     />

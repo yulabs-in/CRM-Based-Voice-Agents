@@ -85,7 +85,7 @@ export function extractAnswers(
 }
 
 const OUTCOME_KEYS = ["disposition", "outcome", "call_outcome", "result", "interest", "interested", "status"];
-const NEGATIVE = /\b(no|not interested|declined|refused|dnd|do not call|wrong number|wrong person|negative|cold|unqualified|false)\b/i;
+const NEGATIVE = /\b(no|not interested|already renewed|renewed elsewhere|already bought|bought elsewhere|declined|refused|dnd|do not call|wrong number|wrong person|negative|cold|unqualified|false)\b/i;
 const POSITIVE = /\b(yes|interested|agreed|confirmed|paid|will pay|callback|call back|booked|positive|hot|qualified|true)\b/i;
 const SUMMARY_KEYS = ["call_summary", "summary", "conversation_summary"];
 

@@ -1,6 +1,7 @@
 // Server-only automation engine. Runs active workflows for an event with the service client.
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { asAnswers } from "@/lib/sarvam-call";
+import { DEFAULT_AGENT_VARIABLES } from "@/lib/sarvam-defaults";
 import { callbackTime, rulesMatch, type Action, type AutomationEvent, type Condition, type EventFacts } from "@/lib/automation";
 
 export type AutomationContext = {
@@ -118,7 +119,7 @@ async function scheduleCallback(org: string, contactIds: string[], action: Extra
     status: "draft", starts_at: when.toISOString(), consent_confirmed: true,
     allowed_start_time: source?.allowed_start_time ?? "09:00", allowed_end_time: source?.allowed_end_time ?? "21:00",
     allowed_days: source?.allowed_days ?? ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    timezone: source?.timezone ?? "Asia/Kolkata", agent_variables: source?.agent_variables ?? { customer_name: "full_name" },
+    timezone: source?.timezone ?? "Asia/Kolkata", agent_variables: source?.agent_variables ?? DEFAULT_AGENT_VARIABLES,
     max_retries: source?.max_retries ?? 1, retry_interval_minutes: source?.retry_interval_minutes ?? 60, target_count: contactIds.length,
     notes: ctx.callId ? `Scheduled by automation after call ${ctx.callId}` : "Scheduled by automation",
   }).select("id").single();
