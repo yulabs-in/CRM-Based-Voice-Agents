@@ -11,7 +11,7 @@ const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converte
 /** People who said yes on a call (or were marked so by hand). */
 const INTERESTED = new Set(["qualified", "converted"]);
 /** Extra details the agent collected, shown under "Interested in". */
-const DETAIL_KEYS = ["vehicle_model", "family_size", "current_insurer", "renewal_date"];
+const DETAIL_KEYS = ["vehicle_model", "family_size", "current_insurer", "renewal_date", "trading_style", "experience_level", "consultation_mode", "preferred_language"];
 
 type Row = Record<string, unknown> & { last_call?: { answers?: unknown; summary?: string | null; created_at?: string } | null };
 
@@ -20,9 +20,9 @@ export const Route = createFileRoute("/_authenticated/_app/leads")({
   head: () => ({
     meta: [
       { title: "Leads — Yulabs CRM" },
-      { name: "description", content: "People interested in insurance, straight from your AI calls." },
+      { name: "description", content: "People interested in your services, straight from your AI calls." },
       { property: "og:title", content: "Leads — Yulabs CRM" },
-      { property: "og:description", content: "People interested in insurance, straight from your AI calls." },
+      { property: "og:description", content: "People interested in your services, straight from your AI calls." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -40,7 +40,7 @@ function Page() {
 
   return (
     <EntityPage table="leads" title="Leads" singular="Lead" icon={UserPlus}
-      description="People interested in insurance — added and updated from what they said on your AI calls."
+      description="People interested in your services — added and updated from what they said on your AI calls."
       select="*, last_call:calls!leads_last_call_id_fkey(answers, summary, created_at)"
       order="updated_at"
       rowFilter={rowFilter}
@@ -74,12 +74,12 @@ function Page() {
         ) },
         { key: "interest", label: "Interested in", render: (r) => {
           const a = answersOf(r as Row);
-          const product = a.insurance_type || a.interest;
+          const product = a.insurance_type ? `${humanize(a.insurance_type)} insurance` : a.service_interest || a.market_interest || a.interest;
           const details = DETAIL_KEYS.filter((k) => a[k]).map((k) => `${humanize(k)}: ${a[k]}`);
           if (!product && !details.length) return <span className="text-muted-foreground">—</span>;
           return (
             <div className="max-w-[14rem] space-y-1">
-              {product && <span className="inline-flex rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">{humanize(product)} insurance</span>}
+              {product && <span className="inline-flex rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">{humanize(product)}</span>}
               {details.length > 0 && <p className="text-xs text-muted-foreground">{details.join(" · ")}</p>}
             </div>
           );

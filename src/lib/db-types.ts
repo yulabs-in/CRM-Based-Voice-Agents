@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      cron_state: {
+        Row: {
+          id: number
+          last_run_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          id?: number
+          last_run_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          id?: number
+          last_run_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
+      }
       call_campaigns: {
         Row: {
           contact_ids: string[] | null
@@ -947,6 +965,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          job_title: string | null
+          phone: string | null
+          preferred_language: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -955,6 +976,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          job_title?: string | null
+          phone?: string | null
+          preferred_language?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -963,6 +987,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          job_title?: string | null
+          phone?: string | null
+          preferred_language?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null

@@ -177,10 +177,17 @@ export function CampaignBuilder({ open, onOpenChange, projectId, onSaved }: Prop
                 <Input aria-label="Agent variable name" value={row.name} placeholder="variable_name" className="rounded-xl font-mono text-sm"
                   onChange={(event) => setVariables((current) => current.map((item, position) => (position === index ? { ...item, name: event.target.value } : item)))} />
                 <span className="text-muted-foreground">←</span>
-                <Select value={row.source} onValueChange={(value) => setVariables((current) => current.map((item, position) => (position === index ? { ...item, source: value as VariableSource } : item)))}>
-                  <SelectTrigger className="rounded-xl" aria-label="Contact field"><SelectValue /></SelectTrigger>
-                  <SelectContent>{sourceOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
-                </Select>
+                {row.source.startsWith("=") ? (
+                  // Fixed value set on the voice agent (company name, SEBI number…) — same on every call.
+                  <span className="flex h-9 w-full items-center truncate rounded-xl border bg-muted/40 px-3 text-sm text-muted-foreground" title={row.source.slice(1)}>
+                    Fixed: {row.source.slice(1) || "(empty)"}
+                  </span>
+                ) : (
+                  <Select value={row.source} onValueChange={(value) => setVariables((current) => current.map((item, position) => (position === index ? { ...item, source: value as VariableSource } : item)))}>
+                    <SelectTrigger className="rounded-xl" aria-label="Contact field"><SelectValue /></SelectTrigger>
+                    <SelectContent>{sourceOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                )}
                 <Button size="icon" variant="ghost" aria-label="Remove variable" onClick={() => setVariables((current) => current.filter((_, position) => position !== index))}><Trash2 /></Button>
               </div>
             ))}

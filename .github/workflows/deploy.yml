@@ -1,0 +1,45 @@
+name: Deploy
+
+# main → production (https://yulabs-crm-1122.netlify.app)
+# dev  → preview    (https://dev--yulabs-crm-1122.netlify.app)
+# Needs one repository secret: NETLIFY_AUTH_TOKEN (Netlify → User settings → Applications → Personal access tokens).
+# Server secrets (Supabase service role, Sarvam key) stay in Netlify's environment variables, never here.
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NETLIFY_SITE_ID: ba763ab7-fc79-4b40-b2ad-dac85760c2e3
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tests
+        run: npx vitest run
+      - name: Build
+        run: npm run build
+        env:
+          NITRO_PRESET: netlify
+      - name: Deploy production
+        if: github.ref_name == 'main'
+        run: npx netlify-cli@latest deploy --prod --dir dist --functions .netlify/functions-internal --site "$NETLIFY_SITE_ID" --message "main ${GITHUB_SHA::7}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      - name: Deploy dev preview
+        if: github.ref_name == 'dev'
+        run: npx netlify-cli@latest deploy --alias dev --dir dist --functions .netlify/functions-internal --site "$NETLIFY_SITE_ID" --message "dev ${GITHUB_SHA::7}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
