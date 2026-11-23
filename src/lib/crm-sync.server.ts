@@ -4,7 +4,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
-import { classifyCallOutcome, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
+import { classifyCallOutcome, isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
 
 type CallRow = {
   id: string; organization_id: string; contact_id: string | null; phone: string | null; status: string;
@@ -84,6 +84,15 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     const org = call.organization_id;
     const displayName = nameOf(contact) || contact.phone || "Lead";
 
+    // ---- Do not contact: block every future call to this person (campaigns skip inactive contacts).
+    if (isDoNotContact(verdict.label)) {
+      const { data: current } = await supabaseAdmin.from("contacts").select("tags").eq("id", contact.id).maybeSingle();
+      const tags = Array.isArray(current?.tags) ? (current.tags as string[]) : [];
+      await supabaseAdmin.from("contacts").update({
+        status: "inactive", tags: tags.includes("do-not-call") ? tags : [...tags, "do-not-call"], updated_at: now,
+      } as never).eq("id", contact.id);
+    }
+
     // ---- Lead
     const { data: leadRows } = await supabaseAdmin.from("leads").select("id, status, score, value, name")
       .eq("organization_id", org).eq("contact_id", contact.id).order("created_at", { ascending: false }).limit(1);
@@ -137,7 +146,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
           dealDetail = `Deal ${target.stage} → ${stage}`;
         } else dealDetail = `Deal stays ${target.stage}`;
       } else if (verdict.kind !== "negative" && !(alreadyWon && verdict.kind !== "won")) {
-        const product = answers.insurance_type || answers.product || answers.interest || "";
+        const product = answers.insurance_type || answers.service_interest || answers.market_interest || answers.product || answers.interest || "";
         const { data: created, error } = await supabaseAdmin.from("deals").insert({
           organization_id: org, contact_id: contact.id,
           title: `${displayName}${product ? ` — ${humanize(product)}` : " — AI call"}`.slice(0, 200),
@@ -165,6 +174,17 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         .like("title", "Follow up with %").order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (openTask) await supabaseAdmin.from("tasks").update(task as never).eq("id", openTask.id);
       else await supabaseAdmin.from("tasks").insert({ ...task, organization_id: org, status: "open", contact_id: contact.id, assignee_id: null, created_by: null } as never);
+    }
+
+    // ---- Escalation: a complaint, regulatory question or personal-advice request needs an authorised human.
+    const escalation = (answers.escalation_reason || "").trim();
+    if (escalation || /\bescalated\b/.test(verdict.label)) {
+      await supabaseAdmin.from("tasks").insert({
+        organization_id: org, title: `Escalation: ${displayName}${escalation ? ` — ${escalation}` : ""}`.slice(0, 200),
+        description: [escalation, call.summary].filter(Boolean).join("\n\n").slice(0, 2000) || null,
+        due_at: new Date(Date.now() + 4 * 3600 * 1000).toISOString(), priority: "high", status: "open",
+        contact_id: contact.id, deal_id: dealId, assignee_id: null, created_by: null,
+      } as never);
     }
 
     return { applied: true, verdict: verdict.kind, lead: leadDetail, deal: dealDetail, detail: `${leadDetail}; ${dealDetail}` };

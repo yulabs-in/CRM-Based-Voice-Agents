@@ -46,6 +46,7 @@ import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
 import { Route as AuthenticatedInviteTokenRouteImport } from './routes/_authenticated/invite.$token'
+import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron-sync'
 import { Route as ApiPublicSarvamCallWebhookRouteImport } from './routes/api/public/sarvam-call-webhook'
 import { Route as ApiPublicSarvamCampaignWebhookRouteImport } from './routes/api/public/sarvam-campaign-webhook'
 import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
@@ -261,6 +262,11 @@ const AuthenticatedInviteTokenRoute =
     path: '/invite/$token',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronSyncRoute = ApiPublicCronSyncRouteImport.update({
+  id: '/api/public/cron-sync',
+  path: '/api/public/cron-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSarvamCallWebhookRoute =
   ApiPublicSarvamCallWebhookRouteImport.update({
     id: '/api/public/sarvam-call-webhook',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/cron-sync': typeof ApiPublicCronSyncRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/cron-sync': typeof ApiPublicCronSyncRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
@@ -430,6 +438,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
   '/_authenticated/invite/$token': typeof AuthenticatedInviteTokenRoute
+  '/api/public/cron-sync': typeof ApiPublicCronSyncRoute
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/cron-sync'
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
@@ -520,6 +530,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/workflows'
     | '/invite/$token'
+    | '/api/public/cron-sync'
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
@@ -566,6 +577,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/whatsapp'
     | '/_authenticated/_app/workflows'
     | '/_authenticated/invite/$token'
+    | '/api/public/cron-sync'
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
@@ -580,6 +592,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicCronSyncRoute: typeof ApiPublicCronSyncRoute
   ApiPublicSarvamCallWebhookRoute: typeof ApiPublicSarvamCallWebhookRoute
   ApiPublicSarvamCampaignWebhookRoute: typeof ApiPublicSarvamCampaignWebhookRoute
   ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
@@ -846,6 +859,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInviteTokenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron-sync': {
+      id: '/api/public/cron-sync'
+      path: '/api/public/cron-sync'
+      fullPath: '/api/public/cron-sync'
+      preLoaderRoute: typeof ApiPublicCronSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sarvam-call-webhook': {
       id: '/api/public/sarvam-call-webhook'
       path: '/api/public/sarvam-call-webhook'
@@ -999,6 +1019,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicCronSyncRoute: ApiPublicCronSyncRoute,
   ApiPublicSarvamCallWebhookRoute: ApiPublicSarvamCallWebhookRoute,
   ApiPublicSarvamCampaignWebhookRoute: ApiPublicSarvamCampaignWebhookRoute,
   ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,

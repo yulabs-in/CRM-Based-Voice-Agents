@@ -1,7 +1,8 @@
 // Pure helpers for turning CRM contacts into Sarvam cohort users.
 import { asAnswers } from "@/lib/sarvam-call";
 
-export type VariableSource = "full_name" | "first_name" | "last_name" | "email" | "city" | "job_title" | `custom.${string}`;
+/** A contact field, a lead-file column (custom.x), or a fixed value sent on every call (=text). */
+export type VariableSource = "full_name" | "first_name" | "last_name" | "email" | "city" | "job_title" | `custom.${string}` | `=${string}`;
 export type VariableMap = Record<string, VariableSource>;
 
 export type CohortContact = {
@@ -18,7 +19,9 @@ export function resolveVariables(contact: CohortContact, map: VariableMap): Reco
   const out: Record<string, string> = {};
   for (const [variable, source] of Object.entries(map)) {
     let value: string | null | undefined;
-    if (source === "full_name") value = `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
+    // "=text" is a fixed value sent on every call (e.g. company name, SEBI registration number).
+    if (source.startsWith("=")) value = source.slice(1);
+    else if (source === "full_name") value = `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
     else if (source.startsWith("custom.")) value = custom[source.slice(7)];
     else value = contact[source as keyof Omit<CohortContact, "custom_fields">] as string | null;
     // Sarvam app_variables are string → string; send an empty string rather than dropping a declared variable.

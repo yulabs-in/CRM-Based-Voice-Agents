@@ -98,3 +98,12 @@ describe("greeting and duplicate-number safety", () => {
     expect(asVariableMap(null)).toEqual({});
   });
 });
+
+describe("fixed values", () => {
+  it("sends =text as-is on every call", async () => {
+    const { resolveVariables } = await import("@/lib/campaign-vars");
+    const contact = { first_name: "Ravi", last_name: null, email: null, city: null, job_title: null, custom_fields: {} };
+    expect(resolveVariables(contact, { company_name: "=Acme Research", sebi_registration_number: "=", customer_name: "full_name" }))
+      .toEqual({ company_name: "Acme Research", sebi_registration_number: "", customer_name: "Ravi" });
+  });
+});

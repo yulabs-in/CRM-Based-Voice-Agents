@@ -20,9 +20,9 @@ export const STAGE_RANK: Record<DealStage, number> = { qualification: 1, proposa
 const LEAD_RANK: Record<LeadStatus, number> = { new: 0, contacted: 1, unqualified: 1, qualified: 2, converted: 3 };
 
 const WON = /\b(converted|purchased|bought|paid|payment (done|made|received)|policy (issued|purchased)|sale|sold|closed won|won)\b/;
-const NEGATIVE = /\b(not interested|no interest|not looking|no need|wrong (number|person)|dnd|do not (call|disturb)|don ?t call|declined|refused|rejected|already (has|have|got|insured|renewed|bought|covered)|renewed elsewhere|bought elsewhere|unqualified|not eligible|cold|negative|lost|hostile|abusive)\b/;
+const NEGATIVE = /\b(not interested|no interest|not looking|no need|wrong (number|person)|dnd|do not (call|disturb|contact)|don ?t (call|contact)|opt(ed)? out|declined|refused|rejected|already (has|have|got|insured|renewed|bought|covered)|renewed elsewhere|bought elsewhere|unqualified|not eligible|cold|negative|lost|hostile|abusive)\b/;
 const NEGOTIATION = /\b(accepted|accept|agreed|agree|confirmed|ready to (buy|pay|proceed)|will pay|send payment link|payment link|negotiat\w*|price (discussion|negotiation))\b/;
-const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|site visit|send (details|options|plans?)|requested (a )?quote)\b/;
+const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|consultation|site visit|send (details|options|plans?)|requested (a )?quote)\b/;
 const POSITIVE = /\b(interested|callback|call back|follow ?up|hot|warm|qualified|positive|yes|keen|considering)\b/;
 
 const norm = (text: string) => text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
@@ -39,7 +39,8 @@ export function classifyCallOutcome(input: { status: string | null; outcome?: st
   const label = raw ? norm(raw) : "connected";
 
   // A "no_answer" disposition on a connected call (silent line, voicemail) is not a real conversation.
-  if (/\b(no answer|no response|unresponsive|voicemail|busy|disconnected|call dropped)\b/.test(text)) {
+  // Escalated: a human must follow up (complaint, regulatory or personal-advice question) — not a sales signal either way.
+  if (/\b(no answer|no response|unresponsive|voicemail|busy|disconnected|call dropped|escalated)\b/.test(text)) {
     return { kind: "neutral", label, leadStatus: "contacted", dealStage: null, probability: 0, score: 20 };
   }
   // Negative is checked before positive so "not interested" never reads as "interested".
@@ -86,4 +87,9 @@ export function spokenName(answers: unknown): string | null {
   const name = (a.customer_name || a.user_name || a.full_name || "").trim();
   if (!name || name.length > 60 || /[{}]|\d{3,}/.test(name)) return null;
   return name.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** The caller asked not to be contacted again (stronger than "not interested"): block future calls. */
+export function isDoNotContact(label: string | null | undefined): boolean {
+  return /\b(do not (call|contact|disturb)|don ?t (call|contact)|dnd|opt(ed)? out|never requested|unsubscribe)\b/.test((label ?? "").toLowerCase().replace(/[_-]+/g, " "));
 }
