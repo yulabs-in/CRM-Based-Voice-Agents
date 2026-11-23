@@ -432,6 +432,6 @@ git stash pop
 
 # Your issues in detail
 
-The sections below come from [`docs/issues/README.md`](../issues/README.md), which also explains how all the team's issues fit together (dependencies, shared files, migration numbering).
+Each section below is the full README of one of your issues (from `docs/issues/<number>-<name>/README.md`). [`docs/issues/README.md`](../issues/README.md) explains how all the team's issues fit together: dependencies, shared files, migration numbering.
 
 {{ISSUES}}
