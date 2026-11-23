@@ -30,14 +30,21 @@ export const Route = createFileRoute("/api/public/sarvam-call-webhook")({
         if (!metadata) return new Response("Unauthorized", { status: 401 });
         const { supabaseAdmin } = await import("@/lib/supabase-admin.server");
         const { data: call, error: lookupError } = await supabaseAdmin.from("calls")
-          .select("id, organization_id, webhook_token_hash, contact_id, status")
+          .select("id, organization_id, webhook_token_hash, contact_id, status, agent_id")
           .eq("id", metadata.call_id).maybeSingle();
         if (lookupError || !call || !isValidCallbackToken(await hashCallbackToken(metadata.callback_token), call.webhook_token_hash)) {
           return new Response("Unauthorized", { status: 401 });
         }
 
         const turns = toTranscriptTurns(body.data.interaction_transcript);
-        const answers = extractAnswers(body.data.final_agent_variables);
+        // Inputs we sent (company facts, lead-file fields) are not the customer's answers; the spoken name is.
+        const { data: agent } = call.agent_id
+          ? await supabaseAdmin.from("voice_agents").select("agent_variables").eq("id", call.agent_id).maybeSingle()
+          : { data: null };
+        const inputs = new Set(Object.keys((agent?.agent_variables as Record<string, unknown> | null) ?? {}));
+        for (const key of ["customer_name", "user_name"]) inputs.delete(key);
+        const finalVariables = Object.fromEntries(Object.entries(body.data.final_agent_variables ?? {}).filter(([key]) => !inputs.has(key)));
+        const answers = extractAnswers(finalVariables);
         const insight = summarizeAnswers(answers);
         const durationSeconds = Math.min(86400, Math.max(0, Math.floor(body.data.duration ?? 0)));
         const { error: updateError } = await supabaseAdmin.from("calls").update({

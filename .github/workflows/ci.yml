@@ -1,0 +1,29 @@
+name: CI
+
+# Every pull request into dev or main, and every push to them: tests + production build.
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npx vitest run
+      - name: Production build (Netlify preset)
+        run: npm run build
+        env:
+          NITRO_PRESET: netlify

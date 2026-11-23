@@ -10,6 +10,9 @@ import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { asVariableMap, nameVariables, greetingValues, openingLine, phoneKey, pickContactForPhone, resolveVariables } from "@/lib/campaign-vars";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
+// No CRM contact for this number: contact fields go out empty, fixed "=" values still apply.
+const NO_CONTACT = { first_name: "", last_name: null, email: null, city: null, job_title: null, custom_fields: {} };
+
 type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: string };
 
 async function requireRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string, roles: string[], message: string) {
@@ -93,6 +96,13 @@ export const startSarvamCall = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Sarvam is not configured");
     }
 
+    // Someone at this number asked not to be called again (or was marked inactive): never dial it.
+    const { data: blocked } = await asApp(context.supabase).from("contacts").select("phone")
+      .eq("organization_id", data.organizationId).eq("status", "inactive").ilike("phone", `%${phoneKey(phone)}`).limit(20);
+    if ((blocked ?? []).some((row) => phoneKey(row.phone) === phoneKey(phone))) {
+      throw new Error("This number is marked do-not-call. Reactivate the contact first if they've asked to be called.");
+    }
+
     const { data: active } = await asApp(context.supabase).from("calls").select("id")
       .eq("organization_id", data.organizationId).eq("phone", phone).in("status", ["queued", "in_progress"])
       .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString()).limit(1).maybeSingle();
@@ -119,7 +129,7 @@ export const startSarvamCall = createServerFn({ method: "POST" })
     // Variables come from the voice agent row in the database — the same list the Sarvam agent defines.
     const variableMap = asVariableMap(agent.agent_variables);
     const agentVariables = Object.keys(variableMap).length
-      ? { ...(contact ? resolveVariables(contact, variableMap) : Object.fromEntries(Object.keys(variableMap).map((name) => [name, ""]))), ...(customerName ? Object.fromEntries(nameVariables(variableMap).map((name) => [name, customerName])) : {}) }
+      ? { ...(resolveVariables(contact ?? NO_CONTACT, variableMap)), ...(customerName ? Object.fromEntries(nameVariables(variableMap).map((name) => [name, customerName])) : {}) }
       : customerName ? { customer_name: customerName } : {};
     // Always a finished sentence: the agent never reads "{customer_name}" aloud or greets a guessed name.
     const greeting = openingLine(agent.greeting, greetingValues(contact, extra), agent.greeting_no_name);

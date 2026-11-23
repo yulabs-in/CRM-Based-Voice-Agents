@@ -82,3 +82,20 @@ describe("spokenName", () => {
     expect(spokenName({})).toBeNull();
   });
 });
+
+describe("stock market agent dispositions", () => {
+  it("maps the advisory agent's outcomes", () => {
+    expect(call("consultation_booked")).toMatchObject({ kind: "positive", dealStage: "proposal" });
+    expect(call("follow_up_required")).toMatchObject({ kind: "positive", dealStage: "qualification" });
+    expect(call("do_not_contact")).toMatchObject({ kind: "negative", dealStage: "lost" });
+    expect(call("escalated")).toMatchObject({ kind: "neutral", dealStage: null });
+  });
+});
+
+describe("isDoNotContact", () => {
+  it("blocks only explicit opt-outs, not a plain no", async () => {
+    const { isDoNotContact } = await import("@/lib/crm-outcome");
+    for (const d of ["do_not_contact", "do not call", "dnd", "opted out", "never requested"]) expect(isDoNotContact(d), d).toBe(true);
+    for (const d of ["not_interested", "wrong_person", "interested", ""]) expect(isDoNotContact(d), d).toBe(false);
+  });
+});
