@@ -32,6 +32,7 @@ import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
 import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
+import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/_app/profile'
 import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
 import { Route as AuthenticatedAppSalesAnalyticsRouteImport } from './routes/_authenticated/_app/sales-analytics'
 import { Route as AuthenticatedAppScheduledActionsRouteImport } from './routes/_authenticated/_app/scheduled-actions'
@@ -188,6 +189,11 @@ const AuthenticatedAppPipelineRoute =
     path: '/pipeline',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppProfileRoute = AuthenticatedAppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppRulesRoute = AuthenticatedAppRulesRouteImport.update({
   id: '/rules',
   path: '/rules',
@@ -367,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
@@ -418,6 +425,7 @@ export interface FileRoutesByTo {
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
@@ -472,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/_app/profile': typeof AuthenticatedAppProfileRoute
   '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
   '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
@@ -525,6 +534,7 @@ export interface FileRouteTypes {
     | '/live-calls'
     | '/meetings'
     | '/pipeline'
+    | '/profile'
     | '/rules'
     | '/sales-analytics'
     | '/scheduled-actions'
@@ -576,6 +586,7 @@ export interface FileRouteTypes {
     | '/live-calls'
     | '/meetings'
     | '/pipeline'
+    | '/profile'
     | '/rules'
     | '/sales-analytics'
     | '/scheduled-actions'
@@ -629,6 +640,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/live-calls'
     | '/_authenticated/_app/meetings'
     | '/_authenticated/_app/pipeline'
+    | '/_authenticated/_app/profile'
     | '/_authenticated/_app/rules'
     | '/_authenticated/_app/sales-analytics'
     | '/_authenticated/_app/scheduled-actions'
@@ -835,6 +847,13 @@ declare module '@tanstack/react-router' {
       path: '/pipeline'
       fullPath: '/pipeline'
       preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/profile': {
+      id: '/_authenticated/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedAppProfileRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/rules': {
@@ -1054,6 +1073,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
   AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppProfileRoute: typeof AuthenticatedAppProfileRoute
   AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
   AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
   AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
@@ -1092,6 +1112,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
   AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppProfileRoute: AuthenticatedAppProfileRoute,
   AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
   AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
   AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,

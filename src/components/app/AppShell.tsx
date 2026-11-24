@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { Bell, ChevronsLeft, ChevronsRight, HelpCircle, LogOut, Menu, Plus, Search, Check, Building } from "lucide-react";
+import { Bell, ChevronsLeft, ChevronsRight, HelpCircle, LogOut, Menu, Plus, Search, Check, Building, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, useOrg } from "@/lib/org";
+import { initials, useProfile } from "@/lib/profile";
 import { Logo } from "./Logo";
 import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
@@ -58,7 +59,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [search, setSearch] = useState(false);
-  const { org, role, memberships, switchOrg, email } = useOrg();
+  const { org, role, memberships, switchOrg, email, userId } = useOrg();
+  const { data: me } = useProfile(userId);
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -147,10 +149,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </PopoverContent>
                   </Popover>
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="ml-1 grid size-9 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-primary-foreground">{email.slice(0, 1).toUpperCase()}</DropdownMenuTrigger>
+                    <DropdownMenuTrigger aria-label="Account menu" className="ml-1 grid size-9 place-items-center overflow-hidden rounded-full bg-gradient-primary text-sm font-bold text-primary-foreground">
+                      {me?.avatar_url ? <img src={me.avatar_url} alt="" className="size-full object-cover" /> : initials(me?.full_name, email)}
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-60">
-                      <DropdownMenuLabel className="font-normal"><p className="truncate font-semibold">{email}</p><p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p></DropdownMenuLabel>
+                      <DropdownMenuLabel className="font-normal"><p className="truncate font-semibold">{me?.full_name || email}</p><p className="truncate text-xs text-muted-foreground">{email}</p><p className="text-xs text-muted-foreground">{ROLE_LABELS[role]}</p></DropdownMenuLabel>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate({ to: "/profile" })}><User /> Profile</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>Settings</DropdownMenuItem>
                       <DropdownMenuItem onClick={signOut} className="text-destructive"><LogOut /> Sign out</DropdownMenuItem>
                     </DropdownMenuContent>
