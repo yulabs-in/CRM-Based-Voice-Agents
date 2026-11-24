@@ -31,6 +31,7 @@ import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_auth
 import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/_app/leads'
 import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
 import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
+import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/_app/notifications'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
 import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
 import { Route as AuthenticatedAppSalesAnalyticsRouteImport } from './routes/_authenticated/_app/sales-analytics'
@@ -180,6 +181,12 @@ const AuthenticatedAppMeetingsRoute =
   AuthenticatedAppMeetingsRouteImport.update({
     id: '/meetings',
     path: '/meetings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppNotificationsRoute =
+  AuthenticatedAppNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppPipelineRoute =
@@ -366,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/notifications': typeof AuthenticatedAppNotificationsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
@@ -417,6 +425,7 @@ export interface FileRoutesByTo {
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/notifications': typeof AuthenticatedAppNotificationsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
@@ -471,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/leads': typeof AuthenticatedAppLeadsRoute
   '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/_authenticated/_app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
   '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/live-calls'
     | '/meetings'
+    | '/notifications'
     | '/pipeline'
     | '/rules'
     | '/sales-analytics'
@@ -575,6 +586,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/live-calls'
     | '/meetings'
+    | '/notifications'
     | '/pipeline'
     | '/rules'
     | '/sales-analytics'
@@ -628,6 +640,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/leads'
     | '/_authenticated/_app/live-calls'
     | '/_authenticated/_app/meetings'
+    | '/_authenticated/_app/notifications'
     | '/_authenticated/_app/pipeline'
     | '/_authenticated/_app/rules'
     | '/_authenticated/_app/sales-analytics'
@@ -828,6 +841,13 @@ declare module '@tanstack/react-router' {
       path: '/meetings'
       fullPath: '/meetings'
       preLoaderRoute: typeof AuthenticatedAppMeetingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/notifications': {
+      id: '/_authenticated/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedAppNotificationsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/pipeline': {
@@ -1053,6 +1073,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
   AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
   AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
+  AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
   AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
@@ -1091,6 +1112,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
   AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
   AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
+  AuthenticatedAppNotificationsRoute: AuthenticatedAppNotificationsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
   AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
