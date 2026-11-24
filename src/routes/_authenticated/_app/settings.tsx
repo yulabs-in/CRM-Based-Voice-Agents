@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/app/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiKeysSection } from "@/components/app/ApiKeysSection";
 import { isAdmin, useOrg } from "@/lib/org";
 
 export const Route = createFileRoute("/_authenticated/_app/settings")({
@@ -41,15 +43,44 @@ function Settings() {
   }
   return (
     <div className="animate-rise space-y-6">
-      <PageHeader title="Settings" description={admin ? "Update your organization's details." : "Only owners and admins can change these."} />
-      <form onSubmit={save} className="max-w-2xl rounded-2xl border bg-card p-6 shadow-soft">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {FIELDS.map(([k, l]) => (
-            <div key={k} className="space-y-1.5"><Label htmlFor={k}>{l}</Label><Input id={k} disabled={!admin} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className="rounded-xl" /></div>
-          ))}
-        </div>
-        {admin && <Button variant="hero" className="mt-6" disabled={busy}>Save changes</Button>}
-      </form>
+      <PageHeader
+        title="Settings"
+        description="Manage your organization profile, preferences, and developer API keys."
+      />
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="api-keys">API & MCP Keys</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          <form onSubmit={save} className="max-w-2xl rounded-2xl border bg-card p-6 shadow-soft">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {FIELDS.map(([k, l]) => (
+                <div key={k} className="space-y-1.5">
+                  <Label htmlFor={k}>{l}</Label>
+                  <Input
+                    id={k}
+                    disabled={!admin}
+                    value={f[k]}
+                    onChange={(e) => setF({ ...f, [k]: e.target.value })}
+                    className="rounded-xl"
+                  />
+                </div>
+              ))}
+            </div>
+            {admin && (
+              <Button variant="hero" className="mt-6" disabled={busy}>
+                Save changes
+              </Button>
+            )}
+          </form>
+        </TabsContent>
+
+        <TabsContent value="api-keys">
+          <ApiKeysSection />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
