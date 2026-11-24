@@ -132,5 +132,14 @@ describe("API Pagination & Cross-Org Isolation", () => {
         })
       );
     });
+
+    it("rejects invalid phone numbers with a validation error", async () => {
+      await expect(
+        createOrUpdateContact(orgA, {
+          first_name: "Bad Phone",
+          phone: "123", // invalid mobile
+        })
+      ).rejects.toThrow(/Invalid phone number/);
+    });
   });
 });
