@@ -50,10 +50,16 @@ import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron-
 import { Route as ApiPublicSarvamCallWebhookRouteImport } from './routes/api/public/sarvam-call-webhook'
 import { Route as ApiPublicSarvamCampaignWebhookRouteImport } from './routes/api/public/sarvam-campaign-webhook'
 import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
+import { Route as ApiV1CallsRouteImport } from './routes/api/v1/calls'
+import { Route as ApiV1ContactsRouteImport } from './routes/api/v1/contacts'
+import { Route as ApiV1DealsRouteImport } from './routes/api/v1/deals'
+import { Route as ApiV1LeadsRouteImport } from './routes/api/v1/leads'
 import { Route as AuthenticatedAppCallCampaignsIndexRouteImport } from './routes/_authenticated/_app/call-campaigns.index'
 import { Route as AuthenticatedAppCallCampaignsCampaignIdRouteImport } from './routes/_authenticated/_app/call-campaigns.$campaignId'
 import { Route as AuthenticatedAppProjectsIndexRouteImport } from './routes/_authenticated/_app/projects.index'
 import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/_app/projects.$projectId'
+import { Route as ApiV1CallsIdRouteImport } from './routes/api/v1/calls.$id'
+import { Route as ApiV1ContactsIdRouteImport } from './routes/api/v1/contacts.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -284,6 +290,26 @@ const ApiPublicSarvamWebhookRoute = ApiPublicSarvamWebhookRouteImport.update({
   path: '/api/public/sarvam-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1CallsRoute = ApiV1CallsRouteImport.update({
+  id: '/api/v1/calls',
+  path: '/api/v1/calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1ContactsRoute = ApiV1ContactsRouteImport.update({
+  id: '/api/v1/contacts',
+  path: '/api/v1/contacts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1DealsRoute = ApiV1DealsRouteImport.update({
+  id: '/api/v1/deals',
+  path: '/api/v1/deals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1LeadsRoute = ApiV1LeadsRouteImport.update({
+  id: '/api/v1/leads',
+  path: '/api/v1/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppCallCampaignsIndexRoute =
   AuthenticatedAppCallCampaignsIndexRouteImport.update({
     id: '/call-campaigns/',
@@ -308,6 +334,16 @@ const AuthenticatedAppProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const ApiV1CallsIdRoute = ApiV1CallsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1CallsRoute,
+} as any)
+const ApiV1ContactsIdRoute = ApiV1ContactsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1ContactsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -349,8 +385,14 @@ export interface FileRoutesByFullPath {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
+  '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
+  '/api/v1/deals': typeof ApiV1DealsRoute
+  '/api/v1/leads': typeof ApiV1LeadsRoute
   '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
+  '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
   '/projects/': typeof AuthenticatedAppProjectsIndexRoute
 }
@@ -394,8 +436,14 @@ export interface FileRoutesByTo {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
+  '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
+  '/api/v1/deals': typeof ApiV1DealsRoute
+  '/api/v1/leads': typeof ApiV1LeadsRoute
   '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
+  '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns': typeof AuthenticatedAppCallCampaignsIndexRoute
   '/projects': typeof AuthenticatedAppProjectsIndexRoute
 }
@@ -442,8 +490,14 @@ export interface FileRoutesById {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
+  '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
+  '/api/v1/deals': typeof ApiV1DealsRoute
+  '/api/v1/leads': typeof ApiV1LeadsRoute
   '/_authenticated/_app/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
   '/_authenticated/_app/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
+  '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/_authenticated/_app/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
   '/_authenticated/_app/projects/': typeof AuthenticatedAppProjectsIndexRoute
 }
@@ -489,8 +543,14 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/v1/calls'
+    | '/api/v1/contacts'
+    | '/api/v1/deals'
+    | '/api/v1/leads'
     | '/call-campaigns/$campaignId'
     | '/projects/$projectId'
+    | '/api/v1/calls/$id'
+    | '/api/v1/contacts/$id'
     | '/call-campaigns/'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
@@ -534,8 +594,14 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/v1/calls'
+    | '/api/v1/contacts'
+    | '/api/v1/deals'
+    | '/api/v1/leads'
     | '/call-campaigns/$campaignId'
     | '/projects/$projectId'
+    | '/api/v1/calls/$id'
+    | '/api/v1/contacts/$id'
     | '/call-campaigns'
     | '/projects'
   id:
@@ -581,8 +647,14 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/v1/calls'
+    | '/api/v1/contacts'
+    | '/api/v1/deals'
+    | '/api/v1/leads'
     | '/_authenticated/_app/call-campaigns/$campaignId'
     | '/_authenticated/_app/projects/$projectId'
+    | '/api/v1/calls/$id'
+    | '/api/v1/contacts/$id'
     | '/_authenticated/_app/call-campaigns/'
     | '/_authenticated/_app/projects/'
   fileRoutesById: FileRoutesById
@@ -596,6 +668,10 @@ export interface RootRouteChildren {
   ApiPublicSarvamCallWebhookRoute: typeof ApiPublicSarvamCallWebhookRoute
   ApiPublicSarvamCampaignWebhookRoute: typeof ApiPublicSarvamCampaignWebhookRoute
   ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
+  ApiV1CallsRoute: typeof ApiV1CallsRouteWithChildren
+  ApiV1ContactsRoute: typeof ApiV1ContactsRouteWithChildren
+  ApiV1DealsRoute: typeof ApiV1DealsRoute
+  ApiV1LeadsRoute: typeof ApiV1LeadsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -887,6 +963,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSarvamWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/calls': {
+      id: '/api/v1/calls'
+      path: '/api/v1/calls'
+      fullPath: '/api/v1/calls'
+      preLoaderRoute: typeof ApiV1CallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/contacts': {
+      id: '/api/v1/contacts'
+      path: '/api/v1/contacts'
+      fullPath: '/api/v1/contacts'
+      preLoaderRoute: typeof ApiV1ContactsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/deals': {
+      id: '/api/v1/deals'
+      path: '/api/v1/deals'
+      fullPath: '/api/v1/deals'
+      preLoaderRoute: typeof ApiV1DealsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/leads': {
+      id: '/api/v1/leads'
+      path: '/api/v1/leads'
+      fullPath: '/api/v1/leads'
+      preLoaderRoute: typeof ApiV1LeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/_app/call-campaigns/': {
       id: '/_authenticated/_app/call-campaigns/'
       path: '/call-campaigns'
@@ -914,6 +1018,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/$projectId'
       preLoaderRoute: typeof AuthenticatedAppProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/api/v1/calls/$id': {
+      id: '/api/v1/calls/$id'
+      path: '/$id'
+      fullPath: '/api/v1/calls/$id'
+      preLoaderRoute: typeof ApiV1CallsIdRouteImport
+      parentRoute: typeof ApiV1CallsRoute
+    }
+    '/api/v1/contacts/$id': {
+      id: '/api/v1/contacts/$id'
+      path: '/$id'
+      fullPath: '/api/v1/contacts/$id'
+      preLoaderRoute: typeof ApiV1ContactsIdRouteImport
+      parentRoute: typeof ApiV1ContactsRoute
     }
   }
 }
@@ -1014,6 +1132,30 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiV1CallsRouteChildren {
+  ApiV1CallsIdRoute: typeof ApiV1CallsIdRoute
+}
+
+const ApiV1CallsRouteChildren: ApiV1CallsRouteChildren = {
+  ApiV1CallsIdRoute: ApiV1CallsIdRoute,
+}
+
+const ApiV1CallsRouteWithChildren = ApiV1CallsRoute._addFileChildren(
+  ApiV1CallsRouteChildren,
+)
+
+interface ApiV1ContactsRouteChildren {
+  ApiV1ContactsIdRoute: typeof ApiV1ContactsIdRoute
+}
+
+const ApiV1ContactsRouteChildren: ApiV1ContactsRouteChildren = {
+  ApiV1ContactsIdRoute: ApiV1ContactsIdRoute,
+}
+
+const ApiV1ContactsRouteWithChildren = ApiV1ContactsRoute._addFileChildren(
+  ApiV1ContactsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1023,6 +1165,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSarvamCallWebhookRoute: ApiPublicSarvamCallWebhookRoute,
   ApiPublicSarvamCampaignWebhookRoute: ApiPublicSarvamCampaignWebhookRoute,
   ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,
+  ApiV1CallsRoute: ApiV1CallsRouteWithChildren,
+  ApiV1ContactsRoute: ApiV1ContactsRouteWithChildren,
+  ApiV1DealsRoute: ApiV1DealsRoute,
+  ApiV1LeadsRoute: ApiV1LeadsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
