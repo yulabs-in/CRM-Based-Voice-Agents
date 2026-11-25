@@ -23,7 +23,7 @@ export type Field = {
 export type Column = { key: string; label: string; render?: (r: Row, refs: Refs) => React.ReactNode; className?: string };
 type Refs = Record<string, Map<string, string>>;
 export type RefTable = "contacts" | "companies" | "deals" | "voice_agents" | "call_campaigns" | "projects";
-type Table = "contacts" | "companies" | "leads" | "deals" | "tasks" | "voice_agents" | "call_campaigns" | "calls" | "workflows" | "messages" | "meetings";
+type Table = "contacts" | "companies" | "leads" | "deals" | "tasks" | "voice_agents" | "call_campaigns" | "calls" | "workflows" | "messages" | "meetings" | "sales_orders" | "client_kyc";
 
 const refLabel = (t: string, r: Record<string, unknown>) =>
   t === "contacts" ? `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() : String(r.name ?? r.title ?? "");

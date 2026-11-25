@@ -8,7 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { asApp, type Database } from "@/lib/supabase";
 
-const STOP_ROLES = ["owner", "admin", "sales_manager", "voice_manager", "sales_rep", "support_agent"];
+const STOP_ROLES = ["owner", "admin", "sales_manager", "team_lead", "voice_manager", "sales_rep", "support_agent"];
 const ACTIVE_CAMPAIGN = ["launching", "scheduled", "running", "paused"];
 const OPEN_TARGETS = ["pending", "queued", "calling", "retrying"];
 
