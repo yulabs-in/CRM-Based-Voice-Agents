@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin.server";
+import { ApiError } from "@/lib/api-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
-import { decodeCursor, encodeCursor, parseLimit } from "./pagination";
+import { decodeCursor, encodeCursor, isUuid, parseLimit } from "./pagination";
 
 export const CONTACT_COLUMNS =
   "id, organization_id, project_id, first_name, last_name, phone, email, city, custom_fields, created_at, updated_at";
@@ -13,6 +14,23 @@ export interface ContactInput {
   city?: string | null;
   project_id?: string | null;
   custom_fields?: Record<string, unknown> | null;
+}
+
+async function assertProjectInOrg(orgId: string, projectId: string) {
+  const { data: project, error } = await supabaseAdmin
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[api/contacts] project lookup failed:", error.message);
+    throw new ApiError(500, "internal_error", "Could not verify project");
+  }
+  if (!project) {
+    throw new ApiError(404, "not_found", "Project not found in this organization");
+  }
 }
 
 export async function listContacts(
@@ -33,14 +51,20 @@ export async function listContacts(
     .eq("organization_id", orgId);
 
   if (params.projectId) {
+    if (!isUuid(params.projectId)) {
+      throw new ApiError(400, "invalid_request", "project_id must be a valid UUID");
+    }
     query = query.eq("project_id", params.projectId);
   }
 
   if (params.q) {
-    const term = params.q.trim();
-    query = query.or(
-      `first_name.ilike.%${term}%,last_name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%`
-    );
+    // Strip PostgREST filter delimiters so commas/parens never break .or(...)
+    const safeTerm = params.q.trim().replace(/[,()]/g, " ").trim();
+    if (safeTerm) {
+      query = query.or(
+        `first_name.ilike.%${safeTerm}%,last_name.ilike.%${safeTerm}%,phone.ilike.%${safeTerm}%,email.ilike.%${safeTerm}%`
+      );
+    }
   }
 
   if (cursor) {
@@ -55,7 +79,10 @@ export async function listContacts(
     .limit(limit + 1);
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[api/contacts] listContacts failed:", error.message);
+    throw new ApiError(500, "internal_error", "Failed to list contacts");
+  }
 
   const rows = data ?? [];
   const hasMore = rows.length > limit;
@@ -74,6 +101,8 @@ export async function listContacts(
 }
 
 export async function getContactById(orgId: string, contactId: string) {
+  if (!isUuid(contactId)) return null;
+
   const { data, error } = await supabaseAdmin
     .from("contacts")
     .select(CONTACT_COLUMNS)
@@ -81,14 +110,21 @@ export async function getContactById(orgId: string, contactId: string) {
     .eq("id", contactId)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[api/contacts] getContactById failed:", error.message);
+    throw new ApiError(500, "internal_error", "Failed to fetch contact");
+  }
   return data;
 }
 
 export async function createOrUpdateContact(orgId: string, input: ContactInput) {
   const normalizedPhone = normalizePhoneNumber(input.phone);
   if (!normalizedPhone) {
-    throw new Error("Invalid phone number. Please provide a valid mobile number.");
+    throw new ApiError(400, "invalid_request", "Invalid phone number. Please provide a valid mobile number.");
+  }
+
+  if (input.project_id) {
+    await assertProjectInOrg(orgId, input.project_id);
   }
 
   // Check if contact with same phone already exists in this org
@@ -109,9 +145,9 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
         city: input.city !== undefined ? input.city : existing.city,
         project_id: input.project_id !== undefined ? input.project_id : existing.project_id,
         custom_fields:
-          input.custom_fields !== undefined
+          (input.custom_fields !== undefined
             ? { ...((existing.custom_fields as object) ?? {}), ...input.custom_fields }
-            : existing.custom_fields,
+            : existing.custom_fields) as never,
         updated_at: new Date().toISOString(),
       })
       .eq("organization_id", orgId)
@@ -119,7 +155,10 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
       .select(CONTACT_COLUMNS)
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[api/contacts] update failed:", error.message);
+      throw new ApiError(500, "internal_error", "Failed to update contact");
+    }
     return { contact: updated, isNew: false };
   }
 
@@ -134,12 +173,15 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
       email: input.email ?? null,
       city: input.city ?? null,
       project_id: input.project_id ?? null,
-      custom_fields: input.custom_fields ?? {},
+      custom_fields: (input.custom_fields ?? {}) as never,
     })
     .select(CONTACT_COLUMNS)
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[api/contacts] insert failed:", error.message);
+    throw new ApiError(500, "internal_error", "Failed to create contact");
+  }
   return { contact: created, isNew: true };
 }
 
@@ -148,6 +190,12 @@ export async function updateContact(
   contactId: string,
   fields: Partial<ContactInput>
 ) {
+  if (!isUuid(contactId)) return null;
+
+  if (fields.project_id) {
+    await assertProjectInOrg(orgId, fields.project_id);
+  }
+
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
@@ -161,18 +209,23 @@ export async function updateContact(
 
   if (fields.phone !== undefined) {
     const normalizedPhone = normalizePhoneNumber(fields.phone);
-    if (!normalizedPhone) throw new Error("Invalid phone number format");
+    if (!normalizedPhone) {
+      throw new ApiError(400, "invalid_request", "Invalid phone number format");
+    }
     payload.phone = normalizedPhone;
   }
 
   const { data, error } = await supabaseAdmin
     .from("contacts")
-    .update(payload)
+    .update(payload as never)
     .eq("organization_id", orgId)
     .eq("id", contactId)
     .select(CONTACT_COLUMNS)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[api/contacts] patch failed:", error.message);
+    throw new ApiError(500, "internal_error", "Failed to update contact");
+  }
   return data;
 }

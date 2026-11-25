@@ -5,6 +5,7 @@ import { Check, Copy, Plug, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { ApiKeysPanel } from "@/components/app/ApiKeysPanel";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAdmin, useOrg } from "@/lib/org";
 
@@ -23,6 +24,7 @@ function DevelopersMcpPage() {
   const admin = isAdmin(role);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedConfig, setCopiedConfig] = useState(false);
+  const [testKey, setTestKey] = useState("");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -66,27 +68,43 @@ function DevelopersMcpPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch(mcpUrl, { method: "GET" });
-      if (res.ok || res.status === 401 || res.status === 405) {
-        setTestResult({
-          ok: true,
-          text: `MCP endpoint reachable (HTTP ${res.status}). Use a generated MCP key in Authorization header.`,
-        });
-      } else if (res.status === 404) {
+      const headers: Record<string, string> = {};
+      const trimmed = testKey.trim();
+      if (trimmed) {
+        headers.Authorization = trimmed.startsWith("Bearer ") ? trimmed : `Bearer ${trimmed}`;
+      }
+
+      const res = await fetch(mcpUrl, { method: "GET", headers });
+      const contentType = res.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+
+      if (res.status === 401 || res.status === 403) {
         setTestResult({
           ok: false,
-          text: "MCP server endpoint (/api/mcp) is not deployed yet (#6). Keys created here are ready once it ships.",
+          text: trimmed
+            ? `MCP server reachable, key rejected (HTTP ${res.status}). Check that the key is active and valid.`
+            : `MCP server reachable (HTTP ${res.status}). Paste an MCP key above to verify authentication.`,
+        });
+      } else if (res.status === 405 && isJson) {
+        setTestResult({
+          ok: true,
+          text: "MCP server reachable (HTTP 405, POST required for JSON-RPC).",
+        });
+      } else if (res.ok && isJson) {
+        setTestResult({
+          ok: true,
+          text: trimmed ? "MCP server reachable and key works." : "MCP server reachable.",
         });
       } else {
         setTestResult({
           ok: false,
-          text: `Unexpected response: HTTP ${res.status}`,
+          text: "MCP server ships with #6 — the /api/mcp endpoint is not deployed yet.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setTestResult({
         ok: false,
-        text: err?.message || "Could not reach MCP endpoint",
+        text: err instanceof Error ? err.message : "Could not reach MCP endpoint",
       });
     } finally {
       setTesting(false);
@@ -108,16 +126,7 @@ function DevelopersMcpPage() {
                 <Plug className="h-4 w-4 text-muted-foreground" />
                 MCP server URL
               </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 px-2.5 text-xs gap-1.5"
-                onClick={handleTestConnection}
-                disabled={testing}
-              >
-                <RefreshCw className={`h-3 w-3 ${testing ? "animate-spin" : ""}`} />
-                {testing ? "Testing..." : "Test connection"}
-              </Button>
+              <span className="text-xs text-muted-foreground">MCP server ships with #6</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -132,6 +141,26 @@ function DevelopersMcpPage() {
               >
                 {copiedUrl ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                 {copiedUrl ? "Copied" : "Copy"}
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center pt-1">
+              <Input
+                type="password"
+                placeholder="Paste MCP key (yk_live_...) to test"
+                value={testKey}
+                onChange={(e) => setTestKey(e.target.value)}
+                className="h-8 text-xs font-mono flex-1"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs gap-1.5 shrink-0"
+                onClick={handleTestConnection}
+                disabled={testing}
+              >
+                <RefreshCw className={`h-3 w-3 ${testing ? "animate-spin" : ""}`} />
+                {testing ? "Testing..." : "Test connection"}
               </Button>
             </div>
 

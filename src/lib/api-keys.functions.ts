@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { asApp } from "@/lib/supabase";
 import { generateRawApiKey, hashApiKey } from "@/lib/api-auth.server";
+import { ALL_SCOPES } from "@/lib/api-scopes";
 
 async function assertOrgAdmin(
   supabase: Parameters<typeof asApp>[0],
@@ -32,7 +33,7 @@ export const createApiKey = createServerFn({ method: "POST" })
           .trim()
           .min(1, "Name is required")
           .max(80, "Name must be under 80 characters"),
-        scopes: z.array(z.string()).min(1, "Select at least one scope"),
+        scopes: z.array(z.enum(ALL_SCOPES)).min(1, "Select at least one scope"),
         purpose: z.enum(["api", "mcp"]).default("api"),
       })
       .parse(input)

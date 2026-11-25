@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/api-keys.functions";
-import { ALL_SCOPES, READ_ONLY_SCOPES, type Scope } from "@/lib/api-auth.server";
+import { ALL_SCOPES, READ_ONLY_SCOPES, type Scope } from "@/lib/api-scopes";
 import { isAdmin, useOrg } from "@/lib/org";
 
 export type KeyPurpose = "api" | "mcp";
@@ -136,8 +136,8 @@ export function ApiKeysPanel({ purpose }: { purpose: KeyPurpose }) {
       setSelectedScopes([...READ_ONLY_SCOPES]);
       queryClient.invalidateQueries({ queryKey: ["api-keys", org.id, purpose] });
       toast.success(`${label} key generated`);
-    } catch (err: any) {
-      toast.error(err?.message || `Failed to create ${label} key`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : `Failed to create ${label} key`);
     } finally {
       setBusy(false);
     }
@@ -156,8 +156,8 @@ export function ApiKeysPanel({ purpose }: { purpose: KeyPurpose }) {
       queryClient.invalidateQueries({ queryKey: ["api-keys", org.id, purpose] });
       toast.success(`Revoked key: ${revokeTarget.name}`);
       setRevokeTarget(null);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to revoke key");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to revoke key");
     } finally {
       setRevoking(false);
     }
