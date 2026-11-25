@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/app/PageHeader";
 import { ROLE_LABELS, isAdmin, useOrg, type OrgRole } from "@/lib/org";
 import { shortDate } from "@/lib/format";
+import { hierarchyRows, managerOptions } from "@/lib/sales-ops";
 
 export const Route = createFileRoute("/_authenticated/_app/team")({
   head: () => ({
@@ -37,11 +38,11 @@ function Team() {
   const members = useQuery({
     queryKey: ["team", org.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("memberships").select("id,user_id,role,created_at").eq("organization_id", org.id);
+      const { data, error } = await supabase.from("memberships").select("id,user_id,role,reports_to,created_at").eq("organization_id", org.id);
       if (error) throw error;
       const { data: profs } = await supabase.from("profiles").select("id,full_name,email").in("id", data.map((m) => m.user_id));
       const pm = new Map((profs ?? []).map((p) => [p.id, p]));
-      return data.map((m) => ({ ...m, profile: pm.get(m.user_id) }));
+      return hierarchyRows(data.map((m) => ({ ...m, reports_to: m.reports_to ?? null, profile: pm.get(m.user_id) })));
     },
   });
   const invites = useQuery({
@@ -61,6 +62,10 @@ function Team() {
   const setRole = useMutation({
     mutationFn: async ({ id, r }: { id: string; r: OrgRole }) => { const { error } = await supabase.from("memberships").update({ role: r }).eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success("Role updated"); refresh(); }, onError: (e) => toast.error(e.message),
+  });
+  const setManager = useMutation({
+    mutationFn: async ({ id, to }: { id: string; to: string | null }) => { const { error } = await supabase.from("memberships").update({ reports_to: to }).eq("id", id); if (error) throw error; },
+    onSuccess: () => { toast.success("Reporting line updated"); refresh(); }, onError: (e) => toast.error(e.message),
   });
   const remove = useMutation({
     mutationFn: async ({ t, id }: { t: "memberships" | "invitations"; id: string }) => { const { error } = await supabase.from(t).delete().eq("id", id); if (error) throw error; },
@@ -82,12 +87,27 @@ function Team() {
         </form>
       )}
       <div className="rounded-2xl border bg-card shadow-soft">
-        <p className="border-b px-4 py-3 text-sm font-semibold">Members ({members.data?.length ?? 0})</p>
+        <div className="border-b px-4 py-3">
+          <p className="text-sm font-semibold">Members ({members.data?.length ?? 0})</p>
+          <p className="text-xs text-muted-foreground">Sales hierarchy: set who each person reports to (Sales Manager → Team Lead → Sales Representative). Reports and dashboards roll numbers up the tree.</p>
+        </div>
         <ul>
           {members.data?.map((m) => (
-            <li key={m.id} className="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-0">
+            <li key={m.id} className="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-0" style={{ paddingLeft: 16 + m.depth * 24 }}>
+              {m.depth > 0 && <span className="text-muted-foreground" aria-hidden>└</span>}
               <span className="grid size-9 place-items-center rounded-full bg-accent text-sm font-bold text-accent-foreground">{(m.profile?.full_name || m.profile?.email || "?").slice(0, 1).toUpperCase()}</span>
               <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{m.profile?.full_name || m.profile?.email || "Member"}{m.user_id === userId && " (you)"}</p><p className="truncate text-xs text-muted-foreground">{m.profile?.email}</p></div>
+              {admin ? (
+                <Select value={m.reports_to ?? "__none"} onValueChange={(v) => setManager.mutate({ id: m.id, to: v === "__none" ? null : v })}>
+                  <SelectTrigger className="w-48 rounded-xl" aria-label={`Who ${m.profile?.full_name || "this member"} reports to`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Reports to no one</SelectItem>
+                    {managerOptions(members.data ?? [], m.user_id).map((o) => <SelectItem key={o.user_id} value={o.user_id}>Reports to {o.profile?.full_name || o.profile?.email || "member"}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : m.reports_to ? (
+                <span className="text-xs text-muted-foreground">Reports to {members.data?.find((x) => x.user_id === m.reports_to)?.profile?.full_name ?? "—"}</span>
+              ) : null}
               {admin && m.role !== "owner" && m.user_id !== userId ? (
                 <>
                   <Select value={m.role} onValueChange={(v) => setRole.mutate({ id: m.id, r: v as OrgRole })}>

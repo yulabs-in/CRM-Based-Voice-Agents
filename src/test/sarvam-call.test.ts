@@ -68,7 +68,7 @@ describe("default Sarvam setup", async () => {
   it("has a callable caller number and complete agent details", () => {
     expect(normalizePhoneNumber(SARVAM_DEFAULTS.callerNumber)).toBe("+918064269483");
     expect(normalizePhoneNumber("+91 80642 69483")).toBe("+918064269483");
-    expect(DEFAULT_AGENT).toMatchObject({ sarvam_agent_id: "YULabs-Insu-13e07aa4-48c0", sarvam_app_version: 1, sarvam_connection_id: "614a33c8-31-e56314c0-c598", status: "active" });
+    expect(DEFAULT_AGENT).toMatchObject({ sarvam_agent_id: "YULabs-Insu-13e07aa4-48c0", sarvam_app_version: 6, sarvam_connection_id: "614a33c8-31-e56314c0-c598", status: "active" });
   });
 });
 

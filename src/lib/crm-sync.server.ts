@@ -5,6 +5,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
 import { classifyCallOutcome, isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
+import { notify, recipientsFor } from "@/lib/notify.server";
+import { kycFromAnswers, mergeKyc, orderFromAnswers } from "@/lib/call-capture";
+import { inr } from "@/lib/format";
 
 type CallRow = {
   id: string; organization_id: string; contact_id: string | null; phone: string | null; status: string;
@@ -54,6 +57,49 @@ async function withSpokenName(contact: ContactRow, answers: Record<string, strin
 
 const isPlaceholderName = (name: string | null | undefined) => !name || /^Caller \d{3,4}$/.test(name.trim());
 
+type KycRow = { id: string; status: string; full_name: string | null; date_of_birth: string | null; email: string | null; address_line: string | null;
+  city: string | null; pincode: string | null; nominee_name: string | null; nominee_relation: string | null; pan_masked: string | null };
+
+/** Saves the KYC details the customer agreed to give. A record staff already verified is never changed by a call. */
+async function saveKycFromCall(org: string, contactId: string, callId: string, answers: Record<string, string>): Promise<string | null> {
+  const captured = kycFromAnswers(answers);
+  if (!captured) return null;
+  const { data: existing } = await supabaseAdmin.from("client_kyc")
+    .select("id, status, full_name, date_of_birth, email, address_line, city, pincode, nominee_name, nominee_relation, pan_masked")
+    .eq("organization_id", org).eq("contact_id", contactId).maybeSingle();
+  const row = existing as KycRow | null;
+  if (row?.status === "verified") return "KYC already verified (left unchanged)";
+  const now = new Date().toISOString();
+  const values = { ...mergeKyc(row, captured), consent_given: true, consent_at: now, status: "collected", source: "ai_call", call_id: callId };
+  const { error } = row
+    ? await supabaseAdmin.from("client_kyc").update(values as never).eq("id", row.id)
+    : await supabaseAdmin.from("client_kyc").insert({ ...values, organization_id: org, contact_id: contactId } as never);
+  if (error) throw new Error(`Could not save KYC: ${error.message}`);
+  return row ? "KYC updated from call" : "KYC collected on call";
+}
+
+/** Creates a draft sales order when the customer asked to go ahead. One order per call (unique index on call_id). */
+async function saveOrderFromCall(org: string, contactId: string, dealId: string | null, callId: string, answers: Record<string, string>, summary: string | null): Promise<string | null> {
+  const order = orderFromAnswers(answers);
+  if (!order) return null;
+  const notes = [
+    order.budget ? `Customer's yearly budget: ${inr(order.budget)}` : null,
+    answers.objections ? `Concerns: ${answers.objections}` : null,
+    summary ? `Call summary: ${summary}` : null,
+  ].filter(Boolean).join("\n") || null;
+  const { data, error } = await supabaseAdmin.from("sales_orders").insert({
+    organization_id: org, contact_id: contactId, deal_id: dealId, call_id: callId, owner_id: null, created_by: null,
+    product_type: order.product_type, plan_name: order.plan_name, insurer: order.insurer, sum_insured: order.sum_insured,
+    payment_frequency: order.payment_frequency, premium_amount: 0, status: "draft", source: "ai_call", order_number: "", notes,
+  } as never).select("order_number").maybeSingle();
+  if (error) {
+    if (error.code === "23505") return null; // this call already has its order
+    throw new Error(`Could not create sales order: ${error.message}`);
+  }
+  const number = (data as { order_number?: string } | null)?.order_number;
+  return number ? `Draft order ${number} created` : "Draft order created";
+}
+
 /** Applies one finished call to the CRM. Safe to call repeatedly: only the first caller does the work. */
 export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResult> {
   const { data } = await supabaseAdmin.from("calls")
@@ -91,6 +137,18 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
       await supabaseAdmin.from("contacts").update({
         status: "inactive", tags: tags.includes("do-not-call") ? tags : [...tags, "do-not-call"], updated_at: now,
       } as never).eq("id", contact.id);
+
+      const dncRecipients = await recipientsFor(org, "contact.do_not_contact");
+      await notify({
+        orgId: org,
+        type: "contact.do_not_contact",
+        title: `${displayName} asked not to be contacted`,
+        body: "Contact marked inactive and tagged do-not-call.",
+        link: `/contacts?id=${contact.id}`,
+        priority: "normal",
+        recipients: dncRecipients,
+        dedupeKey: call.id,
+      });
     }
 
     // ---- Lead
@@ -128,14 +186,16 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     // ---- Deal / Sales Pipeline
     let dealDetail = "No deal change";
     let dealId: string | null = null;
+    let dealOwnerId: string | null = null;
     if (verdict.dealStage) {
-      const { data: deals } = await supabaseAdmin.from("deals").select("id, stage, probability")
+      const { data: deals } = await supabaseAdmin.from("deals").select("id, stage, probability, owner_id")
         .eq("organization_id", org).eq("contact_id", contact.id).order("updated_at", { ascending: false }).limit(10);
       const open = (deals ?? []).find((deal) => deal.stage !== "won" && deal.stage !== "lost");
       const reopenable = (deals ?? []).find((deal) => deal.stage === "lost");
       const alreadyWon = (deals ?? []).some((deal) => deal.stage === "won");
       const target = open ?? (verdict.kind !== "negative" ? reopenable : undefined);
       if (target) {
+        dealOwnerId = target.owner_id ?? null;
         const stage = nextDealStage(target.stage, verdict);
         dealId = target.id;
         if (stage) {
@@ -178,16 +238,82 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
 
     // ---- Escalation: a complaint, regulatory question or personal-advice request needs an authorised human.
     const escalation = (answers.escalation_reason || "").trim();
-    if (escalation || /\bescalated\b/.test(verdict.label)) {
+    const isEscalated = Boolean(escalation || /\bescalated\b/.test(verdict.label));
+    if (isEscalated) {
       await supabaseAdmin.from("tasks").insert({
         organization_id: org, title: `Escalation: ${displayName}${escalation ? ` — ${escalation}` : ""}`.slice(0, 200),
         description: [escalation, call.summary].filter(Boolean).join("\n\n").slice(0, 2000) || null,
         due_at: new Date(Date.now() + 4 * 3600 * 1000).toISOString(), priority: "high", status: "open",
         contact_id: contact.id, deal_id: dealId, assignee_id: null, created_by: null,
       } as never);
+
+      const escalationRecipients = await recipientsFor(org, "call.escalated", { dealOwnerId });
+      await notify({
+        orgId: org,
+        type: "call.escalated",
+        title: `Escalation: ${displayName}${escalation ? ` — ${escalation}` : ""}`,
+        body: [escalation, call.summary?.slice(0, 150)].filter(Boolean).join(" — ") || null,
+        link: `/tasks`,
+        priority: "high",
+        recipients: escalationRecipients,
+        dedupeKey: call.id,
+      });
     }
 
-    return { applied: true, verdict: verdict.kind, lead: leadDetail, deal: dealDetail, detail: `${leadDetail}; ${dealDetail}` };
+    // ---- Consultation Booked Notification
+    const rawDisp = (answers.disposition || answers.outcome || "").toLowerCase();
+    const isConsultation = rawDisp.includes("consultation") || /\bconsultation\b/.test(verdict.label);
+    const consultTime = (answers.consultation_time || answers.follow_up_time || answers.callback_time || "").trim();
+    if (isConsultation) {
+      const consultRecipients = await recipientsFor(org, "consultation.booked", { dealOwnerId });
+      await notify({
+        orgId: org,
+        type: "consultation.booked",
+        title: `Consultation booked: ${displayName}${consultTime ? `, ${consultTime}` : ""}`,
+        body: [consultTime ? `Time: ${consultTime}` : null, call.summary?.slice(0, 150)].filter(Boolean).join(" — ") || null,
+        link: `/meetings`,
+        priority: "normal",
+        recipients: consultRecipients,
+        dedupeKey: call.id,
+      });
+    }
+
+    // ---- Interested Lead Notification
+    if (verdict.kind === "positive" || verdict.kind === "won") {
+      const product = answers.insurance_type || answers.service_interest || answers.market_interest || answers.product || answers.interest || "";
+      const leadRecipients = await recipientsFor(org, "lead.interested", { dealOwnerId });
+      await notify({
+        orgId: org,
+        type: "lead.interested",
+        title: `New interested lead: ${displayName}`,
+        body: [product ? `Interested in: ${product}` : null, call.summary?.slice(0, 150)].filter(Boolean).join(" — ") || null,
+        link: `/leads?contact=${contact.id}`,
+        priority: "normal",
+        recipients: leadRecipients,
+        dedupeKey: call.id,
+      });
+    }
+
+    // ---- KYC and order request the agent collected (sections 6 and 7 of the script)
+    const extras: string[] = [];
+    // Never fatal: a problem here (e.g. migration 0021 not applied yet) must not undo the lead/deal update above.
+    if (!isDoNotContact(verdict.label)) {
+      for (const [label, save] of [
+        ["KYC", () => saveKycFromCall(org, contact.id, call.id, answers)],
+        ["Order", () => saveOrderFromCall(org, contact.id, dealId, call.id, answers, call.summary)],
+      ] as const) {
+        try {
+          const note = await save();
+          if (note) extras.push(note);
+        } catch (error) {
+          console.error(`[crm] ${label} capture failed`, call.id, error);
+          extras.push(`${label} not saved: ${error instanceof Error ? error.message : "unknown error"}`);
+        }
+      }
+    }
+
+    const detail = [leadDetail, dealDetail, ...extras].join("; ");
+    return { applied: true, verdict: verdict.kind, lead: leadDetail, deal: dealDetail, detail };
   } catch (error) {
     // Release the claim so the next sweep retries.
     await supabaseAdmin.from("calls").update({ crm_synced_at: null } as never).eq("id", call.id);

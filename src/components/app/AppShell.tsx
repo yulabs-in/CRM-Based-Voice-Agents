@@ -16,6 +16,7 @@ import { Logo } from "./Logo";
 import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
 import { RealtimeSync } from "./RealtimeSync";
+import { NotificationBell } from "./NotificationBell";
 
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -134,13 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Popover>
-                    <PopoverTrigger asChild><Button variant="ghost" size="icon" aria-label="Notifications"><Bell /></Button></PopoverTrigger>
-                    <PopoverContent align="end" className="w-80 rounded-2xl">
-                      <p className="font-semibold">Notifications</p>
-                      <div className="dot-canvas mt-3 rounded-xl border py-8 text-center text-sm text-muted-foreground">You're all caught up.</div>
-                    </PopoverContent>
-                  </Popover>
+                  <NotificationBell />
                   <Popover>
                     <PopoverTrigger asChild><Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label="Help"><HelpCircle /></Button></PopoverTrigger>
                     <PopoverContent align="end" className="w-72 rounded-2xl text-sm">
