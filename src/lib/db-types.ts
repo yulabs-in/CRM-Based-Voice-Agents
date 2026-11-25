@@ -22,6 +22,7 @@ export type Database = {
           key_prefix: string
           key_hash: string
           scopes: string[]
+          purpose: string
           created_by: string | null
           last_used_at: string | null
           revoked_at: string | null
@@ -34,6 +35,7 @@ export type Database = {
           key_prefix: string
           key_hash: string
           scopes?: string[]
+          purpose?: string
           created_by?: string | null
           last_used_at?: string | null
           revoked_at?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           key_prefix?: string
           key_hash?: string
           scopes?: string[]
+          purpose?: string
           created_by?: string | null
           last_used_at?: string | null
           revoked_at?: string | null

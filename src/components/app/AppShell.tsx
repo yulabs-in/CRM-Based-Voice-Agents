@@ -10,17 +10,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS, useOrg } from "@/lib/org";
+import { isAdmin, ROLE_LABELS, useOrg } from "@/lib/org";
 import { Logo } from "./Logo";
 import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
 import { RealtimeSync } from "./RealtimeSync";
 
+
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { role } = useOrg();
+  const admin = isAdmin(role);
   return (
     <nav className="flex flex-col gap-5 px-3 pb-6">
-      {NAV.map((g, i) => (
+      {NAV.filter((g) => !g.adminOnly || admin).map((g, i) => (
         <div key={i}>
           {g.label && !collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</p>}
           <ul className="space-y-0.5">
@@ -75,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
-  const pages = NAV.flatMap((g) => g.items).filter((i) => i.to);
+  const pages = NAV.filter((g) => !g.adminOnly || isAdmin(role)).flatMap((g) => g.items).filter((i) => i.to);
 
   return (
     <TooltipProvider delayDuration={150}>

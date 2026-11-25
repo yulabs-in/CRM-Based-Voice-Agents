@@ -56,6 +56,8 @@ import { Route as ApiV1DealsRouteImport } from './routes/api/v1/deals'
 import { Route as ApiV1LeadsRouteImport } from './routes/api/v1/leads'
 import { Route as AuthenticatedAppCallCampaignsIndexRouteImport } from './routes/_authenticated/_app/call-campaigns.index'
 import { Route as AuthenticatedAppCallCampaignsCampaignIdRouteImport } from './routes/_authenticated/_app/call-campaigns.$campaignId'
+import { Route as AuthenticatedAppDevelopersApiRouteImport } from './routes/_authenticated/_app/developers.api'
+import { Route as AuthenticatedAppDevelopersMcpRouteImport } from './routes/_authenticated/_app/developers.mcp'
 import { Route as AuthenticatedAppProjectsIndexRouteImport } from './routes/_authenticated/_app/projects.index'
 import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/_app/projects.$projectId'
 import { Route as ApiV1CallsIdRouteImport } from './routes/api/v1/calls.$id'
@@ -322,6 +324,18 @@ const AuthenticatedAppCallCampaignsCampaignIdRoute =
     path: '/call-campaigns/$campaignId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppDevelopersApiRoute =
+  AuthenticatedAppDevelopersApiRouteImport.update({
+    id: '/developers/api',
+    path: '/developers/api',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppDevelopersMcpRoute =
+  AuthenticatedAppDevelopersMcpRouteImport.update({
+    id: '/developers/mcp',
+    path: '/developers/mcp',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppProjectsIndexRoute =
   AuthenticatedAppProjectsIndexRouteImport.update({
     id: '/projects/',
@@ -390,6 +404,8 @@ export interface FileRoutesByFullPath {
   '/api/v1/deals': typeof ApiV1DealsRoute
   '/api/v1/leads': typeof ApiV1LeadsRoute
   '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
+  '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
@@ -441,6 +457,8 @@ export interface FileRoutesByTo {
   '/api/v1/deals': typeof ApiV1DealsRoute
   '/api/v1/leads': typeof ApiV1LeadsRoute
   '/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
+  '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
@@ -495,6 +513,8 @@ export interface FileRoutesById {
   '/api/v1/deals': typeof ApiV1DealsRoute
   '/api/v1/leads': typeof ApiV1LeadsRoute
   '/_authenticated/_app/call-campaigns/$campaignId': typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  '/_authenticated/_app/developers/api': typeof AuthenticatedAppDevelopersApiRoute
+  '/_authenticated/_app/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/_authenticated/_app/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
@@ -548,6 +568,8 @@ export interface FileRouteTypes {
     | '/api/v1/deals'
     | '/api/v1/leads'
     | '/call-campaigns/$campaignId'
+    | '/developers/api'
+    | '/developers/mcp'
     | '/projects/$projectId'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
@@ -599,6 +621,8 @@ export interface FileRouteTypes {
     | '/api/v1/deals'
     | '/api/v1/leads'
     | '/call-campaigns/$campaignId'
+    | '/developers/api'
+    | '/developers/mcp'
     | '/projects/$projectId'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
@@ -652,6 +676,8 @@ export interface FileRouteTypes {
     | '/api/v1/deals'
     | '/api/v1/leads'
     | '/_authenticated/_app/call-campaigns/$campaignId'
+    | '/_authenticated/_app/developers/api'
+    | '/_authenticated/_app/developers/mcp'
     | '/_authenticated/_app/projects/$projectId'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
@@ -1005,6 +1031,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppCallCampaignsCampaignIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/developers/api': {
+      id: '/_authenticated/_app/developers/api'
+      path: '/developers/api'
+      fullPath: '/developers/api'
+      preLoaderRoute: typeof AuthenticatedAppDevelopersApiRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/developers/mcp': {
+      id: '/_authenticated/_app/developers/mcp'
+      path: '/developers/mcp'
+      fullPath: '/developers/mcp'
+      preLoaderRoute: typeof AuthenticatedAppDevelopersMcpRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/projects/': {
       id: '/_authenticated/_app/projects/'
       path: '/projects'
@@ -1068,6 +1108,8 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppWhatsappRoute: typeof AuthenticatedAppWhatsappRoute
   AuthenticatedAppWorkflowsRoute: typeof AuthenticatedAppWorkflowsRoute
   AuthenticatedAppCallCampaignsCampaignIdRoute: typeof AuthenticatedAppCallCampaignsCampaignIdRoute
+  AuthenticatedAppDevelopersApiRoute: typeof AuthenticatedAppDevelopersApiRoute
+  AuthenticatedAppDevelopersMcpRoute: typeof AuthenticatedAppDevelopersMcpRoute
   AuthenticatedAppProjectsProjectIdRoute: typeof AuthenticatedAppProjectsProjectIdRoute
   AuthenticatedAppCallCampaignsIndexRoute: typeof AuthenticatedAppCallCampaignsIndexRoute
   AuthenticatedAppProjectsIndexRoute: typeof AuthenticatedAppProjectsIndexRoute
@@ -1107,6 +1149,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppWorkflowsRoute: AuthenticatedAppWorkflowsRoute,
   AuthenticatedAppCallCampaignsCampaignIdRoute:
     AuthenticatedAppCallCampaignsCampaignIdRoute,
+  AuthenticatedAppDevelopersApiRoute: AuthenticatedAppDevelopersApiRoute,
+  AuthenticatedAppDevelopersMcpRoute: AuthenticatedAppDevelopersMcpRoute,
   AuthenticatedAppProjectsProjectIdRoute:
     AuthenticatedAppProjectsProjectIdRoute,
   AuthenticatedAppCallCampaignsIndexRoute:

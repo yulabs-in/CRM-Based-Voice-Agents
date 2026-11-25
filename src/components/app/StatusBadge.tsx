@@ -8,7 +8,7 @@ const map: Record<string, keyof typeof tone> = {
   active: "good", won: "good", done: "good", qualified: "good", converted: "good", completed: "good", positive: "good", running: "good", connected: "good",
   new: "info", qualification: "info", open: "info", contacted: "info", queued: "info", scheduled: "info", pending: "info", processing: "info", outbound: "info", inbound: "info", calling: "info",
   proposal: "warn", negotiation: "warn", medium: "warn", in_progress: "warn", retrying: "warn", paused: "warn", no_answer: "warn", busy: "warn", neutral: "warn", launching: "warn",
-  high: "bad", lost: "bad", unqualified: "bad", failed: "bad", negative: "bad", cancelled: "bad",
+  high: "bad", lost: "bad", unqualified: "bad", failed: "bad", negative: "bad", cancelled: "bad", revoked: "bad",
   inactive: "muted", low: "muted", draft: "muted", archived: "muted", excluded: "muted", ended: "muted",
 };
 

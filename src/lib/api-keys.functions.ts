@@ -33,6 +33,7 @@ export const createApiKey = createServerFn({ method: "POST" })
           .min(1, "Name is required")
           .max(80, "Name must be under 80 characters"),
         scopes: z.array(z.string()).min(1, "Select at least one scope"),
+        purpose: z.enum(["api", "mcp"]).default("api"),
       })
       .parse(input)
   )
@@ -51,9 +52,10 @@ export const createApiKey = createServerFn({ method: "POST" })
         key_prefix: keyPrefix,
         key_hash: keyHash,
         scopes: data.scopes,
+        purpose: data.purpose,
         created_by: context.userId,
       })
-      .select("id, organization_id, name, key_prefix, scopes, created_at")
+      .select("id, organization_id, name, key_prefix, scopes, purpose, created_by, created_at")
       .single();
 
     if (error || !inserted) {
@@ -73,6 +75,7 @@ export const listApiKeys = createServerFn({ method: "GET" })
     z
       .object({
         organizationId: z.string().uuid(),
+        purpose: z.enum(["api", "mcp"]).optional(),
       })
       .parse(input)
   )
@@ -80,19 +83,45 @@ export const listApiKeys = createServerFn({ method: "GET" })
     await assertOrgAdmin(context.supabase, data.organizationId, context.userId);
 
     // Never select key_hash!
-    const { data: keys, error } = await asApp(context.supabase)
+    let query = asApp(context.supabase)
       .from("api_keys")
       .select(
-        "id, organization_id, name, key_prefix, scopes, created_by, last_used_at, revoked_at, created_at"
+        "id, organization_id, name, key_prefix, scopes, purpose, created_by, last_used_at, revoked_at, created_at"
       )
-      .eq("organization_id", data.organizationId)
-      .order("created_at", { ascending: false });
+      .eq("organization_id", data.organizationId);
+
+    if (data.purpose) {
+      query = query.eq("purpose", data.purpose);
+    }
+
+    const { data: keys, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return keys ?? [];
+    const rows = keys ?? [];
+    const creatorIds = Array.from(
+      new Set(rows.map((r) => r.created_by).filter((id): id is string => Boolean(id)))
+    );
+
+    const creatorNames = new Map<string, string>();
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await asApp(context.supabase)
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", creatorIds);
+
+      for (const p of profiles ?? []) {
+        const label = p.full_name || p.email;
+        if (label) creatorNames.set(p.id, label);
+      }
+    }
+
+    return rows.map((row) => ({
+      ...row,
+      created_by_name: row.created_by ? creatorNames.get(row.created_by) ?? null : null,
+    }));
   });
 
 export const revokeApiKey = createServerFn({ method: "POST" })
