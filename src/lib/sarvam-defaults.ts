@@ -1,11 +1,11 @@
 // Default Sarvam Voice Agents setup used when a workspace hasn't entered its own.
 // These are identifiers, not secrets — the API key stays in SARVAM_API_KEY on the server.
-// Keep in sync with db/migrations/0006_default_sarvam_setup.sql and 0013_yulabs_insurance_agent.sql.
+// Keep in sync with db/migrations/0006_default_sarvam_setup.sql, 0013_yulabs_insurance_agent.sql and 0025_live_agent_scripts_v6.sql.
 export const SARVAM_DEFAULTS = {
   organizationId: "019e90bb-4638-7c0c-8779-3b46919584f2",
   workspaceId: "019e90bb-466e-7199-9d47-d08cbf9eb144",
   agentId: "YULabs-Insu-13e07aa4-48c0", // "YULabs Insurance — India"
-  agentVersion: 1,
+  agentVersion: 6, // committed 25 Nov 2026: silence nudges, KYC with consent, order capture (see 0025)
   connectionId: "614a33c8-31-e56314c0-c598",
   callerNumber: "+918064269483",
 } as const;

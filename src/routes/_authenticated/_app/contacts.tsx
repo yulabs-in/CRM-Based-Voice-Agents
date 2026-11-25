@@ -13,9 +13,10 @@ import { shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_authenticated/_app/contacts")({
-  validateSearch: (s: Record<string, unknown>): { new?: boolean; project?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { new?: boolean; project?: string; id?: string } => ({
     new: s.new === true || s.new === "true" ? true : undefined,
     project: typeof s.project === "string" ? s.project : undefined,
+    id: typeof s.id === "string" ? s.id : undefined,
   }),
   head: () => pageHead("Contacts", "Manage every customer contact in your workspace."),
   component: Page,
@@ -41,7 +42,7 @@ function Page() {
     <>
       <EntityPage table="contacts" title="Contacts" singular="Contact" icon={Users} description="Everyone your team works with, across all projects."
         openNew={s.new} onCloseNew={() => nav({ to: "/contacts", search: { project: s.project } })}
-        filter={s.project ? { project_id: s.project } : undefined}
+        filter={s.id ? { id: s.id } : s.project ? { project_id: s.project } : undefined}
         actions={<>
           <Select value={s.project ?? ALL} onValueChange={(value) => nav({ to: "/contacts", search: { project: value === ALL ? undefined : value } })}>
             <SelectTrigger className="w-48 rounded-xl bg-card" aria-label="Filter by project"><SelectValue /></SelectTrigger>

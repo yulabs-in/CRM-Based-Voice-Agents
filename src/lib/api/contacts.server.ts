@@ -2,6 +2,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { ApiError } from "@/lib/api-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { decodeCursor, encodeCursor, isUuid, parseLimit } from "./pagination";
+import type { Database, Json } from "@/lib/db-types";
+
+type ContactUpdate = Database["public"]["Tables"]["contacts"]["Update"];
 
 export const CONTACT_COLUMNS =
   "id, organization_id, project_id, first_name, last_name, phone, email, city, custom_fields, created_at, updated_at";
@@ -145,9 +148,9 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
         city: input.city !== undefined ? input.city : existing.city,
         project_id: input.project_id !== undefined ? input.project_id : existing.project_id,
         custom_fields:
-          (input.custom_fields !== undefined
-            ? { ...((existing.custom_fields as object) ?? {}), ...input.custom_fields }
-            : existing.custom_fields) as never,
+          input.custom_fields !== undefined
+            ? ({ ...((existing.custom_fields as object) ?? {}), ...input.custom_fields } as Json)
+            : existing.custom_fields,
         updated_at: new Date().toISOString(),
       })
       .eq("organization_id", orgId)
@@ -173,7 +176,7 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
       email: input.email ?? null,
       city: input.city ?? null,
       project_id: input.project_id ?? null,
-      custom_fields: (input.custom_fields ?? {}) as never,
+      custom_fields: (input.custom_fields ?? {}) as Json,
     })
     .select(CONTACT_COLUMNS)
     .single();
@@ -196,7 +199,7 @@ export async function updateContact(
     await assertProjectInOrg(orgId, fields.project_id);
   }
 
-  const payload: Record<string, unknown> = {
+  const payload: ContactUpdate = {
     updated_at: new Date().toISOString(),
   };
 
@@ -205,7 +208,7 @@ export async function updateContact(
   if (fields.email !== undefined) payload.email = fields.email;
   if (fields.city !== undefined) payload.city = fields.city;
   if (fields.project_id !== undefined) payload.project_id = fields.project_id;
-  if (fields.custom_fields !== undefined) payload.custom_fields = fields.custom_fields;
+  if (fields.custom_fields !== undefined) payload.custom_fields = fields.custom_fields as Json;
 
   if (fields.phone !== undefined) {
     const normalizedPhone = normalizePhoneNumber(fields.phone);

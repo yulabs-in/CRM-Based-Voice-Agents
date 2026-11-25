@@ -10,6 +10,9 @@ const map: Record<string, keyof typeof tone> = {
   proposal: "warn", negotiation: "warn", medium: "warn", in_progress: "warn", retrying: "warn", paused: "warn", no_answer: "warn", busy: "warn", neutral: "warn", launching: "warn",
   high: "bad", lost: "bad", unqualified: "bad", failed: "bad", negative: "bad", cancelled: "bad", revoked: "bad",
   inactive: "muted", low: "muted", draft: "muted", archived: "muted", excluded: "muted", ended: "muted",
+  // sales orders, payments, KYC
+  issued: "good", paid: "good", verified: "good", received: "good", confirmed: "info", collected: "info",
+  partial: "warn", partly_paid: "warn", refunded: "warn", overdue: "bad", rejected: "bad", lapsed: "bad", not_set: "muted",
 };
 
 export function StatusBadge({ value }: { value?: unknown }) {
