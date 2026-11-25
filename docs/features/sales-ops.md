@@ -10,6 +10,7 @@ the Manager > Team Lead > Sales Rep hierarchy, renewal reminders and the Reports
 | `db/migrations/0020_sales_hierarchy.sql` | Adds the `team_lead` role and `memberships.reports_to` (with loop and same-workspace checks). **Run it alone.** Postgres won't let a new enum value be used in the transaction that adds it. |
 | `db/migrations/0021_sales_orders_kyc_payments.sql` | `sales_orders`, `payments`, `client_kyc`, `renewal_reminders`, order numbers (`SO-00001` per workspace), `amount_paid` kept in sync with payments, RLS, realtime, and a daily pg_cron job at 09:00 IST that creates renewal reminder tasks. |
 | `db/migrations/0022_insurance_script_v3.sql` | Updates the CRM's copy of the insurance agent script (silence handling, KYC with consent, order capture). |
+| `db/migrations/0023_stock_script_v2.sql` | Stores the stock agent script in the CRM (`public.stock_advisory_script()`) with the same silence handling, KYC with consent (no nominee) and order capture. Orders from it get product type `other`. |
 
 `0019` is taken by the notifications PR (#14).
 
@@ -34,6 +35,15 @@ The agent runs on Sarvam, not in the CRM. Migration 0022 only updates the CRM's 
 4. **Commit a new version**, then set `voice_agents.sarvam_app_version` to it (Voice Agents page or SQL).
 5. Place a test call and stay silent: you should hear "Hello, are you there?" once, then a polite goodbye.
    The call should end as `no_answer` (or `callback` if you had spoken).
+
+Do the same for the stock agent `Stock-Marke-53bad6ec-5d28`:
+
+1. **Script:** paste `public.stock_advisory_script()` from 0023, changing `{var}` to `{{var}}`.
+2. **Output variables:** add `order_confirmed`, `order_plan`, `order_budget`, `order_payment_frequency`,
+   `kyc_consent`, `kyc_full_name`, `kyc_dob`, `kyc_email`, `kyc_address`, `kyc_city`, `kyc_pincode`, `kyc_pan`.
+3. Same silence settings, commit a new version, raise `voice_agents.sarvam_app_version`, and test.
+
+The Renewals page lists the insurance agent first for AI renewal calls, because they use its call track B.
 
 ## 3. What happens on a call
 

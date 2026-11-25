@@ -18,6 +18,7 @@ import { downloadCsv } from "@/lib/csv";
 import { inr, shortDate } from "@/lib/format";
 import { pageHead } from "@/lib/seo";
 import { startSarvamCall } from "@/lib/sarvam.functions";
+import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 import {
   PRODUCT_TYPES, daysToRenewal, labelOf, renewalWindow, renewalsDue, type RenewalWindow,
 } from "@/lib/sales-ops";
@@ -63,9 +64,10 @@ function RenewalsPage() {
   const agents = useQuery({
     queryKey: ["call-agents", org.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("voice_agents").select("id, name").eq("organization_id", org.id).eq("status", "active").order("created_at");
+      const { data, error } = await supabase.from("voice_agents").select("id, name, sarvam_agent_id").eq("organization_id", org.id).eq("status", "active").order("created_at");
       if (error) throw error;
-      return data;
+      // Renewal calls use call track B of the insurance script, so list the insurance agent first.
+      return [...data].sort((a, b) => Number(b.sarvam_agent_id === SARVAM_DEFAULTS.agentId) - Number(a.sarvam_agent_id === SARVAM_DEFAULTS.agentId));
     },
   });
   const agent = agentId || agents.data?.[0]?.id || "";
