@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
+import { createRouter, rootRouteId } from "@tanstack/react-router";
 import { notify, recipientsFor } from "@/lib/notify.server";
 import { parseNotificationLink } from "@/lib/notifications-ui";
+import { routeTree } from "@/routeTree.gen";
 
 // Mock supabaseAdmin
 const mockSelect = vi.fn();
@@ -202,6 +205,23 @@ describe("notify.server", () => {
         search: { id: "xyz-789" },
       });
       expect(parseNotificationLink("/tasks")).toEqual({ to: "/tasks" });
+    });
+
+    it("resolves parsed notification links to real TanStack Router routes (not Not Found)", () => {
+      const router = createRouter({
+        routeTree,
+        context: { queryClient: new QueryClient() },
+      });
+
+      for (const raw of ["/leads?contact=abc-123", "/contacts?id=xyz-789", "/meetings", "/tasks"]) {
+        const target = parseNotificationLink(raw);
+        const location = router.buildLocation(target as never);
+        const matches = router.matchRoutes(location);
+        expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
+        if (target.search) {
+          expect(location.search).toEqual(target.search);
+        }
+      }
     });
   });
 });
