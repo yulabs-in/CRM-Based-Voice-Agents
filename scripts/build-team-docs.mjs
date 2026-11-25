@@ -2,13 +2,14 @@
 // Builds one developer guide per team member from:
 //   docs/team/templates/guide.md          shared workflow (setup, git, testing, PRs into dev)
 //   docs/team/templates/plan-<login>.md   the member's order of work and collaborators
-//   docs/issues/README.md                 "## #N: Title" sections, copied in for the member's issues
+//   docs/issues/<nn>-<name>/README.md     full per-issue README, copied in for the member's issues
+//                                         (falls back to the "## #N: Title" summary in docs/issues/README.md)
 // Writes docs/team/<slug>.md and docs/team/pdf/<Name>-Developer-Guide.pdf (PDF via headless Chrome/Edge).
 //
 //   node scripts/build-team-docs.mjs            # markdown + PDFs
 //   node scripts/build-team-docs.mjs --no-pdf   # markdown only
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, mkdtempSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, mkdtempSync, rmSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -35,6 +36,26 @@ const sections = new Map();
     const branch = (body.match(/\*\*Branch:\*\* `([^`]+)`/) || [])[1] || "";
     sections.set(Number(m[1]), { title: m[2].trim(), body, branch });
   });
+}
+
+// Detailed per-issue READMEs (docs/issues/04-profile-page/README.md …) override the summaries above.
+const demote = (md) => {
+  let fence = false;
+  return md.split(/\r?\n/).map((l) => {
+    if (/^\s*```/.test(l)) fence = !fence;
+    return !fence && /^#{1,5}\s/.test(l) ? "#" + l : l;
+  }).join("\n");
+};
+for (const dir of readdirSync(p("docs/issues"), { withFileTypes: true })) {
+  const m = dir.isDirectory() && dir.name.match(/^(\d+)-/);
+  const file = m && p("docs/issues", dir.name, "README.md");
+  if (!file || !existsSync(file)) continue;
+  const md = readFileSync(file, "utf8").trim();
+  const head = md.match(/^# #(\d+): (.+)$/m);
+  const branchRow = md.match(/\| \*\*Branch\*\* \|[^`]*`([^`]+)`/);
+  if (!head) continue;
+  const n = Number(head[1]);
+  sections.set(n, { title: head[2].trim(), body: demote(md), branch: branchRow ? branchRow[1] : sections.get(n)?.branch || "" });
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -82,6 +103,7 @@ function mdToHtml(md) {
   const out = [];
   const lists = []; // stack of { type, indent }
   let para = [];
+  let issueCount = 0;
   const flushPara = () => { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; } };
   const closeLists = (toIndent = -1) => {
     while (lists.length && lists[lists.length - 1].indent > toIndent) out.push(`</li></${lists.pop().type}>`);
@@ -107,7 +129,9 @@ function mdToHtml(md) {
       flushPara(); closeLists();
       const lvl = h[1].length;
       const id = h[2].toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-      out.push(`<h${lvl} id="${id}">${inline(h[2])}</h${lvl}>`);
+      const isIssue = lvl === 2 && /^#\d+:/.test(h[2]);
+      const cls = isIssue ? (issueCount++ ? ' class="issue"' : ' class="issue first"') : "";
+      out.push(`<h${lvl}${cls} id="${id}">${inline(h[2])}</h${lvl}>`);
       i++; continue;
     }
     if (/^\s*---+\s*$/.test(line)) { flushPara(); closeLists(); out.push("<hr>"); i++; continue; }
@@ -118,7 +142,8 @@ function mdToHtml(md) {
       i += 2;
       const rows = [];
       while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
-      out.push(`<table><thead><tr>${head.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
+      const thead = head.every((c) => !c) ? "" : `<thead><tr>${head.map((c) => `<th>${c}</th>`).join("")}</tr></thead>`;
+      out.push(`<table>${thead}<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`);
       continue;
     }
     if (/^>\s?/.test(line)) {
@@ -174,6 +199,8 @@ body { font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-se
 h1 { font-size: 22pt; color: #111827; border-bottom: 3px solid #6d28d9; padding-bottom: 6px; margin: 0 0 10px; }
 h1:not(:first-of-type) { break-before: page; }
 h2 { font-size: 15pt; color: #4c1d95; margin: 22px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; break-after: avoid; }
+h2.issue { break-before: page; font-size: 18pt; }
+h2.issue.first { break-before: auto; }
 h3 { font-size: 12pt; color: #111827; margin: 16px 0 6px; break-after: avoid; }
 h4 { font-size: 11pt; margin: 12px 0 4px; }
 p { margin: 6px 0; }

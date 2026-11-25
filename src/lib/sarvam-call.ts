@@ -1,4 +1,5 @@
 // Pure helpers shared by the browser, server functions and webhooks (no secrets here).
+import { redactAnswers } from "@/lib/call-capture";
 
 export type SarvamAttemptStatus = "connected" | "no_answer" | "busy" | "failed";
 export type CallStatus = "queued" | "in_progress" | "completed" | "no_answer" | "failed";
@@ -81,7 +82,8 @@ export function extractAnswers(
       answers[key] = text;
     }
   }
-  return answers;
+  // A PAN read out on the call is stored masked (ABCxxxxx4F), never in full.
+  return redactAnswers(answers);
 }
 
 const OUTCOME_KEYS = ["disposition", "outcome", "call_outcome", "result", "interest", "interested", "status"];
@@ -101,7 +103,8 @@ export function summarizeAnswers(answers: Answers): {
   const words = (outcome ?? "").replace(/[_-]+/g, " ");
   const sentiment = !outcome ? null : NEGATIVE.test(words) ? "negative" : POSITIVE.test(words) ? "positive" : "neutral";
   const agentSummary = SUMMARY_KEYS.map((candidate) => answers[candidate]).find(Boolean);
-  const entries = Object.entries(answers);
+  // Personal KYC details never go into the one-line summary shown around the app.
+  const entries = Object.entries(answers).filter(([name]) => !name.startsWith("kyc_"));
   const summary = agentSummary ?? (entries.length ? entries.map(([name, value]) => `${humanize(name)}: ${value}`).join(" · ") : null);
   return { outcome, sentiment, summary };
 }

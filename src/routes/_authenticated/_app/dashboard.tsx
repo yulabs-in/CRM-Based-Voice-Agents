@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PhoneCall } from "lucide-react";
 import { StatusBadge } from "@/components/app/StatusBadge";
+import { SalesOverview } from "@/components/app/SalesOverview";
 import { ChartCard, KpiGrid, TrendBox } from "@/components/app/charts";
 import { fetchAll } from "@/lib/fetch-all";
 import { callKpis, callsOverTime, duration, type CallRow } from "@/lib/call-insights";
@@ -139,6 +140,7 @@ function Dashboard() {
           ) : <Skeleton className="h-60" />}
         </Card>
       </div>
+      <SalesOverview start={rangeStart(range)} />
       <VoiceOverview orgId={org.id} start={rangeStart(range)} />
     </div>
   );

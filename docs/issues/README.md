@@ -14,6 +14,39 @@ Read it together with:
 
 ---
 
+## Detailed README for each issue
+
+Every issue has its own detailed README. Each one covers: summary, what already exists in the code, scope, **what to build point by point**, the data model (SQL), files to create or change, rules and edge cases, testing (unit and manual, with commands), acceptance criteria, Git commands for that issue, what to put in the PR, and what to settle with the lead first.
+
+| Issue | Title | Assignee | Branch |
+|---|---|---|---|
+| [#4](04-profile-page/README.md) | Profile page | Kammar Shashank | `feature/4-profile-page` |
+| [#5](05-api-keys-rest-api/README.md) | API keys and a public REST API | Charan Varigonda | `feature/5-api-keys` |
+| [#6](06-mcp-server/README.md) | MCP server for the CRM | Tejaswini | `feature/6-mcp-server` |
+| [#7](07-api-mcp-docs/README.md) | API and MCP documentation (with use cases) | Kammar Shashank | `feature/7-api-docs` |
+| [#8](08-ui-ux-polish/README.md) | UI/UX polish pass | Charan Varigonda | `feature/8-ui-polish-*` |
+| [#9](09-multi-agent-setup/README.md) | Multi-agent setup: create and manage voice agents from the CRM | Tejaswini | `feature/9-multi-agent` |
+| [#10](10-agent-outcome-rules/README.md) | Per-agent outcome rules and lead fields | Kammar Shashank | `feature/10-agent-outcome-rules` |
+| [#11](11-consultation-booking/README.md) | Consultation booking with calendar invites | Charan Varigonda | `feature/11-consultation-booking` |
+| [#12](12-whatsapp-followup/README.md) | WhatsApp follow-up after calls (approved templates) | Tejaswini | `feature/12-whatsapp-followup` |
+| [#13](13-dnc-registry/README.md) | Do-not-contact registry and compliance log | Kammar Shashank | `feature/13-dnc-registry` |
+| [#14](14-notifications/README.md) | Notifications for new interested leads and escalations | Charan Varigonda | `feature/14-notifications` |
+| [#15](15-agent-analytics-ab/README.md) | Agent analytics and A/B testing of scripts | Tejaswini | `feature/15-agent-analytics` |
+| [#16](16-roles-access/README.md) | Roles and feature access for users | Kammar Shashank | `feature/16-roles-access` |
+| [#17](17-e2e-tests/README.md) | End-to-end tests for the call to lead flow | Charan Varigonda | `feature/17-e2e-tests` |
+| [#18](18-dev-database-seed/README.md) | Separate dev database and seed data | Tejaswini | `feature/18-dev-database` |
+| [#19](19-inbound-calls/README.md) | Inbound calls: the agent answers your business number | Kammar Shashank | `feature/19-inbound-calls` |
+| [#20](20-lead-capture-widget/README.md) | Website lead-capture widget with instant AI callback | Charan Varigonda | `feature/20-lead-widget` |
+| [#21](21-transcript-search-player/README.md) | Transcript search and a synced recording player | Tejaswini | `feature/21-transcript-search` |
+| [#22](22-ai-contact-summary/README.md) | AI contact summary and next best action | Kammar Shashank | `feature/22-ai-contact-summary` |
+| [#23](23-usage-cost-dashboard/README.md) | Usage and cost dashboard | Charan Varigonda | `feature/23-usage-dashboard` |
+| [#24](24-email-sync/README.md) | Email sync on the contact timeline | Tejaswini | `feature/24-email-sync` |
+| [#25](25-dark-mode-pwa/README.md) | Dark mode and installable mobile app (PWA) | Kammar Shashank | `feature/25-dark-mode-pwa` |
+
+The sections further down are short summaries. **The per-issue READMEs are the source of truth.**
+
+---
+
 ## 1. Team and assignments
 
 | Member | GitHub | Issues |

@@ -16,7 +16,7 @@ This guide covers everything you need to build, test and ship your issues: one-t
 | 4 | [#17](https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/17) | End-to-end tests for the call to lead flow | `feature/17-e2e-tests` |
 | 5 | [#20](https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/20) | Website lead-capture widget with instant AI callback | `feature/20-lead-widget` |
 | 6 | [#23](https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/23) | Usage and cost dashboard | `feature/23-usage-dashboard` |
-| 7 | [#8](https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/8) | UI/UX polish pass | `feature/8-ui-polish` |
+| 7 | [#8](https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/8) | UI/UX polish pass | `feature/8-ui-polish-audit` |
 
 ## Your plan
 
@@ -473,158 +473,1061 @@ git stash pop
 
 # Your issues in detail
 
-The sections below come from [`docs/issues/README.md`](../issues/README.md), which also explains how all the team's issues fit together (dependencies, shared files, migration numbering).
+Each section below is the full README of one of your issues (from `docs/issues/<number>-<name>/README.md`). [`docs/issues/README.md`](../issues/README.md) explains how all the team's issues fit together: dependencies, shared files, migration numbering.
 
 ## #5: API keys and a public REST API
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/5-api-keys` · **Depends on:** nothing (use #16's permission map once it lands) · **Blocks:** #6 MCP server, #7 docs
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/5 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/5-api-keys` (you may split it into `feature/5-api-keys-ui` and `feature/5-rest-api`) |
+| **PR into** | `dev` |
+| **Order** | Charan's 1st issue: **others are waiting on it** |
+| **Depends on** | nothing. Later, use `can()` from #16 for who may manage keys |
+| **Blocks** | #6 MCP server (Tejaswini), #7 API docs (Shashank) |
+| **Size** | ~6–8 days |
 
-**Why:** customers want to connect their own systems (website forms, sheets, dashboards) to the CRM.
+### 1. Summary
 
-**Build:**
-1. Migration `api_keys`: `id`, `organization_id`, `name`, `key_prefix` (first 8 chars, shown in the UI), `key_hash` (SHA-256 hex, **never store the raw key**), `scopes text[]`, `created_by`, `last_used_at`, `revoked_at`, `created_at`. RLS: only owners and admins of the org can select, insert or update.
-2. Scopes: `contacts:read`, `contacts:write`, `leads:read`, `deals:read`, `calls:read`, `calls:write`.
-3. Key format: `yk_live_` + 32 random bytes base62 or hex (`crypto.getRandomValues`). Show it **once** with a copy button. After that, only the prefix is visible.
-4. Settings → **API & MCP** page: create (name + scope checkboxes), list (name, prefix, scopes, created by, last used), revoke (with a confirm dialog).
-5. Shared server helper `src/lib/api-auth.server.ts`: `authenticateApiKey(request, requiredScope)` → reads `Authorization: Bearer yk_live_…` → SHA-256 → finds an un-revoked key → checks the scope → returns `{ organizationId, keyId }`, or throws a 401/403 JSON error. #6 reuses this.
-6. Routes under `src/routes/api/v1/` (copy the structure of `src/routes/api/public/*.ts`):
-   - `GET /api/v1/contacts` (search `?q=`), `POST /api/v1/contacts`, `GET /api/v1/contacts/:id`, `PATCH /api/v1/contacts/:id`
-   - `GET /api/v1/leads`, `GET /api/v1/deals`
-   - `GET /api/v1/calls`, `GET /api/v1/calls/:id` (status, duration, answers, summary, transcript)
-   - `POST /api/v1/calls`: places an AI call by reusing the logic in `startSarvamCall`. Requires `calls:write` and `consent_confirmed: true`, and refuses do-not-contact numbers.
-7. Every query uses the service client **and** `.eq('organization_id', orgId)`. That filter is what keeps orgs apart.
-8. Errors are always `{ "error": { "code": "unauthorized" | "forbidden" | "not_found" | "invalid_request" | "rate_limited", "message": "…" } }`. Pagination is `?limit=` (default 50, max 200) plus `?cursor=` (the last `created_at`/`id`). Responses include `next_cursor`.
-9. Rate limit: for example 60 requests per minute per key (an in-memory map is fine to start; note the limitation). Update `last_used_at` on every request, at most once a minute.
+Customers can create **API keys** in Settings and use them to read and write their CRM data from their own systems over a **REST API** at `/api/v1/*`: contacts, leads, deals, calls, and placing an AI call. Keys are scoped (each grants only certain actions), revocable, hashed in the database, and **strictly limited to their own workspace**.
 
-**Test:**
-- Unit tests (`src/test/api-auth.test.ts`): hashing, a valid key, a revoked key → 401, a missing scope → 403.
-- With the dev server running:
-  ```bash
-  curl -s http://localhost:<port>/api/v1/contacts -H "Authorization: Bearer yk_live_xxx"
-  curl -s -X POST http://localhost:<port>/api/v1/contacts -H "Authorization: Bearer yk_live_xxx" -H "Content-Type: application/json" -d '{"name":"Test User","phone":"+919999999999"}'
-  ```
-- Revoke the key and repeat: you get 401. Use a key without `contacts:write` for the POST: you get 403.
-- **Cross-org test:** a key from org A asks for a contact id from org B and must get 404. Write this as a test.
+### 2. What already exists
 
-**Done when:** a key created in the UI works with `curl`, a revoked key gets 401, a key without the scope gets 403, and a key from org A can never read org B's data.
+- Server routes live in `src/routes/api/public/*.ts`. Copy their structure (`createFileRoute(...)({ server: { handlers: { GET, POST } } })`).
+- The service-role client is `supabaseAdmin` from `@/lib/supabase-admin.server`. It **bypasses RLS**, so you must filter by `organization_id` yourself.
+- `startSarvamCall` in `src/lib/sarvam.functions.ts` places a call (consent checks, do-not-call refusal, variable mapping).
+- Tables: `contacts`, `leads`, `deals`, `calls` (with `answers`, `summary`, `transcript`, `transcript_turns`).
+- Role helpers in SQL: `public.has_org_role(org, array['owner','admin']::public.org_role[])`.
+
+### 3. Scope
+
+**In scope:** `api_keys` table, the key-management UI, a shared auth helper, REST endpoints, JSON errors, pagination, rate limit, `last_used_at`, tests.
+
+**Out of scope:** outgoing webhooks, OAuth apps, per-key IP allow-lists (you can note them as follow-ups).
+
+### 4. What to build, point by point
+
+#### 4.1 Database
+1. Migration `00NN_api_keys.sql` (see §5): the table, indexes, RLS for owners/admins only.
+
+#### 4.2 Key generation (server function)
+2. `createApiKey({ organizationId, name, scopes })` as a server function (`createServerFn`):
+   - check the caller is an owner/admin of the org (or `can(role,'api_keys.manage')` once #16 lands)
+   - generate `yk_live_` + 32 random bytes as base62 (`crypto.getRandomValues`)
+   - store `key_prefix` = the first 12 chars (e.g. `yk_live_Ab3x`) and `key_hash` = SHA-256 hex of the full key
+   - return the **full key once**, and never store or log it
+3. `revokeApiKey({ id })`: sets `revoked_at = now()`, owners/admins only.
+4. `listApiKeys({ organizationId })`: never returns `key_hash`.
+
+#### 4.3 Settings → "API & MCP" page
+5. New section or route `src/routes/_authenticated/_app/settings.api.tsx` (or a tab in `settings.tsx`; agree with the lead).
+6. **Create key** dialog: name (required), scope checkboxes with a one-line explanation each, and a "Read-only" preset.
+7. After creating: a dialog shows the full key in a monospace box with a **Copy** button and the warning "You won't see this key again."
+8. Table: name, prefix (`yk_live_Ab3x…`), scopes as chips, created by, created, last used ("Never" / relative time), status (Active/Revoked), and a **Revoke** button with a confirm dialog.
+9. Empty state: "No API keys yet. Create one to connect your website, sheets or AI assistant." plus a link to the docs (#7).
+
+#### 4.4 Auth helper (`src/lib/api-auth.server.ts`), shared with #6
+10. `authenticateApiKey(request: Request, required: Scope): Promise<{ organizationId: string; keyId: string; scopes: Scope[] }>`
+    - read `Authorization: Bearer <key>`; if it's missing or malformed → `ApiError(401, "unauthorized")`
+    - hash it, then select from `api_keys` where `key_hash = ?` and `revoked_at is null`; if nothing → 401
+    - if `required` isn't in `scopes` → `ApiError(403, "forbidden", "This key lacks the calls:write scope")`
+    - rate limit (see 4.6) → `ApiError(429, "rate_limited")`
+    - update `last_used_at` at most once per minute per key (fire-and-forget)
+11. `apiError(e)` → `Response` with JSON `{ "error": { "code", "message" } }` and the right status.
+12. `json(data, init?)` helper. Always set `Content-Type: application/json` and `Cache-Control: no-store`.
+
+#### 4.5 Endpoints (`src/routes/api/v1/…`)
+
+| Method & path | Scope | Notes |
+|---|---|---|
+| `GET /api/v1/contacts` | `contacts:read` | `?q=` searches name/phone/email; `?project_id=`; pagination |
+| `POST /api/v1/contacts` | `contacts:write` | body `{ first_name, last_name?, phone, email?, city?, project_id?, custom_fields? }`; normalise the phone; if the phone already exists in the org, update it instead of creating a duplicate (return 200 vs 201) |
+| `GET /api/v1/contacts/:id` | `contacts:read` | 404 if it's not in the org |
+| `PATCH /api/v1/contacts/:id` | `contacts:write` | partial update, whitelisted fields only |
+| `GET /api/v1/leads` | `leads:read` | `?status=` filter |
+| `GET /api/v1/deals` | `deals:read` | `?stage=` filter |
+| `GET /api/v1/calls` | `calls:read` | `?status=&agent_id=&campaign_id=&since=` |
+| `GET /api/v1/calls/:id` | `calls:read` | status, duration, answers, summary, transcript, recording URL (signed, short-lived) |
+| `POST /api/v1/calls` | `calls:write` | body `{ phone, agent_id, contact_id?, variables?, consent_confirmed: true }`; reuse the core of `startSarvamCall`; refuse do-not-contact numbers (use `isBlocked()` from #13 when it lands); returns `{ id, status }` |
+
+13. Move the shared query code into `src/lib/api/contacts.server.ts`, `calls.server.ts`, etc., so #6 can call the **same functions**.
+14. Every query: `supabaseAdmin.from(t).select(cols).eq("organization_id", orgId)`. Never select `*`; whitelist the columns you return.
+15. Validate bodies and query strings with zod. Bad input → 400 `invalid_request`, with the field in the message.
+
+#### 4.6 Pagination and rate limit
+16. `?limit=` (default 50, max 200), `?cursor=` = an opaque base64 of `created_at|id`. Order by `created_at desc, id desc`. Response: `{ data: [...], next_cursor: string | null }`.
+17. Rate limit: 60 requests/minute per key, using a fixed window in an in-memory `Map`. Add a comment that this is per server instance (good enough for now). Set the `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers.
+
+### 5. Data model
+
+```sql
+-- 00NN_api_keys.sql: per-workspace API keys (only the SHA-256 of the key is stored)
+create table if not exists public.api_keys (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 80),
+  key_prefix text not null,
+  key_hash text not null unique,
+  scopes text[] not null default '{}',
+  created_by uuid default auth.uid() references auth.users(id) on delete set null,
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists api_keys_org_idx on public.api_keys (organization_id);
+alter table public.api_keys enable row level security;
+create policy "admins read keys" on public.api_keys for select to authenticated
+  using (public.has_org_role(organization_id, array['owner','admin']::public.org_role[]));
+create policy "admins create keys" on public.api_keys for insert to authenticated
+  with check (public.has_org_role(organization_id, array['owner','admin']::public.org_role[]));
+create policy "admins revoke keys" on public.api_keys for update to authenticated
+  using (public.has_org_role(organization_id, array['owner','admin']::public.org_role[]));
+grant select, insert, update on public.api_keys to authenticated;
+grant all on public.api_keys to service_role;
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_api_keys.sql` | **new** |
+| `src/lib/api-auth.server.ts` | **new**: auth, errors, rate limit |
+| `src/lib/api-keys.functions.ts` | **new**: create/list/revoke server functions |
+| `src/lib/api/*.server.ts` | **new**: shared queries (contacts, leads, deals, calls) |
+| `src/routes/api/v1/contacts.ts`, `contacts.$id.ts`, `leads.ts`, `deals.ts`, `calls.ts`, `calls.$id.ts` | **new** |
+| `src/routes/_authenticated/_app/settings*.tsx` | API & MCP section |
+| `src/integrations/supabase/types.ts` | `api_keys` types |
+| `src/test/api-auth.test.ts`, `src/test/api-contacts.test.ts` | **new** |
+
+### 7. Rules, edge cases, security
+
+- **The raw key is never stored, logged or returned twice.** Make sure you don't `console.log` the request headers.
+- Use a constant-time comparison where you compare hashes in JS.
+- **Cross-org isolation is the #1 risk:** every query filters by the key's `organization_id`, including lookups by id.
+- Recording URLs: return a **signed URL** valid for ~10 minutes, never a permanent public URL.
+- `POST /calls` needs `consent_confirmed: true`, otherwise 400. A blocked number → 409 `do_not_contact`.
+- A revoked key stops working immediately (no caching of key lookups longer than a few seconds).
+
+### 8. Testing
+
+**Unit tests:**
+- hashing is deterministic; `authenticateApiKey` returns 401 (missing header / unknown key / revoked key), 403 (missing scope), and success
+- pagination cursor encode/decode round-trips; `limit` is clamped to 1–200
+- zod validation errors become a 400 with a helpful message
+- **cross-org:** with a mocked `supabaseAdmin`, `getContact(orgA, idFromOrgB)` returns null → 404
+
+**Manual (dev server running; use the port Vite prints):**
+
+```bash
+KEY=yk_live_xxxxxxxx
+BASE=http://localhost:8080
+curl -s $BASE/api/v1/contacts -H "Authorization: Bearer $KEY" | jq
+curl -s -X POST $BASE/api/v1/contacts -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"first_name":"Test","phone":"+919000000001"}' | jq
+curl -s "$BASE/api/v1/calls?limit=5" -H "Authorization: Bearer $KEY" | jq
+curl -s -o /dev/null -w "%{http_code}\n" $BASE/api/v1/contacts                       # 401
+curl -s -o /dev/null -w "%{http_code}\n" $BASE/api/v1/contacts -H "Authorization: Bearer yk_live_wrong"   # 401
+```
+
+Then revoke the key (→ 401), use a read-only key for the POST (→ 403), and make 61 quick calls (→ 429).
+
+### 9. Acceptance criteria
+
+- [ ] An owner/admin can create, view (prefix only) and revoke keys; the full key is shown once
+- [ ] A key from the UI works with `curl` on every endpoint in §4.5
+- [ ] Revoked key → 401; missing scope → 403; bad input → 400; over the limit → 429
+- [ ] A key from org A can never read or change org B's data (test included)
+- [ ] `authenticateApiKey` and the shared query functions are reusable by #6
+- [ ] All checks pass
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/5-api-keys
+git add db/migrations/00NN_api_keys.sql src/lib/api-auth.server.ts
+git commit -m "API keys: table, hashing and auth helper"
+git push -u origin feature/5-api-keys
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#5 API keys and public REST API" --body "Closes #5 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #5`; "Migration `00NN_api_keys.sql` needs applying"
+- The endpoint table with request/response examples (Shashank copies these into the #7 docs)
+- The `authenticateApiKey` signature for Tejaswini (#6)
+- curl output for 200 / 401 / 403 / 429
+
+### 12. Settle with the lead before starting
+
+- Is `/settings/api` its own route or a tab?
+- Rate limit numbers; whether `deals:read` is a separate scope (as above) or part of `leads:read`.
 
 ---
 
 ## #14: Notifications for new interested leads and escalations
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/14-notifications` · **Depends on:** nothing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/14 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/14-notifications` |
+| **PR into** | `dev` |
+| **Order** | Charan's 2nd issue |
+| **Depends on** | nothing |
+| **Blocks** | nothing |
+| **Size** | ~4 days (+1 for the optional email digest) |
 
-**Why:** the team should hear about hot leads and escalations straight away.
+### 1. Summary
 
-**Build:**
-1. Migration `notifications` (`id`, `organization_id`, `user_id`, `type`, `title`, `body`, `link`, `priority`, `read_at`, `created_at`). RLS: users see only their own. Add the table to the `supabase_realtime` publication.
-2. Create notifications from `crm-sync.server.ts` (via a small `notify()` helper): new interested lead, consultation booked, escalation (high priority), do-not-contact request. Decide who receives each: the deal owner, otherwise admins and managers.
-3. `NotificationBell.tsx` in `AppShell.tsx`: unread count badge, dropdown list, mark read, mark all read, click → `link`. Live through Supabase Realtime (`postgres_changes` on `notifications` filtered by `user_id`).
-4. Optional: a morning email digest (yesterday's interested leads and pending follow-ups).
+The team hears about hot leads and escalations **straight away**. A bell in the top bar shows an unread count that updates **live** (no reload). It lists notifications for new interested leads, booked consultations, escalations (high priority) and do-not-contact requests.
 
-**Test:**
-- Unit test for "who gets notified" per event type.
-- Open the app in two browser windows as two users, simulate an interested webhook, and check the right user's bell updates **without a reload**.
-- User B must not be able to read user A's notifications (try it from the browser console).
+### 2. What already exists
 
-**Done when:** finishing an interested test call shows a notification within seconds, without a reload.
+- `applyCallOutcomeToCrm` in `src/lib/crm-sync.server.ts` knows when a lead is created or moves to interested, when an escalation task is made, and when a contact is blocked.
+- Realtime is already used for live call updates (migration `0014_call_outcomes_to_crm_and_realtime.sql` shows how tables are added to `supabase_realtime`).
+- Top bar and account menu: `src/components/app/AppShell.tsx`.
+
+### 3. Scope
+
+**In scope:** the `notifications` table, a `notify()` helper, recipients logic, events from the sync, the bell UI with live updates, mark read / mark all read.
+
+**Optional:** a morning email digest.
+
+**Out of scope:** push notifications to phones, per-user notification preferences beyond "mute".
+
+### 4. What to build, point by point
+
+#### 4.1 Database
+1. Migration `00NN_notifications.sql` (§5): table, indexes, RLS (users see and update only their own), added to the `supabase_realtime` publication.
+
+#### 4.2 Server helper (`src/lib/notify.server.ts`)
+2. `notify({ orgId, type, title, body?, link?, priority?, recipients })`: bulk insert, one row per recipient.
+3. `recipientsFor(orgId, event, { dealOwnerId, assigneeId })`:
+   - `lead.interested`, `consultation.booked` → the deal owner if set, otherwise all `owner`, `admin` and `sales_manager` members
+   - `call.escalated` → owners, admins and sales managers (always), plus the deal owner. `priority = 'high'`
+   - `contact.do_not_contact` → owners and admins
+4. Never throw out of `notify()`. A notification failure must not break the CRM sync (`try/catch` and log).
+
+#### 4.3 Hook into the sync (small diff)
+5. In `crm-sync.server.ts`, after the existing steps, call `notify` for:
+   - a new lead created, or a lead moved to an interested/qualified status → "New interested lead: <name>" (body: product interest and a summary snippet; link `/leads?contact=<id>`)
+   - consultation booked → "Consultation booked: <name>, <time>"
+   - escalation task created → "Escalation: <name>, <reason>" (high)
+   - do-not-contact → "<name> asked not to be contacted"
+6. **Idempotent:** add `dedupe_key` (e.g. `lead.interested:<call_id>`) with a unique index on `(user_id, dedupe_key)`, and insert with `on conflict do nothing`. Webhook retries and the cron sync must not double-notify.
+
+#### 4.4 Bell UI (`src/components/app/NotificationBell.tsx`)
+7. A bell icon button in the top bar (`aria-label="Notifications"`) with a red badge showing the unread count (9+ cap).
+8. Popover: the latest 20 notifications. Unread ones are bold with a dot; high-priority ones have a red accent. Show relative time ("2 min ago"), title and body (2 lines).
+9. Clicking an item marks it read and navigates to its `link`.
+10. A "Mark all read" button, and a "View all" link to `/notifications` (a simple full list page with paging).
+11. **Live:** subscribe with `supabase.channel('notifications').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.<uid>' }, ...)`. On insert, prepend it, bump the count, and show a toast for `priority = 'high'` only.
+12. Unsubscribe on unmount and on org switch.
+
+#### 4.5 Optional: morning digest
+13. At 8:30 IST, an email to each user: yesterday's interested leads and pending follow-ups. Use the existing cron route pattern (`/api/public/cron-sync`) or a separate scheduled route, and an email provider agreed with the lead.
+
+### 5. Data model
+
+```sql
+-- 00NN_notifications.sql: per-user in-app notifications, delivered live via Supabase Realtime
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null, title text not null, body text, link text,
+  priority text not null default 'normal' check (priority in ('normal','high')),
+  dedupe_key text,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_user_unread_idx on public.notifications (user_id, created_at desc) where read_at is null;
+create unique index if not exists notifications_dedupe_key on public.notifications (user_id, dedupe_key) where dedupe_key is not null;
+alter table public.notifications enable row level security;
+create policy "own read" on public.notifications for select to authenticated using (user_id = auth.uid());
+create policy "own mark read" on public.notifications for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, update on public.notifications to authenticated;
+grant all on public.notifications to service_role;
+alter publication supabase_realtime add table public.notifications;
+```
+
+Inserts come only from the server (service role); there is no insert policy for `authenticated`.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_notifications.sql` | **new** |
+| `src/lib/notify.server.ts` | **new** |
+| `src/lib/crm-sync.server.ts` | calls to `notify` (small) |
+| `src/components/app/NotificationBell.tsx` | **new** |
+| `src/components/app/AppShell.tsx` | mount the bell |
+| `src/routes/_authenticated/_app/notifications.tsx` | **new**: full list |
+| `src/test/notify.test.ts` | **new** |
+
+### 7. Rules, edge cases, security
+
+- Users only ever see their own notifications (RLS). **Test this.**
+- No duplicates on retries (`dedupe_key`).
+- Notification failures never break call processing.
+- Don't put full transcripts or sensitive answers in `body`; keep it to a short summary.
+- Members removed from the org stop receiving new notifications (recipients are computed from current memberships).
+
+### 8. Testing
+
+**Unit tests:** `recipientsFor` for each event, with and without a deal owner; the dedupe key format; `notify` swallows errors (mock it to throw, and assert the sync continues).
+
+**Manual:**
+1. Open the app as user A (normal window) and user B (private window, same org, admin).
+2. Simulate an interested webhook for a contact whose deal owner is A → A's bell updates **within seconds without a reload**; B gets nothing (A is the owner).
+3. Simulate an escalation → both get a high-priority notification and a toast.
+4. Replay the same webhook → no duplicate.
+5. Mark read / mark all read → the count updates; reload → still read.
+6. In B's console: `await supabase.from('notifications').select('*').eq('user_id','<A_ID>')` → returns nothing.
+
+```bash
+npx vitest run src/test/notify.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] An interested test call shows a notification within seconds, without a reload
+- [ ] Escalations are high priority and reach managers
+- [ ] Mark read / mark all read work; the unread count is correct
+- [ ] No duplicates on webhook retry; users can't read others' notifications
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/14-notifications
+git add db/migrations/00NN_notifications.sql src/lib/notify.server.ts
+git commit -m "Notifications: table, recipients and notify helper"
+git push -u origin feature/14-notifications
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#14 Notifications" --body "Closes #14 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #14`; the migration to apply
+- A GIF of the bell updating live in two windows
+
+### 12. Settle with the lead before starting
+
+- The recipient rules per event.
+- Whether the email digest is in scope now, and which email provider to use.
 
 ---
 
 ## #11: Consultation booking with calendar invites
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/11-consultation-booking` · **Depends on:** nothing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/11 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/11-consultation-booking` |
+| **PR into** | `dev` |
+| **Order** | Charan's 3rd issue |
+| **Depends on** | nothing |
+| **Blocks** | nothing |
+| **Size** | ~5–6 days (+2 for optional Google Calendar) |
 
-**Why:** a consultation booked on a call should land on the team's calendar automatically.
+### 1. Summary
 
-**Build:**
-1. Time parser `src/lib/parse-followup-time.ts`: turns "tomorrow 11 AM", "day after tomorrow morning", "Monday evening", "25th at 3" into a datetime in **Asia/Kolkata**, relative to the call end time. Define defaults: morning = 10:00, afternoon = 14:00, evening = 18:00. Return `null` when unsure, and never guess wildly.
-2. When the agent returns `consultation_booked` (or `callback` with `follow_up_time`), create a `meetings` row (the table exists) linked to the contact and deal from `crm-sync.server.ts`. Show it on the Meetings page and the contact timeline.
-3. Owner assignment: the deal owner, otherwise round-robin among users with a chosen role (setting).
-4. Optional: Google Calendar (OAuth per user, tokens server-side) to create the event and invite the advisor.
+When a caller books a consultation on an AI call ("tomorrow at 11", "day after tomorrow morning"), the CRM should automatically create a **meeting** at the right time in **IST**, linked to the contact and deal, assigned to an advisor. It shows on the Meetings page and the contact timeline. Optionally, it also creates a Google Calendar event and invites the advisor.
 
-**Test:**
-- Many parser unit tests (`src/test/parse-followup-time.test.ts`). Freeze "now" with `vi.setSystemTime`, and cover IST midnight edge cases and English/Hinglish phrasing.
-- Simulate a `consultation_booked` webhook and check the meeting appears with the right time and owner.
-- Running the same webhook twice must not create two meetings (idempotent by call id).
+### 2. What already exists
 
-**Done when:** a consultation booked on a call shows up as a meeting with the right time and owner within a minute of the call ending.
+- `meetings` table: `title`, `starts_at`, `duration_minutes`, `location`, `contact_id`, `notes`, `status` (no `deal_id`, owner or call link yet).
+- Call answers in `calls.answers` (jsonb), e.g. `disposition: "consultation_booked"`, `follow_up_time: "tomorrow 11 AM"`, `consultation_mode: "phone"`.
+- `applyCallOutcomeToCrm` in `src/lib/crm-sync.server.ts` runs after every completed call (webhook and cron sync).
+- Pages: `meetings.tsx`, `activity-timeline.tsx`.
+
+### 3. Scope
+
+**In scope:** the time parser with lots of tests, meeting creation from the sync, owner assignment, a settings option, idempotency, display on Meetings and the timeline.
+
+**Optional:** Google Calendar (OAuth per user).
+
+**Out of scope:** rescheduling by SMS/WhatsApp, customer-facing calendar invites.
+
+### 4. What to build, point by point
+
+#### 4.1 Database
+1. Migration `00NN_meetings_from_calls.sql`: add `meetings.deal_id`, `meetings.owner_id`, `meetings.call_id` (unique when not null; this makes it idempotent), `meetings.source` (`manual`/`call`), `meetings.external_event_id`. Add `organizations.meeting_assignment` jsonb (or a small `booking_settings` table).
+
+#### 4.2 Time parser (`src/lib/parse-followup-time.ts`), pure, heavily tested
+2. `parseFollowUpTime(text: string, reference: Date, tz = "Asia/Kolkata"): { start: Date; confidence: "exact" | "approximate" } | null`
+3. Understand:
+   - relative days: today, tonight, tomorrow, day after tomorrow, "in 2 days", next week
+   - weekdays: Monday … Sunday, "next Monday", "this Friday" (the next occurrence, never in the past)
+   - dates: "25th", "25 Dec", "25/12", "December 25"
+   - times: "11", "11 AM", "11:30 am", "3 pm", "15:00", "half past 3", "3 o'clock"
+   - parts of day: morning 10:00, afternoon 14:00, evening 18:00, night 20:00 (`approximate`)
+   - Hinglish: "kal" (tomorrow), "parso" (day after), "subah" (morning), "shaam" (evening), "dopahar" (afternoon), "raat" (night)
+4. A bare hour without am/pm: 1–7 → PM, 8–11 → AM, 12 → noon (business hours).
+5. A result in the past (e.g. "11 AM" said at 2 PM) → move to the next day.
+6. Unsure → return `null`. **Never guess wildly.** A null means "create a task to confirm the time" instead of a meeting.
+7. Compute in IST and return a UTC `Date` (no library is needed; IST is UTC+5:30 with no DST, but write it as a helper `fromIst(y,m,d,h,min)`).
+
+#### 4.3 Create the meeting (sync)
+8. In `crm-sync.server.ts`, add a call to a **new** function `maybeBookConsultation(call, contact, dealId, verdict)` in `src/lib/booking.server.ts`. Keep the change in the sync file to ~3 lines.
+9. Trigger when the disposition is `consultation_booked`, **or** `callback` with a `follow_up_time` answer.
+10. Parse `answers.follow_up_time` (or `callback_time`) relative to `call.ended_at`:
+    - parsed → insert a `meetings` row: title "Consultation: <name>", `starts_at`, 30 min, `location` from `consultation_mode`, notes = call summary plus the raw time text, `call_id`, `deal_id`, `owner_id`, `source = 'call'`
+    - not parsed → create a task "Confirm consultation time with <name> (said: '<text>')" due in 2 hours
+11. **Idempotent:** `on conflict (call_id) do nothing`. Webhook retries and the cron sync must not create duplicates.
+
+#### 4.4 Owner assignment
+12. Owner = the deal's owner if set; otherwise round-robin among members with the configured role (e.g. `sales_rep`), picking the user with the fewest meetings in the next 7 days (ties broken by name). Store the setting in `organizations.meeting_assignment`.
+13. Settings UI: "Consultations are assigned to: Deal owner, else round-robin among [role ▾]".
+
+#### 4.5 Display
+14. Meetings page: show call-booked meetings with a "From AI call" badge and a link to the call.
+15. Contact timeline: a meeting entry with time and owner.
+
+#### 4.6 Optional: Google Calendar
+16. Per-user OAuth (Google Calendar scope `calendar.events`). Tokens are stored server-side, encrypted.
+17. On meeting creation, if the owner connected Google: create an event (IST), invite the owner, and save `external_event_id`.
+
+### 5. Data model
+
+```sql
+-- 00NN_meetings_from_calls.sql: link meetings to calls/deals/owners so AI-booked consultations can be created
+alter table public.meetings
+  add column if not exists deal_id uuid references public.deals(id) on delete set null,
+  add column if not exists owner_id uuid references auth.users(id) on delete set null,
+  add column if not exists call_id uuid references public.calls(id) on delete set null,
+  add column if not exists source text not null default 'manual',
+  add column if not exists external_event_id text;
+create unique index if not exists meetings_call_id_key on public.meetings (call_id) where call_id is not null;
+alter table public.organizations add column if not exists meeting_assignment jsonb not null default '{"mode":"deal_owner_then_round_robin","role":"sales_rep"}';
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_meetings_from_calls.sql` | **new** |
+| `src/lib/parse-followup-time.ts` | **new**: parser |
+| `src/lib/booking.server.ts` | **new**: `maybeBookConsultation`, `pickOwner` |
+| `src/lib/crm-sync.server.ts` | one call to `maybeBookConsultation` |
+| `src/routes/_authenticated/_app/meetings.tsx`, `activity-timeline.tsx` | badge and link |
+| `src/routes/_authenticated/_app/settings.tsx` | assignment setting |
+| `src/test/parse-followup-time.test.ts`, `src/test/booking.test.ts` | **new** |
+
+### 7. Rules and edge cases
+
+- Times are always shown in IST in the UI and stored in UTC.
+- A time on a Sunday or outside 9:00–20:00 → keep it, but add a note "Outside business hours" (don't move it silently).
+- The same call processed twice → one meeting.
+- A contact without a deal → `deal_id = null` is fine.
+- No eligible owner → `owner_id = null`, plus a task for admins "Assign consultation".
+
+### 8. Testing
+
+**Parser unit tests** (aim for 30+ cases). Freeze time:
+
+```ts
+vi.useFakeTimers();
+vi.setSystemTime(new Date("2026-11-23T08:30:00Z")); // 14:00 IST, Monday
+expect(parseFollowUpTime("tomorrow 11 AM", new Date())?.start.toISOString()).toBe("2026-11-24T05:30:00.000Z");
+```
+
+Cover: tomorrow 11 AM; day after tomorrow morning; Monday evening (next Monday); "11" at 14:00 → tomorrow 11:00; "kal subah"; "parso shaam 6 baje"; "25th at 3"; 23:50 IST "tomorrow" (date boundary); garbage text → null.
+
+**Booking tests:** `pickOwner` round-robin fairness; a second call with the same `call_id` → no new meeting; an unparseable time → task, no meeting.
+
+**Manual:** simulate a completed webhook with `disposition: consultation_booked`, `follow_up_time: "tomorrow 11 AM"` → the meeting appears on the Meetings page with the right IST time and owner. Replay the same webhook → still one meeting.
+
+```bash
+npx vitest run src/test/parse-followup-time.test.ts src/test/booking.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] A booked consultation becomes a meeting with the right time (IST) and owner within a minute of the call ending
+- [ ] An unparseable time creates a "confirm time" task instead
+- [ ] No duplicates on webhook retries or cron sync
+- [ ] Shown on the Meetings page and the contact timeline with a link to the call
+- [ ] 30+ parser tests; all checks pass
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/11-consultation-booking
+git add src/lib/parse-followup-time.ts src/test/parse-followup-time.test.ts
+git commit -m "Booking: IST follow-up time parser with tests"
+git push -u origin feature/11-consultation-booking
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#11 Consultation booking" --body "Closes #11 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #11`; the migration to apply; the parser test table (input → expected)
+- A screenshot of a call-booked meeting
+
+### 12. Settle with the lead before starting
+
+- The default consultation length, and business hours.
+- Whether Google Calendar is in this PR or a follow-up.
 
 ---
 
 ## #17: End-to-end tests for the call to lead flow
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/17-e2e-tests` · **Depends on:** #18 seed data (start with your own fixtures if #18 isn't merged yet)
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/17 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/17-e2e-tests` |
+| **PR into** | `dev` |
+| **Order** | Charan's 4th issue |
+| **Depends on** | #18 seed data (Tejaswini). Start with your own fixtures if it isn't merged |
+| **Blocks** | nothing |
+| **Size** | ~5–6 days |
 
-**Why:** catch regressions in the most important flow automatically.
+### 1. Summary
 
-**Build:**
-1. Add Playwright: `npm i -D @playwright/test`, `npx playwright install chromium`. Config in `playwright.config.ts` with `webServer` starting `npm run dev`. Tests go in `e2e/`.
-2. Seeded test workspace and user (from #18). **Mock Sarvam**: the outbound call request is intercepted or stubbed, and the test then POSTs a simulated payload to `/api/public/sarvam-call-webhook`.
-3. Flow per case: sign in → place a test call → send the webhook → check the call shows Completed, the lead appears under Leads → Interested, the deal is in the right pipeline stage and the follow-up task exists.
-4. Cases: interested; consultation booked (stock agent); not interested (no new lead); do-not-contact (contact blocked and the next call refused); webhook missing (the sync path).
-5. CI: add a job to `.github/workflows/ci.yml` that runs `npx playwright test` on every PR, uploading the HTML report as an artifact when it fails. Test credentials come from GitHub Actions secrets, never from the repo.
+Automatically catch regressions in the most important flow: **place a call → Sarvam reports the result → the CRM shows the call, lead, deal and task correctly.** Playwright tests drive a real browser against a local dev server with a seeded workspace and a **mocked Sarvam**, and run in GitHub Actions on every PR.
 
-**Test:** break a mapping on purpose (for example interested → wrong stage in `crm-outcome.ts`) and confirm the suite fails, then revert.
+### 2. What already exists
 
-**Done when:** the suite runs green in CI and fails if a disposition mapping is broken.
+- Unit tests with Vitest (`src/test/*`), and CI in `.github/workflows/ci.yml` (Vitest plus build on PRs into `dev`/`main`).
+- Webhook route: `src/routes/api/public/sarvam-call-webhook.ts`. It finds the call by id and checks `webhook_token_hash`, then runs `applyCallOutcomeToCrm`.
+- Cron sync route: `src/routes/api/public/cron-sync.ts` (pulls from Sarvam when the webhook never arrives).
+- Outcome mapping: `src/lib/crm-outcome.ts`.
+
+### 3. Scope
+
+**In scope:** Playwright setup, a test workspace and user, the Sarvam mock, 5 scenario tests, a CI job, an HTML report artifact on failure, and how-to-run docs.
+
+**Out of scope:** visual regression, load testing, tests against production.
+
+### 4. What to build, point by point
+
+#### 4.1 Setup
+1. `npm i -D @playwright/test` and `npx playwright install --with-deps chromium`.
+2. `playwright.config.ts`: `testDir: "e2e"`, `use.baseURL: "http://localhost:8080"` (match the dev server port), `webServer: { command: "npm run dev", url: baseURL, reuseExistingServer: !process.env.CI, timeout: 120_000 }`, retries 1 in CI, `trace: "retain-on-failure"`, `reporter: [["html", { open: "never" }], ["list"]]`.
+3. Add npm scripts: `"e2e": "playwright test"` and `"e2e:ui": "playwright test --ui"`.
+4. Make sure Vitest ignores `e2e/` (its `include` is `src/**`, so that's fine).
+5. Add `playwright-report/` and `test-results/` to `.gitignore`.
+
+#### 4.2 Test data
+6. Use the **dev database** from #18 (never production). The env vars for e2e: `E2E_SUPABASE_URL`, `E2E_SUPABASE_SERVICE_ROLE_KEY`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`, read from `.env.e2e.local` locally and from GitHub Actions secrets in CI.
+7. `e2e/fixtures/seed.ts`: before each test, create a fresh test org via the service role (or reset a known one): user membership, one agent, one contact with a fake number `+91 90000 0000x`. After each test, delete it. The tests must be independent.
+8. `e2e/fixtures/auth.ts`: sign in once through the UI and save `storageState` for reuse.
+
+#### 4.3 Mock Sarvam
+9. Placing a call hits Sarvam on the **server**, so browser-level `page.route` can't intercept it. Options (agree with the lead):
+   - **a. Env switch (recommended):** `SARVAM_MOCK=1` makes `sarvam.server.ts` return a fake `{ call_id }` instead of calling Sarvam (one small `if` at the HTTP boundary). Never enabled in production; also check `NODE_ENV !== "production"`.
+   - **b.** A tiny local mock HTTP server, with `SARVAM_API_BASE` pointing at it.
+10. After "placing" the call, the test **POSTs a simulated webhook** to `/api/public/sarvam-call-webhook` with the call's id/token and a payload (`status: completed`, `final_agent_variables: { disposition: "interested", ... }`, a transcript, `duration`). Keep the payloads in `e2e/payloads/*.json`.
+
+#### 4.4 Scenarios (`e2e/call-to-lead.spec.ts`)
+11. **Interested (insurance agent):** sign in → Voice Agents → Test call to the seeded contact (tick consent) → send the webhook → Call history shows **Completed** → Leads → Interested lists the contact with product interest → Pipeline shows the deal in **qualification** → Tasks has the follow-up task.
+12. **Consultation booked (stock agent):** the deal goes to the proposal stage, and the follow-up/meeting exists (if #11 is merged).
+13. **Not interested:** the call is completed, **no new lead**, and the deal (if any) is lost.
+14. **Do-not-contact:** after the webhook, the contact is inactive with the `do-not-call` tag, and a **second test call is refused** with the do-not-call message.
+15. **Webhook missing (sync path):** don't send the webhook; instead make the Sarvam mock report the call completed, and trigger the sync (call `/api/public/cron-sync` with the test token, or the in-app "Sync" action) → same result as scenario 11.
+16. Use role/text selectors (`getByRole`, `getByText`), not CSS classes. Add `data-testid` only where needed.
+
+#### 4.5 CI
+17. Add a job `e2e` to `.github/workflows/ci.yml` (on pull requests into `dev`/`main`): checkout → setup-node 22 → `npm ci` → `npx playwright install --with-deps chromium` → `npx playwright test`, with env from secrets and `SARVAM_MOCK=1`. Upload `playwright-report/` with `actions/upload-artifact@v4` if it fails.
+18. The owner adds the secrets (`E2E_*`) in GitHub → Settings → Secrets → Actions. List the names in the PR.
+
+### 5. Data model
+
+None (uses the #18 dev project; fixtures create and delete their own data).
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `playwright.config.ts` | **new** |
+| `e2e/call-to-lead.spec.ts` | **new** |
+| `e2e/fixtures/seed.ts`, `auth.ts`, `webhook.ts` | **new** |
+| `e2e/payloads/*.json` | **new**: fake webhook payloads |
+| `src/lib/sarvam.server.ts` | `SARVAM_MOCK` switch (tiny) |
+| `.github/workflows/ci.yml` | e2e job |
+| `package.json` | scripts, devDependency |
+| `.gitignore` | Playwright output |
+| `e2e/README.md` | how to run locally |
+
+### 7. Rules and edge cases
+
+- **Never run against production.** Refuse to start if `E2E_SUPABASE_URL` equals the production URL.
+- No real phone numbers and no real Sarvam calls in tests.
+- Tests must be independent and repeatable (clean up, unique names with a timestamp).
+- Flaky waits: use `expect(...).toBeVisible()` with auto-waiting, never `waitForTimeout`.
+
+### 8. Testing the tests
+
+1. All 5 scenarios pass locally: `npm run e2e`.
+2. **Break a mapping on purpose** (e.g. in `crm-outcome.ts` make "interested" map to `lost`) → the suite fails with a clear message → revert. Mention this in the PR.
+3. They pass in CI on your PR, and the report artifact appears when you force a failure.
+
+```bash
+npx playwright test                     # all
+npx playwright test -g "do-not-contact" # one scenario
+npx playwright test --ui                # watch mode with a browser
+npx playwright show-report
+```
+
+### 9. Acceptance criteria
+
+- [ ] 5 scenarios automated and passing locally and in CI
+- [ ] The suite fails if a disposition mapping is broken (demonstrated)
+- [ ] Sarvam is mocked; no real calls; never touches production
+- [ ] The CI job runs on every PR, with the report uploaded on failure
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/17-e2e-tests
+npm i -D @playwright/test
+git add package.json package-lock.json playwright.config.ts e2e .gitignore
+git commit -m "E2E: Playwright setup with seeded workspace and Sarvam mock"
+git push -u origin feature/17-e2e-tests
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#17 End-to-end tests for call to lead" --body "Closes #17 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #17`; the GitHub secrets the owner must add; the broken-mapping demo; a screenshot of the report
+
+### 12. Settle with the lead before starting
+
+- Mock approach (a) or (b).
+- Which test user/org in the dev project to use.
 
 ---
 
 ## #20: Website lead-capture widget with instant AI callback
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/20-lead-widget` · **Depends on:** #13 helper (`isBlocked`). Uses its own widget key, **not** the #5 API key
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/20 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/20-lead-widget` |
+| **PR into** | `dev` |
+| **Order** | Charan's 5th issue |
+| **Depends on** | `isBlocked()` from #13 (Shashank). Uses its **own widget key**, not the #5 API key |
+| **Blocks** | nothing |
+| **Size** | ~6 days |
 
-**Why:** any website can embed a form that drops enquiries straight into the CRM, with an optional AI call within a minute.
+### 1. Summary
 
-**Build:**
-1. `public/widget.js`: `<script src="https://…/widget.js" data-key="wk_…"></script>` renders a small form (name, phone, interest, consent checkbox required for the callback). Keep it dependency-free and style-isolated (Shadow DOM).
-2. Migration `widget_settings` (`organization_id`, `widget_key`, `allowed_domains text[]`, `project_id`, `agent_id`, `instant_callback bool`, `colour`).
-3. Public endpoint `src/routes/api/public/widget-submit.ts`: validates the widget key and `Origin` against the allowed domains, applies rate limits (per IP and per key) and spam protection (a honeypot field, plus rejecting submissions faster than ~3 s after render), and validates the phone with `normalizePhoneNumber`. Add CORS headers for allowed origins only.
-4. Create or update the contact in the chosen project. If instant callback is on, consent is ticked and the number isn't blocked, place a call with the chosen agent.
-5. Settings page: widget key (regenerate), allowed domains, agent, project, colour, a live preview, and copy-paste embed code.
+A small form **any website can embed** with one `<script>` tag. Enquiries go straight into the CRM as contacts in a chosen project. If the workspace turned on **instant callback** and the visitor ticked consent, an AI agent calls them **within a minute**.
 
-**Test:**
-- Unit tests: honeypot filled → rejected; too fast → rejected; bad phone → 400; disallowed origin → 403.
-- Make a plain `test.html` page that embeds the widget (serve it with `npx serve` on another port and add that origin to the allowed domains), submit it, and check the contact appears. With callback on, your phone rings.
+### 2. What already exists
 
-**Done when:** submitting the widget on a test page creates the contact, and with callback enabled, the phone rings within a minute.
+- `normalizePhoneNumber` for validating Indian mobile numbers.
+- Placing calls: the core of `startSarvamCall` (`src/lib/sarvam.functions.ts`), reused through a server-side helper.
+- Projects and contacts (with `project_id`, `custom_fields`).
+- Public route pattern: `src/routes/api/public/*.ts`; static files in `public/` are served at the site root.
+
+### 3. Scope
+
+**In scope:** `public/widget.js`, `widget_settings`, the public submit endpoint with CORS/origin checks, rate limit, spam protection, contact upsert, instant callback, settings page with live preview and embed code.
+
+**Out of scope:** multi-step forms, file uploads, A/B testing of the widget.
+
+### 4. What to build, point by point
+
+#### 4.1 Database and settings
+1. Migration `00NN_lead_widget.sql` (§5): `widget_settings` (one row per workspace; more widgets later if needed).
+2. Settings page `src/routes/_authenticated/_app/settings.widget.tsx` (or a tab):
+   - **Widget key** `wk_…` (random, shown in full; this is a public identifier, not a secret) with a **Regenerate** button (confirm: "Existing embeds stop working")
+   - **Allowed domains** (chips: `example.com`, `www.example.com`; `localhost:*` allowed only while testing)
+   - **Project** ▾ for new contacts, and **Agent** ▾ for callbacks
+   - **Instant callback** toggle, and **calling hours** (no calls at night; outside the hours → queue for the next window, or create a task)
+   - **Colour**, title ("Get a call back"), button text, privacy-policy URL (required for the consent text)
+   - **Live preview** (renders the real widget in the page) and a **Copy embed code** box:
+     `<script src="https://yulabs-crm-1122.netlify.app/widget.js" data-key="wk_…" async></script>`
+
+#### 4.2 The embed script (`public/widget.js`)
+3. Plain JavaScript (no framework, < 15 KB), an IIFE. It reads `data-key` from its own `<script>` tag (`document.currentScript`).
+4. Fetch the public config: `GET /api/public/widget-config?key=wk_…` → title, colour, button text, privacy URL, callback enabled. Cache it in memory.
+5. Render into a **Shadow DOM** container (so the host site's CSS can't break it, and ours can't leak), either inline where the script is placed or as a floating button (the setting `data-mode="inline|floating"`).
+6. Fields: name (required), phone (required, `type="tel"`), interest (optional select or text), a consent checkbox (required for the callback): "I agree to receive a call from <company> about my enquiry. [Privacy policy]".
+7. A hidden **honeypot** field (`company_website`), and record `renderedAt = Date.now()`.
+8. Submit → `POST /api/public/widget-submit` with JSON. Show states: sending, success ("Thanks! We'll call you shortly." / "We'll be in touch."), error (friendly).
+9. Accessible: labels, focus states, keyboard support, `aria-live` for the result message.
+
+#### 4.3 Public endpoints
+10. `GET /api/public/widget-config`: the public settings only (never the agent id or internal ids). CORS for allowed origins.
+11. `POST /api/public/widget-submit`:
+    - **CORS / origin:** read the `Origin` header; it must match an allowed domain, otherwise 403. Respond to `OPTIONS` preflight with `Access-Control-Allow-Origin: <that origin>`, `-Methods: POST`, `-Headers: Content-Type`
+    - **Validate:** zod; `normalizePhoneNumber(phone)` must be a valid mobile, otherwise 400 "Please enter a valid mobile number"
+    - **Spam:** honeypot filled → pretend success (200) but drop it; `Date.now() - renderedAt < 3000` → drop it; rate limit 5/min per IP and 100/hour per key → 429
+    - **Upsert contact** in the chosen project: match by normalised phone in the org; update name/interest if found, otherwise create it; tag `website-widget`, `custom_fields.interest`, `custom_fields.source_url` (from `Referer`)
+    - **Callback:** if instant callback is on, consent is ticked, the number isn't blocked (`isBlocked`), and it's within calling hours → place the call with the chosen agent (`consent_confirmed` = the checkbox), pass `customer_name` and `interest` as variables. Outside hours → a task "Call back <name>" at the next window start
+    - respond `{ ok: true, callback: "now" | "scheduled" | "none" }`
+
+### 5. Data model
+
+```sql
+-- 00NN_lead_widget.sql: per-workspace website widget settings
+create table if not exists public.widget_settings (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null unique references public.organizations(id) on delete cascade,
+  widget_key text not null unique,
+  allowed_domains text[] not null default '{}',
+  project_id uuid references public.projects(id) on delete set null,
+  agent_id uuid references public.voice_agents(id) on delete set null,
+  instant_callback boolean not null default false,
+  calling_hours jsonb not null default '{"start":"09:00","end":"20:00","tz":"Asia/Kolkata"}',
+  appearance jsonb not null default '{"colour":"#6d28d9","title":"Get a call back","button":"Call me"}',
+  privacy_url text,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+-- RLS: members read; owners/admins write. Public endpoints read it via the service role by widget_key.
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_lead_widget.sql` | **new** |
+| `public/widget.js` | **new** |
+| `src/routes/api/public/widget-config.ts`, `widget-submit.ts` | **new** |
+| `src/lib/widget.server.ts` | **new**: origin check, spam checks, rate limit, upsert, callback |
+| `src/routes/_authenticated/_app/settings.widget.tsx` | **new** |
+| `src/test/widget.test.ts` | **new** |
+| `e2e/widget-test.html` (or `public/widget-test.html` in dev only) | test page |
+
+### 7. Rules, edge cases, security
+
+- **The widget key is public**; security comes from the allowed domains, rate limits and spam checks. Never accept the API key from #5 here.
+- **No callback without ticked consent.** Never call DNC numbers.
+- Calling hours are enforced; no night calls.
+- Don't reveal whether a number exists in the CRM (same response either way).
+- Don't log full phone numbers in server logs (mask them).
+
+### 8. Testing
+
+**Unit tests:** origin matching (`https://www.example.com` vs `example.com`, ports, http/https); honeypot → dropped; too fast → dropped; invalid phone → 400; rate limit → 429 on the 6th request; within/outside calling hours → now/scheduled; consent false → no call; blocked → no call.
+
+**Manual:**
+1. Create `widget-test.html` with the embed code and serve it: `npx serve -l 5500 .` (from the folder containing the file). Add `localhost:5500` to the allowed domains.
+2. Submit the form → the contact appears in the chosen project with the tag `website-widget`.
+3. Turn on instant callback, tick consent, use **your own number** → your phone rings within a minute.
+4. Submit from a non-allowed origin (another port) → blocked (check the console for a CORS/403 error).
+5. Submit 6 times quickly → rate limited.
+6. Check it at phone width and with the keyboard only.
+
+```bash
+npx vitest run src/test/widget.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] Submitting the widget on a test page creates or updates the contact in the chosen project
+- [ ] With callback enabled and consent ticked, the phone rings within a minute
+- [ ] Disallowed origins, spam and floods are rejected; invalid phones get a friendly error
+- [ ] The settings page has a live preview and copy-paste embed code
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/20-lead-widget
+git add public/widget.js src/routes/api/public/widget-submit.ts src/lib/widget.server.ts
+git commit -m "Widget: embed script and public submit endpoint"
+git push -u origin feature/20-lead-widget
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#20 Website lead-capture widget" --body "Closes #20 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #20`; the migration to apply; the embed snippet; a GIF of submit → contact → call
+
+### 12. Settle with the lead before starting
+
+- The consent wording (legal), and default calling hours.
+- Inline vs floating as the default mode.
 
 ---
 
 ## #23: Usage and cost dashboard
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/23-usage-dashboard` · **Depends on:** nothing (use #16's permission map for who can see costs)
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/23 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | `feature/23-usage-dashboard` |
+| **PR into** | `dev` |
+| **Order** | Charan's 6th issue |
+| **Depends on** | nothing. Use `can(role,'billing.view')` from #16 for who sees costs |
+| **Blocks** | nothing |
+| **Size** | ~4–5 days |
 
-**Why:** know how many minutes each agent and campaign uses, and what it costs.
+### 1. Summary
 
-**Build:**
-1. Usage page: call minutes per day, per agent and per campaign; connected vs not-connected attempts; average call length. Aggregate in SQL (a view or RPC).
-2. Settings: cost per minute and per attempt (migration `usage_settings`), and a monthly budget with a warning banner at 80% and an optional hard stop that blocks **new** campaigns from launching.
-3. CSV export for accounting (date, agent, campaign, attempts, connected, minutes, estimated cost).
+Know **how many minutes** each agent and campaign uses and **what it costs**: a usage page with daily minutes, breakdowns per agent and campaign, connected vs not-connected attempts, and average length. On top of that, configurable rates, a monthly budget with an 80% warning and an optional hard stop on new campaigns, and a CSV export for accounting.
 
-**Test:** pick a month, run `select sum(duration_seconds)/60.0 from calls where …` by hand, and compare with the dashboard. Set a tiny budget and check the 80% warning appears and the hard stop blocks launching a campaign.
+### 2. What already exists
 
-**Done when:** the dashboard totals match a manual sum of `calls.duration_seconds` for a chosen month, and the budget warning appears when crossed.
+- `calls`: `agent_id`, `campaign_id`, `status`, `duration_seconds`, `started_at`, `created_at`, `retry_attempt`.
+- `voice_agents`, `call_campaigns` (names); campaign launch code (in `sarvam.functions.ts` / the campaign builder flow).
+- Analytics pages with Recharts (`call-analytics.tsx`, …).
+
+### 3. Scope
+
+**In scope:** a usage RPC, the usage page (charts and tables), the settings for rates and budget, the budget banner, a hard stop on launching new campaigns, CSV export.
+
+**Out of scope:** actual billing or invoices, syncing real costs from Sarvam (note it as a follow-up).
+
+### 4. What to build, point by point
+
+#### 4.1 SQL
+1. RPC `usage_summary(org, from_ts, to_ts)` returning rows per `day` (IST date), `agent_id`, `campaign_id`: `attempts`, `connected` (`status = 'completed'`), `seconds` (sum of `duration_seconds`), `billable_minutes`.
+2. **Billable minutes rule:** per call, `ceil(duration_seconds / 60.0)` (per-minute rounding up is common for telephony; agree with the lead, and make it a setting `rounding: 'per_call_minute' | 'exact'`).
+3. Group the days in **Asia/Kolkata**: `(started_at at time zone 'Asia/Kolkata')::date`.
+4. `security invoker` plus an explicit org filter.
+
+#### 4.2 Settings (rates and budget)
+5. Table `usage_settings` (§5): `cost_per_minute` (₹), `cost_per_attempt` (₹, optional), `currency` (INR), `monthly_budget`, `hard_stop` (bool), `rounding`.
+6. Settings UI (owners/admins): rates, budget, the hard-stop toggle with an explanation ("When the month's estimated spend reaches the budget, new campaigns can't be launched. Running campaigns and test calls are not affected.").
+
+#### 4.3 Usage page (`usage.tsx`)
+7. Month picker (default: current month) or a custom range.
+8. KPI cards: total minutes, estimated spend (₹), attempts, connected %, average call length (connected only, mm:ss), and budget used % (a progress bar).
+9. Charts: minutes per day (bar, stacked by agent), spend cumulative vs budget (line, with the budget as a dashed line).
+10. Tables: per agent and per campaign (attempts, connected, minutes, avg length, estimated cost), sortable.
+11. **Export CSV**: one row per day × agent × campaign: `date, agent, campaign, attempts, connected, minutes, estimated_cost_inr`. Name it `usage-YYYY-MM.csv`.
+12. Hide cost values for roles without `billing.view` (show minutes only).
+
+#### 4.4 Budget warning and hard stop
+13. `getBudgetStatus(orgId)`: spend this month vs budget → `{ spent, budget, percent, level: "ok" | "warning" | "exceeded" }`.
+14. Banner in `AppShell` (for owners/admins/managers) at ≥ 80%: "You've used 82% of this month's calling budget (₹8,200 of ₹10,000)." Dismissible for the day.
+15. **Hard stop:** in the campaign launch server function, if `hard_stop` is on and `level === "exceeded"`, refuse with "Monthly calling budget reached. Raise the budget in Settings → Usage to launch new campaigns." The UI disables Launch with the same message.
+
+### 5. Data model
+
+```sql
+-- 00NN_usage_settings.sql: per-workspace calling rates and monthly budget
+create table if not exists public.usage_settings (
+  organization_id uuid primary key references public.organizations(id) on delete cascade,
+  cost_per_minute numeric(10,2) not null default 0,
+  cost_per_attempt numeric(10,2) not null default 0,
+  currency text not null default 'INR',
+  monthly_budget numeric(12,2),
+  hard_stop boolean not null default false,
+  rounding text not null default 'per_call_minute' check (rounding in ('per_call_minute','exact')),
+  updated_by uuid default auth.uid(), updated_at timestamptz not null default now()
+);
+-- RLS: members read; owners/admins write.
+-- create or replace function public.usage_summary(org uuid, from_ts timestamptz, to_ts timestamptz) returns table(...) ...
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_usage_settings.sql` | **new** |
+| `src/lib/usage.ts` | **new**: `billableMinutes`, `estimateCost`, `budgetLevel`, `toCsv` |
+| `src/lib/usage.functions.ts` | **new**: summary, settings, budget status |
+| `src/routes/_authenticated/_app/usage.tsx` | **new** |
+| `src/routes/_authenticated/_app/settings.tsx` | rates and budget section |
+| `src/components/app/AppShell.tsx` | budget banner |
+| campaign launch server function | hard-stop check |
+| `src/test/usage.test.ts` | **new** |
+
+### 7. Rules and edge cases
+
+- Money in `numeric`, displayed with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`.
+- Months in IST (a call at 00:30 IST on the 1st belongs to the new month).
+- No budget set → no warning or hard stop.
+- The hard stop only blocks **new campaign launches**, not test calls or running campaigns.
+- CSV: escape commas and quotes; UTF-8 with a BOM so Excel opens ₹ correctly.
+
+### 8. Testing
+
+**Unit tests:** `billableMinutes` (0 s → 0, 1 s → 1, 60 s → 1, 61 s → 2; exact mode); `estimateCost` with minute and attempt rates; `budgetLevel` at 79/80/100%; `toCsv` escaping; IST month boundaries.
+
+**Manual check against SQL** (the acceptance criterion):
+
+```sql
+select sum(duration_seconds) / 60.0 as exact_minutes,
+       sum(ceil(duration_seconds / 60.0)) as billable_minutes
+from calls
+where organization_id = '<org>'
+  and started_at >= '2026-11-01 00:00+05:30' and started_at < '2026-12-01 00:00+05:30';
+```
+
+The dashboard totals must match. Then set a tiny budget → the banner appears at 80% → turn on the hard stop → launching a campaign is refused with the message → a test call still works.
+
+```bash
+npx vitest run src/test/usage.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] The dashboard totals match a manual sum of `calls.duration_seconds` for a chosen month
+- [ ] Per-agent and per-campaign breakdowns, connected vs not, average length
+- [ ] Rates and budget are configurable; the warning shows at 80%; the optional hard stop blocks new campaigns
+- [ ] CSV export opens correctly in Excel
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/23-usage-dashboard
+git add db/migrations/00NN_usage_settings.sql src/lib/usage.ts src/test/usage.test.ts
+git commit -m "Usage: billable minutes, cost estimate and budget helpers"
+git push -u origin feature/23-usage-dashboard
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#23 Usage and cost dashboard" --body "Closes #23 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #23`; the migration to apply; the SQL vs dashboard comparison; screenshots including the banner
+
+### 12. Settle with the lead before starting
+
+- The rounding rule and the real rates (per minute / per attempt).
+- Who can see costs.
 
 ---
 
 ## #8: UI/UX polish pass
 
-**Assignee:** Charan Varigonda · **Branch:** `feature/8-ui-polish` (or split: `feature/8-ui-polish-tables`, `feature/8-ui-polish-empty-states`, …) · **Depends on:** nothing, but **do it last**, because it touches many files others are editing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/8 |
+| **Assignee** | Charan Varigonda (`CHARANVARIGONDA`) |
+| **Branch** | several small ones: `feature/8-ui-polish-audit`, `feature/8-ui-polish-tables`, `feature/8-ui-polish-empty-states`, `feature/8-ui-polish-a11y`, `feature/8-ui-polish-landing` |
+| **PR into** | `dev` (one PR per branch) |
+| **Order** | Charan's **last** issue: it touches almost every page |
+| **Depends on** | nothing; coordinate colours with #25 (dark mode, Shashank) |
+| **Blocks** | nothing |
+| **Size** | ~6–8 days spread over several PRs |
 
-**Why:** the app should feel consistent and easy to use on every screen.
+### 1. Summary
 
-**Build:**
-1. **Audit first.** Walk every sidebar page at desktop width and at 375 px. Post a checklist comment on issue #8 (page → problems). Fix from that list.
-2. Empty states with a clear next action on every list page. Loading skeletons instead of blank areas. Friendly error messages (`friendlyError` in `auth.tsx`).
-3. Tables: horizontal scroll on mobile, sticky header, readable column widths, row hover.
-4. Accessibility: visible focus rings, labels on every input and icon-only button (`aria-label`), AA colour contrast, keyboard navigation and focus trap in dialogs.
-5. Consistency: `PageHeader` on every page, one primary button per page, toasts only for things the user can't otherwise see.
-6. Bring the auth page's visual language (cards, spacing, gradients) to the landing page and onboarding.
+Make the whole app feel consistent and easy to use on every screen and at phone width: empty states, loading skeletons, friendly errors, readable tables, accessible controls, consistent headers and buttons, and the auth page's visual style carried to the landing page and onboarding.
 
-**How to keep it mergeable:** open several small PRs (one per area), rebase on `dev` daily, and don't reformat whole files. Only change what you are fixing.
+### 2. What already exists
 
-**Test:** before/after screenshots per page in each PR. Chrome DevTools → device toolbar at 375 px. Keyboard only (Tab / Shift+Tab / Enter / Esc) through sign in → place a test call → open the call → see the lead. Lighthouse accessibility score before and after.
+- UI kit: `src/components/ui/*` (shadcn), `PageHeader`, `EntityPage`, `StatusBadge`.
+- Utilities: `shadow-soft`, `shadow-float`, `bg-gradient-primary`, `dot-canvas`, `animate-rise` (in `src/styles.css`).
+- `src/routes/auth.tsx`: the visual reference, plus `friendlyError()`.
+- Pages: `src/routes/_authenticated/_app/*.tsx` (dashboard, contacts, companies, deals, pipeline, leads, tasks, meetings, call-history, live-calls, transcripts, recordings, call-campaigns, projects, voice-agents, analytics pages, workflows, triggers, integrations, settings, team…).
 
-**Done when:** every page has before/after screenshots, there are no layout breaks at 375 px, and keyboard-only navigation works through the main flows.
+### 3. Scope
+
+**In scope:** visual and interaction fixes on existing pages; small shared components (`EmptyState`, `TableSkeleton`, `ResponsiveTable`).
+
+**Out of scope:** new features, data model changes, big redesigns of a page's purpose, and dark mode (#25).
+
+### 4. What to build, point by point
+
+#### 4.1 Audit first (PR 1, no code changes)
+1. Open every sidebar page at **1440 px** and **375 px** (DevTools → device toolbar → iPhone SE).
+2. For each page, note: spacing/alignment, overflow or horizontal scroll of the whole page, truncated tables, inconsistent buttons, missing empty/loading/error states, missing labels, contrast problems.
+3. Post it as a checklist comment on issue #8 (page → problems → planned fix), and save it as `docs/ui-audit.md` in PR 1 with screenshots in the PR. This is your to-do list for the following PRs.
+
+#### 4.2 Shared components
+4. `src/components/app/EmptyState.tsx`: icon, title, one-line description, and **one primary action** (e.g. "Import contacts"). Use it on every list page with no rows.
+5. `src/components/app/TableSkeleton.tsx` (rows × columns of `Skeleton`) and `CardSkeleton`. Use them while queries load, instead of blank areas or spinners in the middle of the page.
+6. `src/components/app/ErrorState.tsx`: a friendly message (via `friendlyError`) and a **Retry** button that calls `refetch()`.
+
+#### 4.3 Tables (one PR)
+7. Wrap every table in a container with `overflow-x-auto`. The page itself must never scroll sideways.
+8. Sticky header (`sticky top-0 bg-card z-10`), row hover (`hover:bg-muted/50`), min-widths on name/phone columns, and right-aligned numbers.
+9. On ≤ 640 px: hide low-value columns (`hidden sm:table-cell`), or switch to a card list for the main tables (contacts, leads, calls).
+10. Long text truncates with `truncate` and a `title` tooltip.
+
+#### 4.4 Consistency (one PR)
+11. Every page uses `PageHeader` (title, description, primary action at the top right).
+12. **One primary button per page**; the others are `variant="outline"` or `ghost`. Destructive actions are `variant="destructive"` with a confirm dialog.
+13. Toasts only for things the user can't otherwise see (saved in background, copied, error). Not for "page loaded".
+14. Consistent spacing: page padding, card gap `gap-4 md:gap-6`, form field spacing.
+
+#### 4.5 Accessibility (one PR)
+15. Visible focus rings on every interactive element (`focus-visible:ring-2 ring-ring`). Don't remove outlines.
+16. A `<Label>` on every input. Icon-only buttons get an `aria-label` ("Delete contact").
+17. AA colour contrast (4.5:1 for text). Check muted text and badges with DevTools → Lighthouse or the contrast picker.
+18. Dialogs: focus moves into the dialog, Tab is trapped, Esc closes, and focus returns to the trigger (shadcn `Dialog` does this; check custom ones).
+19. Keyboard-only run: sign in → Voice Agents → Test call → open the call → Leads → open the lead.
+
+#### 4.6 Landing and onboarding (one PR)
+20. Apply the auth page's style (cards, spacing, gradient accents, `animate-rise`) to the landing page and the onboarding flow.
+
+### 5. Data model
+
+None.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `docs/ui-audit.md` | **new** (PR 1) |
+| `src/components/app/EmptyState.tsx`, `TableSkeleton.tsx`, `ErrorState.tsx` | **new** |
+| `src/routes/_authenticated/_app/*.tsx` | small targeted edits |
+| `src/routes/index.tsx` (landing), onboarding route | style pass |
+
+### 7. Rules (to keep PRs mergeable)
+
+- **Small PRs, one theme each.** Rebase on `dev` daily: others are editing the same pages.
+- **Don't reformat whole files** or rename things; change only what you're fixing, so diffs stay readable and conflicts stay small.
+- If a page is being rebuilt by someone else (e.g. `voice-agents.tsx` by #9), skip it and polish it after their PR merges.
+- Don't change behaviour or data. If you find a bug, open a separate issue.
+
+### 8. Testing
+
+- Before/after screenshots for every page you touch, at desktop and 375 px.
+- Lighthouse (DevTools → Lighthouse → Accessibility) on 5 key pages before and after; put the scores in the PR.
+- Keyboard-only run of the main flow (4.5 #19).
+- A unit test for `EmptyState` / `ErrorState` rendering (React Testing Library is set up in `src/test/setup.ts`).
+- `npx vitest run && npx tsc --noEmit && npm run build`
+
+### 9. Acceptance criteria
+
+- [ ] Audit checklist posted; every item fixed or explained
+- [ ] Every list page has empty, loading and error states
+- [ ] No page scrolls horizontally at 375 px; tables are readable
+- [ ] Every input has a label; icon buttons have aria-labels; focus is visible; dialogs are keyboard-friendly
+- [ ] One primary action per page; `PageHeader` everywhere
+- [ ] Landing and onboarding match the auth page style
+- [ ] Before/after screenshots in each PR
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/8-ui-polish-tables
+git add src/components/app/TableSkeleton.tsx src/routes/_authenticated/_app/contacts.tsx
+git commit -m "UI: responsive contacts table with sticky header"
+git push -u origin feature/8-ui-polish-tables
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#8 UI polish: tables" --body "Part of #8 ..."
+```
+
+Use `Part of #8` in every PR except the last one, which uses `Closes #8`.
+
+### 11. In the pull request
+
+- Which audit items it fixes (link to the comment)
+- Before/after screenshots (desktop and mobile) and Lighthouse scores
+
+### 12. Settle with the lead before starting
+
+- The order of pages (most-used first: Leads, Contacts, Call history, Campaigns, Dashboard).
+- The colour tokens to agree with #25 before touching colours.

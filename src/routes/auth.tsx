@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AlertCircle, ArrowLeft, BarChart3, CheckCircle2, Eye, EyeOff, Loader2, MailCheck, PhoneCall, Sparkles, Workflow } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { lovable } from "@/integrations/lovable";
@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/app/Logo";
 import { cn } from "@/lib/utils";
+import { friendlyError } from "@/lib/auth-errors";
+import { PasswordStrength } from "@/components/app/PasswordStrength";
 
 type Mode = "signin" | "signup" | "forgot";
 type Search = { mode?: Mode; redirect?: string };
@@ -37,28 +39,6 @@ function GoogleIcon() {
     <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>
   );
 }
-
-/** Supabase auth errors in plain words, plus whether the "resend confirmation" action applies. */
-function friendlyError(message: string): { text: string; unconfirmed?: boolean } {
-  const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) return { text: "That email and password don't match. Check them, or reset your password." };
-  if (m.includes("email not confirmed")) return { text: "Please confirm your email first — we sent you a link when you signed up.", unconfirmed: true };
-  if (m.includes("already registered") || m.includes("already been registered")) return { text: "An account with this email already exists. Sign in instead." };
-  if (m.includes("rate limit") || m.includes("too many")) return { text: "Too many attempts. Wait a minute and try again." };
-  if (m.includes("password should be")) return { text: "Choose a longer password (at least 8 characters)." };
-  return { text: message };
-}
-
-/** 0–4: length, mixed case, digit, symbol. */
-function passwordStrength(password: string): number {
-  if (!password) return 0;
-  let score = password.length >= 8 ? 1 : 0;
-  if (password.length >= 12) score += 1;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
-  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1;
-  return Math.min(4, score);
-}
-const STRENGTH = ["Too short", "Weak", "Fair", "Good", "Strong"];
 
 const HIGHLIGHTS = [
   { icon: PhoneCall, title: "AI voice agents", text: "Call leads in English, Hindi and Telugu — results land in your CRM." },
@@ -107,7 +87,6 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const target = safePath(search.redirect);
-  const strength = useMemo(() => passwordStrength(form.password), [form.password]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => { if (data.user) navigate({ to: target, replace: true }); });
@@ -242,16 +221,7 @@ function AuthPage() {
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                       </button>
                     </div>
-                    {mode === "signup" && form.password && (
-                      <div className="flex items-center gap-2 pt-1" aria-live="polite">
-                        <div className="flex flex-1 gap-1">
-                          {[1, 2, 3, 4].map((step) => (
-                            <span key={step} className={cn("h-1 flex-1 rounded-full transition-colors", strength >= step ? (strength >= 3 ? "bg-success" : strength === 2 ? "bg-primary-glow" : "bg-destructive") : "bg-muted")} />
-                          ))}
-                        </div>
-                        <span className="w-16 text-right text-xs text-muted-foreground">{STRENGTH[strength]}</span>
-                      </div>
-                    )}
+                    {mode === "signup" && form.password && <PasswordStrength value={form.password} />}
                   </div>
                 )}
                 <Button type="submit" variant="hero" size="lg" className="w-full" disabled={busy || (mode === "signup" && form.password.length > 0 && form.password.length < 8)}>

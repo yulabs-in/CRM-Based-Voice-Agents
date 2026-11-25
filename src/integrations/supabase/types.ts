@@ -14,66 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      cron_state: {
+      api_keys: {
         Row: {
-          id: number
-          last_run_at: string | null
-          token_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          organization_id: string
+          purpose: string
+          revoked_at: string | null
+          scopes: string[]
         }
         Insert: {
-          id?: number
-          last_run_at?: string | null
-          token_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          organization_id: string
+          purpose?: string
+          revoked_at?: string | null
+          scopes?: string[]
         }
         Update: {
-          id?: number
-          last_run_at?: string | null
-          token_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          organization_id?: string
+          purpose?: string
+          revoked_at?: string | null
+          scopes?: string[]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_campaigns: {
         Row: {
           agent_id: string | null
+          agent_variables: Json
+          allowed_days: string[]
+          allowed_end_time: string
+          allowed_start_time: string
+          attempts_per_second: number
           audience: string | null
+          consent_confirmed: boolean
+          contact_ids: string[] | null
           created_at: string
           created_by: string | null
+          ends_at: string | null
           id: string
+          last_error: string | null
+          launched_at: string | null
+          max_retries: number
           name: string
           notes: string | null
           organization_id: string
+          project_id: string | null
+          retry_interval_minutes: number
+          sarvam_campaign_id: string | null
+          sarvam_cohort_ids: string[]
+          source: string
           starts_at: string | null
           status: string
           target_count: number
+          timezone: string
           updated_at: string
+          webhook_token_hash: string | null
         }
         Insert: {
           agent_id?: string | null
+          agent_variables?: Json
+          allowed_days?: string[]
+          allowed_end_time?: string
+          allowed_start_time?: string
+          attempts_per_second?: number
           audience?: string | null
+          consent_confirmed?: boolean
+          contact_ids?: string[] | null
           created_at?: string
           created_by?: string | null
+          ends_at?: string | null
           id?: string
+          last_error?: string | null
+          launched_at?: string | null
+          max_retries?: number
           name: string
           notes?: string | null
           organization_id: string
+          project_id?: string | null
+          retry_interval_minutes?: number
+          sarvam_campaign_id?: string | null
+          sarvam_cohort_ids?: string[]
+          source?: string
           starts_at?: string | null
           status?: string
           target_count?: number
+          timezone?: string
           updated_at?: string
+          webhook_token_hash?: string | null
         }
         Update: {
           agent_id?: string | null
+          agent_variables?: Json
+          allowed_days?: string[]
+          allowed_end_time?: string
+          allowed_start_time?: string
+          attempts_per_second?: number
           audience?: string | null
+          consent_confirmed?: boolean
+          contact_ids?: string[] | null
           created_at?: string
           created_by?: string | null
+          ends_at?: string | null
           id?: string
+          last_error?: string | null
+          launched_at?: string | null
+          max_retries?: number
           name?: string
           notes?: string | null
           organization_id?: string
+          project_id?: string | null
+          retry_interval_minutes?: number
+          sarvam_campaign_id?: string | null
+          sarvam_cohort_ids?: string[]
+          source?: string
           starts_at?: string | null
           status?: string
           target_count?: number
+          timezone?: string
           updated_at?: string
+          webhook_token_hash?: string | null
         }
         Relationships: [
           {
@@ -90,24 +176,37 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "call_campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       calls: {
         Row: {
-          crm_synced_at: string | null
           agent_id: string | null
+          answers: Json
           campaign_id: string | null
+          campaign_target_id: string | null
           contact_id: string | null
           created_at: string
+          crm_synced_at: string | null
           direction: string
           duration_seconds: number
+          ended_at: string | null
           external_id: string | null
           id: string
           is_test_call: boolean
           organization_id: string
           outcome: string | null
           phone: string | null
+          recording_path: string | null
           recording_url: string | null
+          retry_attempt: number
+          sarvam_campaign_id: string | null
           sarvam_failure_reason: string | null
           sarvam_interaction_id: string | null
           sarvam_status: string | null
@@ -116,24 +215,31 @@ export type Database = {
           status: string
           summary: string | null
           transcript: string | null
+          transcript_turns: Json | null
           updated_at: string
           webhook_token_hash: string | null
         }
         Insert: {
-          crm_synced_at?: string | null
           agent_id?: string | null
+          answers?: Json
           campaign_id?: string | null
+          campaign_target_id?: string | null
           contact_id?: string | null
           created_at?: string
+          crm_synced_at?: string | null
           direction?: string
           duration_seconds?: number
+          ended_at?: string | null
           external_id?: string | null
           id?: string
           is_test_call?: boolean
           organization_id: string
           outcome?: string | null
           phone?: string | null
+          recording_path?: string | null
           recording_url?: string | null
+          retry_attempt?: number
+          sarvam_campaign_id?: string | null
           sarvam_failure_reason?: string | null
           sarvam_interaction_id?: string | null
           sarvam_status?: string | null
@@ -142,24 +248,31 @@ export type Database = {
           status?: string
           summary?: string | null
           transcript?: string | null
+          transcript_turns?: Json | null
           updated_at?: string
           webhook_token_hash?: string | null
         }
         Update: {
-          crm_synced_at?: string | null
           agent_id?: string | null
+          answers?: Json
           campaign_id?: string | null
+          campaign_target_id?: string | null
           contact_id?: string | null
           created_at?: string
+          crm_synced_at?: string | null
           direction?: string
           duration_seconds?: number
+          ended_at?: string | null
           external_id?: string | null
           id?: string
           is_test_call?: boolean
           organization_id?: string
           outcome?: string | null
           phone?: string | null
+          recording_path?: string | null
           recording_url?: string | null
+          retry_attempt?: number
+          sarvam_campaign_id?: string | null
           sarvam_failure_reason?: string | null
           sarvam_interaction_id?: string | null
           sarvam_status?: string | null
@@ -168,6 +281,7 @@ export type Database = {
           status?: string
           summary?: string | null
           transcript?: string | null
+          transcript_turns?: Json | null
           updated_at?: string
           webhook_token_hash?: string | null
         }
@@ -187,6 +301,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calls_campaign_target_id_fkey"
+            columns: ["campaign_target_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_targets"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calls_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
@@ -195,6 +316,173 @@ export type Database = {
           },
           {
             foreignKeyName: "calls_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_targets: {
+        Row: {
+          answers: Json
+          attempts: number
+          campaign_id: string
+          contact_id: string | null
+          created_at: string
+          id: string
+          last_call_id: string | null
+          last_outcome: string | null
+          organization_id: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          attempts?: number
+          campaign_id: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_id?: string | null
+          last_outcome?: string | null
+          organization_id: string
+          phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          attempts?: number
+          campaign_id?: string
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          last_call_id?: string | null
+          last_outcome?: string | null
+          organization_id?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_targets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_targets_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_targets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_kyc: {
+        Row: {
+          address_line: string | null
+          call_id: string | null
+          city: string | null
+          consent_at: string | null
+          consent_given: boolean
+          contact_id: string
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          nominee_name: string | null
+          nominee_relation: string | null
+          notes: string | null
+          organization_id: string
+          pan_masked: string | null
+          pincode: string | null
+          source: string
+          state: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          address_line?: string | null
+          call_id?: string | null
+          city?: string | null
+          consent_at?: string | null
+          consent_given?: boolean
+          contact_id: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          nominee_name?: string | null
+          nominee_relation?: string | null
+          notes?: string | null
+          organization_id: string
+          pan_masked?: string | null
+          pincode?: string | null
+          source?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          address_line?: string | null
+          call_id?: string | null
+          city?: string | null
+          consent_at?: string | null
+          consent_given?: boolean
+          contact_id?: string
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          nominee_name?: string | null
+          nominee_relation?: string | null
+          notes?: string | null
+          organization_id?: string
+          pan_masked?: string | null
+          pincode?: string | null
+          source?: string
+          state?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_kyc_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_kyc_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_kyc_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -257,6 +545,7 @@ export type Database = {
           city: string | null
           company_id: string | null
           created_at: string
+          custom_fields: Json
           email: string | null
           first_name: string
           id: string
@@ -265,6 +554,7 @@ export type Database = {
           organization_id: string
           owner_id: string | null
           phone: string | null
+          project_id: string | null
           source: string | null
           status: string
           tags: string[]
@@ -274,6 +564,7 @@ export type Database = {
           city?: string | null
           company_id?: string | null
           created_at?: string
+          custom_fields?: Json
           email?: string | null
           first_name: string
           id?: string
@@ -282,6 +573,7 @@ export type Database = {
           organization_id: string
           owner_id?: string | null
           phone?: string | null
+          project_id?: string | null
           source?: string | null
           status?: string
           tags?: string[]
@@ -291,6 +583,7 @@ export type Database = {
           city?: string | null
           company_id?: string | null
           created_at?: string
+          custom_fields?: Json
           email?: string | null
           first_name?: string
           id?: string
@@ -299,6 +592,7 @@ export type Database = {
           organization_id?: string
           owner_id?: string | null
           phone?: string | null
+          project_id?: string | null
           source?: string | null
           status?: string
           tags?: string[]
@@ -319,16 +613,41 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contacts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      cron_state: {
+        Row: {
+          id: number
+          last_run_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          id?: number
+          last_run_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          id?: number
+          last_run_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
       }
       deals: {
         Row: {
-          last_call_id: string | null
           company_id: string | null
           contact_id: string | null
           created_at: string
           expected_close: string | null
           id: string
+          last_call_id: string | null
           organization_id: string
           owner_id: string | null
           probability: number
@@ -338,12 +657,12 @@ export type Database = {
           value: number
         }
         Insert: {
-          last_call_id?: string | null
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
           expected_close?: string | null
           id?: string
+          last_call_id?: string | null
           organization_id: string
           owner_id?: string | null
           probability?: number
@@ -353,12 +672,12 @@ export type Database = {
           value?: number
         }
         Update: {
-          last_call_id?: string | null
           company_id?: string | null
           contact_id?: string | null
           created_at?: string
           expected_close?: string | null
           id?: string
+          last_call_id?: string | null
           organization_id?: string
           owner_id?: string | null
           probability?: number
@@ -383,10 +702,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deals_last_call_id_fkey"
+            columns: ["last_call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deals_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imports: {
+        Row: {
+          column_mapping: Json
+          created_at: string
+          created_by: string | null
+          errors: Json
+          file_name: string
+          file_path: string | null
+          file_type: string
+          id: string
+          inserted: number
+          organization_id: string
+          project_id: string | null
+          skipped: number
+          status: string
+          total_rows: number
+          updated_at: string
+        }
+        Insert: {
+          column_mapping?: Json
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name: string
+          file_path?: string | null
+          file_type: string
+          id?: string
+          inserted?: number
+          organization_id: string
+          project_id?: string | null
+          skipped?: number
+          status?: string
+          total_rows?: number
+          updated_at?: string
+        }
+        Update: {
+          column_mapping?: Json
+          created_at?: string
+          created_by?: string | null
+          errors?: Json
+          file_name?: string
+          file_path?: string | null
+          file_type?: string
+          id?: string
+          inserted?: number
+          organization_id?: string
+          project_id?: string | null
+          skipped?: number
+          status?: string
+          total_rows?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -434,12 +829,12 @@ export type Database = {
       }
       leads: {
         Row: {
-          last_call_id: string | null
           company_name: string | null
           contact_id: string | null
           created_at: string
           email: string | null
           id: string
+          last_call_id: string | null
           name: string
           organization_id: string
           owner_id: string | null
@@ -451,12 +846,12 @@ export type Database = {
           value: number
         }
         Insert: {
-          last_call_id?: string | null
           company_name?: string | null
           contact_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          last_call_id?: string | null
           name: string
           organization_id: string
           owner_id?: string | null
@@ -468,12 +863,12 @@ export type Database = {
           value?: number
         }
         Update: {
-          last_call_id?: string | null
           company_name?: string | null
           contact_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          last_call_id?: string | null
           name?: string
           organization_id?: string
           owner_id?: string | null
@@ -490,6 +885,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_last_call_id_fkey"
+            columns: ["last_call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
             referencedColumns: ["id"]
           },
           {
@@ -566,6 +968,7 @@ export type Database = {
           created_at: string
           id: string
           organization_id: string
+          reports_to: string | null
           role: Database["public"]["Enums"]["org_role"]
           user_id: string
         }
@@ -573,6 +976,7 @@ export type Database = {
           created_at?: string
           id?: string
           organization_id: string
+          reports_to?: string | null
           role?: Database["public"]["Enums"]["org_role"]
           user_id: string
         }
@@ -580,6 +984,7 @@ export type Database = {
           created_at?: string
           id?: string
           organization_id?: string
+          reports_to?: string | null
           role?: Database["public"]["Enums"]["org_role"]
           user_id?: string
         }
@@ -653,6 +1058,82 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          link: string | null
+          organization_id: string
+          priority: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          organization_id: string
+          priority?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          organization_id?: string
+          priority?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_counters: {
+        Row: {
+          name: string
+          organization_id: string
+          value: number
+        }
+        Insert: {
+          name: string
+          organization_id: string
+          value?: number
+        }
+        Update: {
+          name?: string
+          organization_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           business_type: string | null
@@ -710,6 +1191,66 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          mode: string
+          notes: string | null
+          organization_id: string
+          paid_on: string
+          recorded_by: string | null
+          reference: string | null
+          sales_order_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          mode?: string
+          notes?: string | null
+          organization_id: string
+          paid_on?: string
+          recorded_by?: string | null
+          reference?: string | null
+          sales_order_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          mode?: string
+          notes?: string | null
+          organization_id?: string
+          paid_on?: string
+          recorded_by?: string | null
+          reference?: string | null
+          sales_order_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_admins: {
         Row: {
           created_at: string
@@ -727,39 +1268,255 @@ export type Database = {
       }
       profiles: {
         Row: {
-          job_title: string | null
-          phone: string | null
-          preferred_language: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          job_title: string | null
+          phone: string | null
+          preferred_language: string | null
           updated_at: string
         }
         Insert: {
-          job_title?: string | null
-          phone?: string | null
-          preferred_language?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
-          updated_at?: string
-        }
-        Update: {
           job_title?: string | null
           phone?: string | null
           preferred_language?: string | null
+          updated_at?: string
+        }
+        Update: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          job_title?: string | null
+          phone?: string | null
+          preferred_language?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          contact_count: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renewal_reminders: {
+        Row: {
+          created_at: string
+          days_before: number
+          id: string
+          organization_id: string
+          sales_order_id: string
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          days_before: number
+          id?: string
+          organization_id: string
+          sales_order_id: string
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          days_before?: number
+          id?: string
+          organization_id?: string
+          sales_order_id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_reminders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_reminders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_orders: {
+        Row: {
+          amount_paid: number
+          call_id: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          id: string
+          insurer: string | null
+          notes: string | null
+          order_number: string
+          organization_id: string
+          owner_id: string | null
+          payment_due_date: string | null
+          payment_frequency: string
+          plan_name: string | null
+          policy_end_date: string | null
+          policy_number: string | null
+          policy_start_date: string | null
+          premium_amount: number
+          product_type: string
+          renewed_from_order_id: string | null
+          source: string
+          status: string
+          sum_insured: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number
+          call_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          id?: string
+          insurer?: string | null
+          notes?: string | null
+          order_number: string
+          organization_id: string
+          owner_id?: string | null
+          payment_due_date?: string | null
+          payment_frequency?: string
+          plan_name?: string | null
+          policy_end_date?: string | null
+          policy_number?: string | null
+          policy_start_date?: string | null
+          premium_amount?: number
+          product_type?: string
+          renewed_from_order_id?: string | null
+          source?: string
+          status?: string
+          sum_insured?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          call_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          id?: string
+          insurer?: string | null
+          notes?: string | null
+          order_number?: string
+          organization_id?: string
+          owner_id?: string | null
+          payment_due_date?: string | null
+          payment_frequency?: string
+          plan_name?: string | null
+          policy_end_date?: string | null
+          policy_number?: string | null
+          policy_start_date?: string | null
+          premium_amount?: number
+          product_type?: string
+          renewed_from_order_id?: string | null
+          source?: string
+          status?: string
+          sum_insured?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_renewed_from_order_id_fkey"
+            columns: ["renewed_from_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -833,9 +1590,11 @@ export type Database = {
       }
       voice_agents: {
         Row: {
+          agent_variables: Json
           created_at: string
           created_by: string | null
           greeting: string | null
+          greeting_no_name: string | null
           id: string
           instructions: string | null
           language: string
@@ -851,9 +1610,11 @@ export type Database = {
           voice: string | null
         }
         Insert: {
+          agent_variables?: Json
           created_at?: string
           created_by?: string | null
           greeting?: string | null
+          greeting_no_name?: string | null
           id?: string
           instructions?: string | null
           language?: string
@@ -869,9 +1630,11 @@ export type Database = {
           voice?: string | null
         }
         Update: {
+          agent_variables?: Json
           created_at?: string
           created_by?: string | null
           greeting?: string | null
+          greeting_no_name?: string | null
           id?: string
           instructions?: string | null
           language?: string
@@ -896,58 +1659,177 @@ export type Database = {
           },
         ]
       }
+      workflow_runs: {
+        Row: {
+          call_id: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          created_at: string
+          error: string | null
+          event: string
+          id: string
+          matched: boolean
+          organization_id: string
+          results: Json
+          status: string
+          workflow_id: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          error?: string | null
+          event: string
+          id?: string
+          matched?: boolean
+          organization_id: string
+          results?: Json
+          status?: string
+          workflow_id?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          campaign_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          error?: string | null
+          event?: string
+          id?: string
+          matched?: boolean
+          organization_id?: string
+          results?: Json
+          status?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflows: {
         Row: {
           action: string | null
+          actions: Json
+          campaign_id: string | null
           condition: string | null
+          conditions: Json
           created_at: string
           created_by: string | null
           id: string
           kind: string
+          last_run_at: string | null
+          match: string
           name: string
           notes: string | null
           organization_id: string
+          project_id: string | null
+          run_count: number
           schedule_at: string | null
           status: string
+          trigger: Json
           trigger_event: string | null
           updated_at: string
         }
         Insert: {
           action?: string | null
+          actions?: Json
+          campaign_id?: string | null
           condition?: string | null
+          conditions?: Json
           created_at?: string
           created_by?: string | null
           id?: string
           kind?: string
+          last_run_at?: string | null
+          match?: string
           name: string
           notes?: string | null
           organization_id: string
+          project_id?: string | null
+          run_count?: number
           schedule_at?: string | null
           status?: string
+          trigger?: Json
           trigger_event?: string | null
           updated_at?: string
         }
         Update: {
           action?: string | null
+          actions?: Json
+          campaign_id?: string | null
           condition?: string | null
+          conditions?: Json
           created_at?: string
           created_by?: string | null
           id?: string
           kind?: string
+          last_run_at?: string | null
+          match?: string
           name?: string
           notes?: string | null
           organization_id?: string
+          project_id?: string | null
+          run_count?: number
           schedule_at?: string | null
           status?: string
+          trigger?: Json
           trigger_event?: string | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "workflows_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workflows_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -959,6 +1841,10 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: string }
       can_write_org: { Args: { _org: string }; Returns: boolean }
+      create_default_voice_agent: {
+        Args: { _created_by: string; _org: string }
+        Returns: undefined
+      }
       has_org_role: {
         Args: {
           _org: string
@@ -967,12 +1853,25 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      next_org_counter: {
+        Args: { _name: string; _org: string }
+        Returns: number
+      }
+      queue_renewal_reminders: { Args: never; Returns: number }
+      refresh_project_contact_counts: {
+        Args: { _projects: string[] }
+        Returns: undefined
+      }
+      stock_advisory_script: { Args: never; Returns: string }
+      yulabs_insurance_script: { Args: never; Returns: string }
+      yulabs_insurance_variables: { Args: never; Returns: Json }
     }
     Enums: {
       org_role:
         | "owner"
         | "admin"
         | "sales_manager"
+        | "team_lead"
         | "sales_rep"
         | "voice_manager"
         | "support_agent"
@@ -1109,6 +2008,7 @@ export const Constants = {
         "owner",
         "admin",
         "sales_manager",
+        "team_lead",
         "sales_rep",
         "voice_manager",
         "support_agent",

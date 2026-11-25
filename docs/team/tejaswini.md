@@ -473,148 +473,1043 @@ git stash pop
 
 # Your issues in detail
 
-The sections below come from [`docs/issues/README.md`](../issues/README.md), which also explains how all the team's issues fit together (dependencies, shared files, migration numbering).
+Each section below is the full README of one of your issues (from `docs/issues/<number>-<name>/README.md`). [`docs/issues/README.md`](../issues/README.md) explains how all the team's issues fit together: dependencies, shared files, migration numbering.
 
 ## #18: Separate dev database and seed data
 
-**Assignee:** Tejaswini · **Branch:** `feature/18-dev-database` · **Depends on:** nothing · **Unblocks:** #17, and lets everyone test migrations safely
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/18 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/18-dev-database` |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's **1st** issue: it unblocks everyone |
+| **Depends on** | the owner creating a second Supabase project (or branch) and giving you access |
+| **Unblocks** | #17 E2E tests (Charan), and safe migration testing for the whole team |
+| **Size** | ~4–5 days |
 
-**Why:** the `dev` branch and the dev preview still share the production database.
+### 1. Summary
 
-**Today:** `main` deploys production and `dev` deploys https://dev--yulabs-crm-1122.netlify.app, but both use the same Supabase project (`yulabs-crm`).
+Today the `dev` branch preview (https://dev--yulabs-crm-1122.netlify.app) and production use the **same** Supabase database, so testing on dev can touch real customer data. After this issue, dev has its **own database**, filled with **seed data** (a realistic demo workspace with fake numbers) by **one command**, and there's a written, safe migration process.
 
-**Build:**
-1. A second Supabase project (or a Supabase branch) for development. The owner creates it and gives you access. Apply every file in `db/migrations/` in order, and write down the exact steps in `db/README.md`.
-2. Seed script (`db/seed.sql` or `scripts/seed.mjs`): a demo workspace with a few contacts, both voice agents, calls with transcripts and answers, and leads and deals in each pipeline stage. **No real phone numbers** (use `+91 90000 0000x`-style fakes).
-3. One command: `npm run db:seed` (or similar) against an empty project gives a working demo.
-4. Netlify: the `dev` branch deploy uses the dev database through branch-specific environment variables. Production keeps the current one. (The owner sets the variables; you document which ones.)
-5. A "migrate safely" checklist in `CONTRIBUTING.md`: apply on dev first, check the preview, then apply to production during the release.
+### 2. What already exists
 
-**Test:** run the seed on a fresh empty project from scratch, following only your README. Open the dev preview and check it shows only seed data.
+- Production Supabase project `yulabs-crm`; migrations in `db/migrations/0000_…` to `0017_…` (apply them in order).
+- Netlify site with branch deploys: `main` → production, `dev` → the dev preview (`.github/workflows/deploy.yml`).
+- Environment variables: `.env` (public: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_*`), and server secrets (`SUPABASE_SERVICE_ROLE_KEY`, `SARVAM_API_KEY`, `PUBLIC_APP_URL`).
+- `drizzle/` and `drizzle.config.ts` exist; check whether they're still used before relying on them.
 
-**Done when:** the dev preview shows only seed data, and running the seed on an empty project gives a working demo in one command.
+### 3. Scope
+
+**In scope:** the dev project set up with all migrations, a documented apply process, a seed script, an npm script, the Netlify branch env vars (documented; the owner applies them), a "migrate safely" checklist.
+
+**Out of scope:** automatic migrations in CI, data copies from production (never copy real customer data).
+
+### 4. What to build, point by point
+
+#### 4.1 Dev project
+1. Ask the owner to create a Supabase project `yulabs-crm-dev` (same region as production) **or** a Supabase branch, and to add you as a developer.
+2. Apply **every** migration in order. Two ways (document both in `db/README.md`):
+   - **SQL editor:** open each file `0000` → `0017` in order, run it, and check for errors.
+   - **Script:** `scripts/db-apply.mjs` that reads `db/migrations/*.sql` sorted by name and runs each against `DATABASE_URL` (the dev Postgres connection string) using `postgres` or `pg`, recording applied files in a `_migrations` table so reruns skip them. **Refuse to run if `DATABASE_URL` contains the production project ref.**
+3. Things that need special handling, documented step by step: `0017` (pg_cron/pg_net, Vault token, and the cron job's target URL must be the **dev preview** URL); storage buckets (`avatars`, recordings); Auth settings (site URL, redirect URLs for the dev preview and localhost); the Realtime publication.
+
+#### 4.2 Seed data
+4. `db/seed.sql` (plain SQL, idempotent) **or** `scripts/seed.mjs` (Node with the service role; better for creating an auth user). Recommended: Node.
+5. What to create:
+   - a demo user (`demo@yulabs.test` with a password from the env `SEED_DEMO_PASSWORD`) as owner of the workspace **"Demo Insurance & Advisory"**
+   - 2–3 more users with other roles (sales_rep, voice_manager)
+   - both voice agents (insurance and stock market advisory), with variables like the production migrations
+   - 2 projects (CSV-style imports) with ~30 contacts. **Fake numbers only:** `+91 90000 000NN`, names from a fixed list, `example.com` emails
+   - ~40 calls over the last 14 days with mixed statuses (completed, no_answer, failed), realistic `answers` (interested, not_interested, consultation_booked, callback with follow_up_time, do_not_contact, escalated), transcripts (3–8 turns), summaries, durations
+   - leads and deals in **every** pipeline stage; tasks (open/done); a couple of meetings
+   - one finished campaign with targets
+6. Make it **idempotent**: rerunning doesn't duplicate (fixed UUIDs, or delete the demo org first with a `--reset` flag).
+7. `package.json` scripts: `"db:apply": "node scripts/db-apply.mjs"`, `"db:seed": "node scripts/seed.mjs"`, `"db:reset-demo": "node scripts/seed.mjs --reset"`.
+8. Env for the scripts: a `.env.dev.local` (git-ignored) with `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` for the **dev** project. Add an `.env.dev.example` with the names only.
+
+#### 4.3 Netlify (the owner applies it; you document it)
+9. In Netlify → Site configuration → Environment variables, set **branch-specific values** for `dev`: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`, `SUPABASE_PROJECT_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `PUBLIC_APP_URL=https://dev--yulabs-crm-1122.netlify.app`. Production keeps the current values.
+10. Because the build reads `VITE_*` at build time, check the deploy workflow builds the `dev` branch with the dev values (GitHub Actions `environment: dev` secrets, or the Netlify env). Document exactly where each value comes from.
+
+#### 4.4 Process docs
+11. `db/README.md`: how migrations work, how to apply them to dev, how to seed, how to reset, and the troubleshooting you hit.
+12. A **"Migrate safely"** checklist added to `CONTRIBUTING.md`:
+    1. write an additive migration in a PR
+    2. the owner applies it to **dev** → check the dev preview
+    3. merge to `dev`
+    4. at release, apply it to **production** right before merging `dev` → `main`
+    5. never edit an applied migration; write a new one
+
+### 5. Data model
+
+No schema changes. Optionally a `_migrations(filename text primary key, applied_at timestamptz)` table created by `db-apply.mjs` in the dev project.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `scripts/db-apply.mjs` | **new** |
+| `scripts/seed.mjs` (+ `scripts/seed-data/*.json`) | **new** |
+| `db/README.md` | **new** |
+| `.env.dev.example` | **new** (names only) |
+| `package.json` | `db:*` scripts (+ `postgres` devDependency if used) |
+| `CONTRIBUTING.md` | migrate-safely checklist; remove "dev and production share a database" once it's live |
+| `.github/workflows/deploy.yml` | only if the dev build needs different env wiring (agree with the owner) |
+
+### 7. Rules, edge cases, security
+
+- **Never copy production data** into dev. Seed data is fake only.
+- **Both scripts refuse the production project** (check the URL/ref against a constant).
+- No secrets in the repo: `.env.dev.local` stays git-ignored (check with `git check-ignore`).
+- The seed must not send anything (no Sarvam calls, no emails).
+- The cron job in dev points at the dev preview, never at production.
+
+### 8. Testing
+
+1. **Fresh run:** create an empty project (or reset the branch) → `npm run db:apply` → `npm run db:seed` → sign in to a local app pointed at dev as the demo user → every page has data.
+2. Rerun `npm run db:seed` → no duplicates.
+3. Point the scripts at the production URL → they refuse with a clear message.
+4. After the owner sets the Netlify variables: open the dev preview → you see **only seed data**; production is unchanged.
+5. A unit test (`src/test/db-apply.test.ts`) for migration ordering and the production-guard function.
+
+```bash
+cp .env.dev.example .env.dev.local      # fill in the dev project values
+npm run db:apply
+npm run db:seed
+npx vitest run && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] The dev preview shows only seed data and no longer touches production
+- [ ] Running the seed on an empty project gives a working demo in one command
+- [ ] `db/README.md` lets someone else redo it from scratch
+- [ ] The migrate-safely checklist is in `CONTRIBUTING.md`
+- [ ] The scripts refuse to run against production
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/18-dev-database
+git add scripts/db-apply.mjs scripts/seed.mjs db/README.md .env.dev.example package.json package-lock.json
+git commit -m "Dev DB: migration runner and seed script"
+git push -u origin feature/18-dev-database
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#18 Separate dev database and seed data" --body "Closes #18 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #18`
+- The exact list of Netlify / GitHub env values the owner must set (names only, no values)
+- Screenshots of the dev preview showing the demo workspace
+
+### 12. Settle with the lead/owner before starting
+
+- A separate project or a Supabase branch (cost and limits).
+- Who sets the Netlify and GitHub environment values, and when.
 
 ---
 
 ## #9: Multi-agent setup: create and manage voice agents from the CRM
 
-**Assignee:** Tejaswini · **Branch:** `feature/9-multi-agent` · **Depends on:** nothing · **Blocks:** #10, #15 (they build on agent/version data)
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/9 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/9-multi-agent` (split if large: `feature/9-agent-cards`, `feature/9-agent-wizard`, `feature/9-agent-publish`) |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 2nd issue |
+| **Depends on** | nothing. Use `can(role,'agents.manage')` from #16 once it lands |
+| **Blocks** | #10 per-agent rules (Shashank), #15 per-version analytics (you) |
+| **Size** | ~8–10 days |
 
-**Why:** adding an agent today means working in the Sarvam dashboard and then editing rows by hand.
+### 1. Summary
 
-**Today:** two agents exist (`YULabs Insurance`, `Stock Market Advisory`). Each is a `voice_agents` row pointing at a Sarvam agent (`sarvam_agent_id`, `sarvam_app_version`). Variables map to contact fields, lead-file columns (`custom.x`) or fixed values (`=text`, e.g. company name or SEBI number). See `src/lib/campaign-vars.ts`.
+Today adding a voice agent means working in the Sarvam dashboard and then editing database rows by hand. After this issue, an admin can **create, configure, test, publish and roll back** voice agents (insurance, stock market advisory, and more) entirely from the CRM's Voice Agents page.
 
-**Build:**
-1. Agent cards on `voice-agents.tsx`: status, version, caller number, languages, and the last 7 days of calls, connect rate and interested %.
-2. "New agent" wizard: start from a template (clone an existing Sarvam agent), then set name, greeting, no-name greeting, script and languages.
-3. Variables editor: add or remove variables; pick the source (contact field, lead column, or fixed value with a text box); mark which ones are customer answers (post-call outputs).
-4. Company facts panel for fixed values (company name, registration numbers, services, fees, website, hours).
-5. Publish flow: save draft → test in a text chat (Sarvam `send_chat`) → commit a version → switch the CRM to it. Add version history and roll back.
-6. Every Sarvam call goes through server functions (`*.server.ts` / `createServerFn`). The Sarvam key never reaches the browser.
+### 2. What already exists
 
-**Test:**
-- Unit tests for the variable-mapping logic (extend `src/test/campaign-vars.test.ts`).
-- Create an agent from a template, chat with it, publish it, and place a test call to **your own** number.
-- Roll back to the previous version, then confirm the CRM row points at the old version and a test call uses it.
-- In DevTools → Network, confirm no request from the browser contains the Sarvam key.
+- `voice_agents` table: `name`, `language`, `voice`, `purpose`, `greeting`, `greeting_no_name`, `instructions` (script), `sarvam_agent_id`, `sarvam_app_version`, `sarvam_connection_id`, `sarvam_agent_phone_number`, `agent_variables` (jsonb), `status`.
+- Two agents seeded by migrations: `YULabs Insurance` (`0013`) and `Stock Market Advisory` (`0015`).
+- Variable sources (`src/lib/campaign-vars.ts`): a contact field (`full_name`, `first_name`, …), a lead-file column (`custom.<col>`), or a **fixed value** (`=text`).
+- Sarvam server code: `src/lib/sarvam.server.ts`, `src/lib/sarvam.functions.ts`. The key lives only on the server (`SARVAM_API_KEY`).
+- Page: `src/routes/_authenticated/_app/voice-agents.tsx` (cards, test-call form).
+- Sarvam docs: https://docs.sarvam.ai/voice-agents (agents, versions/apps, `send_chat`, telephony connections).
 
-**Done when:** a new agent can be created, tested in chat, published and used for a test call entirely from the CRM, and rolling back a version works.
+### 3. Scope
+
+**In scope:** agent cards with 7-day stats, a new-agent wizard from a template, a variables editor, a company facts panel, draft → chat test → publish → switch, version history and rollback.
+
+**Out of scope:** per-agent outcome rules (#10), inbound deployments (#19), buying phone numbers.
+
+### 4. What to build, point by point
+
+#### 4.1 Agent cards
+1. One card per agent: name, status badge (Active/Draft/Paused), live version (`sarvam_app_version`), caller number, languages.
+2. 7-day stats from `calls`: calls, connect rate (`status = 'completed'` / all), interested % (from `answers.disposition` via `classifyCallOutcome`). Compute them in **one** SQL view or RPC (`agent_stats_7d`), not one query per card.
+3. Card actions: **Test call** (existing), **Edit**, **Versions**, **Duplicate**, **Pause/Activate**.
+
+#### 4.2 "New agent" wizard (dialog or full page, 4 steps)
+4. **Template:** pick an existing agent to clone (the Sarvam agent config is copied via the API) or "Blank".
+5. **Basics:** name, purpose (one line), languages (multi-select: `hi-IN`, `en-IN`, `te-IN`, …), voice.
+6. **Conversation:** greeting (with `{{customer_name}}`), greeting when the name is unknown (`greeting_no_name`), and the script/instructions in a large textarea with a character count.
+7. **Telephony:** connection id and caller number (dropdown from existing agents' values, or typed in).
+8. Saving creates the Sarvam agent or version as a **draft** and the `voice_agents` row with `status = 'draft'`.
+
+#### 4.3 Variables editor
+9. A table of variables: name (snake_case, validated), **source** (Contact field ▾ | Lead column ▾ | Fixed value [text box]), and a checkbox **"Customer answer (post-call output)"**.
+10. Contact field options from `campaign-vars.ts`. Lead columns from the custom fields seen in the org's projects (distinct keys of `contacts.custom_fields`).
+11. Fixed values are stored as `=text` (keep the existing format, so campaigns and test calls keep working).
+12. Answer variables are what Sarvam returns in `final_agent_variables`. Keep a list per agent (e.g. `interested`, `disposition`, `callback_time`, `objections`) so the webhook and #10 know which keys are answers.
+
+#### 4.4 Company facts panel
+13. A form for facts used as fixed values: company name, registration numbers (IRDAI/SEBI), services, fees, website, hours, address. Store them in `voice_agents.agent_variables` as `=` values, or in a separate `company_facts` jsonb (agree with the lead).
+14. One click: "Use in variables" adds or links the fact to a variable.
+
+#### 4.5 Publish flow and versions
+15. **Save draft** → **Test in chat**: a chat panel that calls Sarvam `send_chat` through a server function and shows the conversation. A "Reset chat" button.
+16. **Publish**: commit a new Sarvam version → record it in `voice_agent_versions` (§5) → set `voice_agents.sarvam_app_version` to it → `status = 'active'`.
+17. **Version history** drawer: version number, published by, published at, a note, and a diff of greeting/script against the previous version (simple line diff).
+18. **Roll back**: confirm dialog → set `sarvam_app_version` back to the chosen version (and re-activate it in Sarvam if needed) → log it.
+19. Record the version on each call: `calls.agent_version` (new column), so #15 can compare versions.
+
+#### 4.6 Server functions (the Sarvam key never reaches the browser)
+20. `listAgents`, `createAgentDraft`, `updateAgentDraft`, `chatWithDraft`, `publishAgent`, `rollbackAgent`, `duplicateAgent`, all in `src/lib/agents.functions.ts`, calling `src/lib/sarvam.server.ts` helpers.
+21. Permission check in each: admin/owner/voice_manager (switch to `can()` after #16).
+
+### 5. Data model
+
+```sql
+-- 00NN_agent_versions.sql: version history for voice agents, and which version each call used
+create table if not exists public.voice_agent_versions (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  agent_id uuid not null references public.voice_agents(id) on delete cascade,
+  sarvam_app_version text not null,
+  greeting text, greeting_no_name text, instructions text,
+  agent_variables jsonb not null default '{}',
+  answer_variables text[] not null default '{}',
+  note text,
+  published_by uuid default auth.uid(),
+  published_at timestamptz not null default now()
+);
+create index if not exists voice_agent_versions_agent_idx on public.voice_agent_versions (agent_id, published_at desc);
+alter table public.voice_agent_versions enable row level security;
+create policy "tenant read" on public.voice_agent_versions for select to authenticated using (public.is_org_member(organization_id));
+create policy "tenant write" on public.voice_agent_versions for insert to authenticated with check (public.can_write_org(organization_id));
+grant select, insert on public.voice_agent_versions to authenticated;
+grant all on public.voice_agent_versions to service_role;
+
+alter table public.voice_agents add column if not exists answer_variables text[] not null default '{}';
+alter table public.calls add column if not exists agent_version text;
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_agent_versions.sql` | **new** |
+| `src/lib/agents.functions.ts` | **new**: server functions |
+| `src/lib/sarvam.server.ts` | add create/clone/version/send_chat helpers |
+| `src/routes/_authenticated/_app/voice-agents.tsx` | cards, actions |
+| `src/components/app/agents/AgentWizard.tsx`, `VariablesEditor.tsx`, `CompanyFacts.tsx`, `ChatTester.tsx`, `VersionHistory.tsx` | **new** |
+| `src/lib/sarvam.functions.ts` / webhook | save `agent_version` on calls |
+| `src/test/campaign-vars.test.ts`, `src/test/agents.test.ts` | extend / **new** |
+
+### 7. Rules, edge cases, security
+
+- **No Sarvam key or raw Sarvam response with secrets in the browser.** Check DevTools → Network.
+- Variable names: `^[a-z][a-z0-9_]{1,40}$`, unique per agent.
+- Don't break existing campaigns. Old `agent_variables` must keep working unchanged.
+- Publishing while a campaign is running: warn "Running campaigns will use the new version for new calls."
+- Rollback to a version that no longer exists in Sarvam → a clear error, nothing changed.
+
+### 8. Testing
+
+**Unit tests:** variable name validation; `resolveVariables` with contact, custom and fixed sources (extend `campaign-vars.test.ts`); version diff helper; the permission check.
+
+**Manual test script:**
+1. Create "Test Agent" from the insurance template → it appears as Draft.
+2. Add a fixed variable `company_name = =YULabs` and an answer variable `interested`.
+3. Chat with it in the tester → the greeting uses the name, and it answers from the script.
+4. Publish → the version shows in history; status Active.
+5. Test call to **your own number** → the call row has `agent_version` set.
+6. Edit the script, publish v2, then roll back to v1 → the CRM points at v1, and the next test call uses v1.
+7. Signed in as a sales rep → no Edit/Publish buttons, and calling the server function directly is refused.
+
+```bash
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] Agent cards show version, number, languages and 7-day stats
+- [ ] A new agent can be created from a template, tested in chat, published, and used for a test call, all from the CRM
+- [ ] The variables editor supports contact field, lead column and fixed value, and marks answer variables
+- [ ] Version history and rollback work; calls record their version
+- [ ] The Sarvam key never reaches the browser; only permitted roles can manage agents
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/9-multi-agent
+git add db/migrations/00NN_agent_versions.sql src/lib/agents.functions.ts
+git commit -m "Agents: version table and server functions"
+git push -u origin feature/9-multi-agent
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#9 Multi-agent setup" --body "Closes #9 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #9`; the migration to apply
+- A screen recording of create → chat → publish → test call → rollback
+- A note for Shashank (#10) on where `answer_variables` live
+
+### 12. Settle with the lead before starting
+
+- Which Sarvam API endpoints to use for cloning and versioning (check the docs together).
+- Where company facts live (in `agent_variables` or a separate column).
 
 ---
 
 ## #6: MCP server for the CRM
 
-**Assignee:** Tejaswini · **Branch:** `feature/6-mcp-server` · **Depends on:** #5 (start with a stub key check) · **Blocks:** #7
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/6 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/6-mcp-server` |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 3rd issue |
+| **Depends on** | #5 API keys (Charan). Start with a stub key check until it's merged |
+| **Blocks** | #7 docs (Shashank documents the MCP setup) |
+| **Size** | ~4–5 days |
 
-**Why:** AI assistants (Claude, Cursor and others) can then search contacts, read calls and place calls for a customer through the Model Context Protocol.
+### 1. Summary
 
-**Build:**
-1. Endpoint `/api/mcp` (route file in `src/routes/api/`) using `@modelcontextprotocol/sdk` with the **Streamable HTTP** transport.
-2. Auth: the same API keys as #5 (`authenticateApiKey`). Each tool checks its own scope.
-3. Tools are thin wrappers that call the same functions as the REST routes. Move the shared query logic into `src/lib/api/*.server.ts` and don't copy it:
-   - `search_contacts`, `get_contact`, `create_contact`, `list_leads`, `list_deals`, `get_call` (summary, answers, transcript), `list_recent_calls`, `place_call`
-4. Zod input schemas with clear descriptions. The AI reads these descriptions to decide what to call, so write them for a human.
-5. `place_call` requires `consent_confirmed: true` and refuses do-not-contact numbers, just like the test-call form.
+Expose the CRM to AI assistants (Claude Desktop, Claude Code, Cursor, …) through the **Model Context Protocol**. A customer adds `https://<app>/api/mcp` with their API key, and can then ask in plain language: "show me today's interested leads", "summarise the last call with +91…", "call this lead". Each question maps to a tool that runs organization-scoped queries.
 
-**Test:**
-- Unit test each tool handler with a fake org.
-- Claude Code: `claude mcp add --transport http yulabs http://localhost:<port>/api/mcp --header "Authorization: Bearer yk_live_xxx"`, then ask "show me today's interested leads" and "summarise the last call with +91…".
-- Claude Desktop / Cursor: add the same URL and header in their MCP config. Put the snippets in the PR for #7 to reuse.
-- Check that a key from org A sees only org A's data, and that a key without `calls:write` can't use `place_call`.
+### 2. What already exists / what you reuse
 
-**Done when:** the server can be added to Claude Desktop / Claude Code with a key, and those two questions return correct, organization-scoped answers.
+- From #5: `authenticateApiKey(request, scope)` in `src/lib/api-auth.server.ts`, and the shared query functions in `src/lib/api/*.server.ts`. **Call these; don't write new queries.**
+- `startSarvamCall` logic for placing calls (via the #5 shared function).
+- Server route pattern: `src/routes/api/public/*.ts`.
+
+### 3. Scope
+
+**In scope:** a Streamable HTTP MCP endpoint, API-key auth with per-tool scopes, 8 tools, zod schemas with good descriptions, tests, and config snippets for 3 clients.
+
+**Out of scope:** MCP resources and prompts (tools only), OAuth for MCP, stdio transport.
+
+### 4. What to build, point by point
+
+#### 4.1 Setup
+1. `npm install @modelcontextprotocol/sdk` (commit `package.json` and `package-lock.json`).
+2. Create `src/lib/mcp/server.ts`: a function `buildMcpServer(ctx: { organizationId; scopes })` that creates an `McpServer({ name: "yulabs-crm", version: "1.0.0" })` and registers the tools.
+3. Create the route `src/routes/api/mcp.ts` handling `POST` (and `GET`/`DELETE` if the transport needs them) with `StreamableHTTPServerTransport` in **stateless** mode (`sessionIdGenerator: undefined`). This works on serverless (Netlify functions).
+4. Auth at the top of the handler: `authenticateApiKey(request, "contacts:read")` as the minimum. Pass the scopes to the server so each tool checks its own.
+
+#### 4.2 Tools
+
+| Tool | Scope | Input (zod) | Returns |
+|---|---|---|---|
+| `search_contacts` | `contacts:read` | `query` (string, name/phone/email), `limit` (1–50, default 10) | list: id, name, phone, email, status |
+| `get_contact` | `contacts:read` | `contact_id` (uuid) **or** `phone` | contact, plus its last 5 calls (date, outcome, summary) and open deals |
+| `create_contact` | `contacts:write` | `first_name`, `last_name?`, `phone`, `email?`, `city?`, `project_id?` | created/updated contact |
+| `list_leads` | `leads:read` | `status?` (e.g. `qualified`), `since?` (ISO date or "today"/"this_week"), `limit?` | leads, with name, phone, product interest and last call summary |
+| `list_deals` | `deals:read` | `stage?`, `limit?` | deals: title, stage, value, contact |
+| `list_recent_calls` | `calls:read` | `since?`, `agent_id?`, `outcome?`, `limit?` | calls: id, contact, status, duration, outcome, summary |
+| `get_call` | `calls:read` | `call_id` **or** `phone` (= that number's latest call) | status, duration, answers, summary, transcript (trimmed to ~8k chars) |
+| `place_call` | `calls:write` | `phone`, `agent_id`, `contact_id?`, `consent_confirmed: z.literal(true)` | `{ call_id, status }` |
+
+5. Each tool: check its scope first. If it's missing, return an MCP error result with "This API key lacks the calls:write scope" (`isError: true`, not a thrown exception).
+6. Return **both** a short human-readable text and structured JSON (`content: [{ type: "text", text }]`; add `structuredContent` if the SDK version supports it).
+7. Write descriptions **for the AI**: say what the tool does, when to use it, and what each field means, e.g. *"List leads (people who showed interest on AI calls). Use `since: 'today'` for today's new leads."*
+8. `place_call`: the description must say that the user must explicitly confirm they have the person's consent; `consent_confirmed` must be the literal `true`. Do-not-contact numbers are refused with a clear message.
+9. Resolve "today"/"this_week" in **Asia/Kolkata**.
+
+#### 4.3 Stub while waiting for #5
+10. If #5 isn't merged yet: create `src/lib/api-auth.server.ts` with the same signature, returning a fixed test org from an env var `MCP_DEV_ORG_ID`, marked `// TODO(#5): replace with real key auth`. Delete the stub when you rebase onto #5.
+
+### 5. Data model
+
+None. Everything goes through the #5 tables and functions.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `src/lib/mcp/server.ts` | **new**: builds the server and registers the tools |
+| `src/lib/mcp/tools/*.ts` | **new**: one file per tool (handler + schema) |
+| `src/lib/mcp/time.ts` | **new**: "today"/"this_week" → IST date ranges |
+| `src/routes/api/mcp.ts` | **new**: HTTP endpoint |
+| `src/test/mcp-tools.test.ts` | **new** |
+| `package.json`, `package-lock.json` | the SDK dependency |
+
+### 7. Rules, edge cases, security
+
+- Same isolation rule as #5: every query uses the key's `organization_id`.
+- Trim large outputs (transcripts, long lists) so the AI's context isn't flooded; say "(truncated)" when you do.
+- Never return the Sarvam key, internal tokens or the service-role key in a tool result or error.
+- Phone inputs go through `normalizePhoneNumber`. Ambiguous input → ask for the full number in the error text.
+- Log tool name, org id and duration only. **No personal data in logs.**
+
+### 8. Testing
+
+**Unit tests** (call the tool handlers directly with a mocked data layer):
+- each tool returns data only for the given org
+- a missing scope → `isError` result with the scope name
+- `place_call` without `consent_confirmed: true` fails schema validation
+- `time.ts`: "today" at 00:30 IST is still the correct IST day
+
+**With real clients** (dev server running, a real key from #5):
+
+```bash
+# Claude Code
+claude mcp add --transport http yulabs http://localhost:8080/api/mcp --header "Authorization: Bearer yk_live_xxx"
+claude    # then ask: "show me today's interested leads"
+```
+
+Claude Desktop (`claude_desktop_config.json`, via the `mcp-remote` bridge):
+
+```json
+{ "mcpServers": { "yulabs": { "command": "npx", "args": ["-y", "mcp-remote", "http://localhost:8080/api/mcp", "--header", "Authorization: Bearer yk_live_xxx"] } } }
+```
+
+Cursor (`.cursor/mcp.json`):
+
+```json
+{ "mcpServers": { "yulabs": { "url": "http://localhost:8080/api/mcp", "headers": { "Authorization": "Bearer yk_live_xxx" } } } }
+```
+
+You can also use the MCP Inspector: `npx @modelcontextprotocol/inspector`, then connect to the URL with the header.
+
+Questions to try: "show me today's interested leads", "summarise the last call with +91 90000 00001", "find contact Ravi", "how many calls did the insurance agent make this week?", and "call +91 9…" (it must ask for consent).
+
+### 9. Acceptance criteria
+
+- [ ] The server connects from Claude Code, Claude Desktop and Cursor using an API key
+- [ ] The two example questions in the issue return correct, org-scoped answers
+- [ ] Each tool enforces its scope; `place_call` requires consent and refuses DNC numbers
+- [ ] Tools reuse the #5 functions (no duplicated queries)
+- [ ] Tests added; all checks pass
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/6-mcp-server
+npm install @modelcontextprotocol/sdk
+git add package.json package-lock.json src/lib/mcp src/routes/api/mcp.ts
+git commit -m "MCP: server endpoint with contact and call tools"
+git push -u origin feature/6-mcp-server
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#6 MCP server for the CRM" --body "Closes #6 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #6`
+- A short screen recording or screenshots of Claude answering the two questions
+- The three client config snippets (for #7)
+- The list of tools with their descriptions
+
+### 12. Settle with the lead before starting
+
+- Which questions customers will ask most (that tells you which tools matter).
+- The maximum transcript length to return.
 
 ---
 
 ## #12: WhatsApp follow-up after calls (approved templates)
 
-**Assignee:** Tejaswini · **Branch:** `feature/12-whatsapp-followup` · **Depends on:** nothing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/12 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/12-whatsapp-followup` |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 4th issue |
+| **Depends on** | nothing (uses `isBlocked()` from #13 if merged) |
+| **Blocks** | nothing |
+| **Size** | ~5–6 days |
 
-**Why:** send the brochure, company profile or quote options on WhatsApp after an interested call, as promised on the call.
+### 1. Summary
 
-**Build:**
-1. Integration settings for a WhatsApp Business provider (Meta Cloud API, Gupshup, Twilio, … agree with the lead). Credentials are stored server-side only.
-2. Template library per agent (approved templates only), with variables from the call (name, product, follow-up time).
-3. Automation action "Send WhatsApp template" in `src/components/app/WorkflowBuilder.tsx` + `src/lib/automation.server.ts` (tests in `src/test/automation.test.ts`).
-4. Send only when the caller gave consent (`consent_to_share = yes` for the stock agent), and never to do-not-contact numbers. Log every message on the contact timeline (`messages` table).
-5. Idempotency: one call → at most one message per template.
+After an interested call, send the brochure, company profile or quote options on **WhatsApp**, as the agent promised on the call. Messages use **pre-approved templates** only, are sent only with the caller's **consent**, go out **at most once** per call, and are logged on the contact's timeline.
 
-**Test:**
-- Unit tests: consent yes → send; consent missing/no → no send; replaying the same call → no second send.
-- Use the provider's **test/sandbox number** and your own phone only.
+### 2. What already exists
 
-**Done when:** an interested test call triggers exactly one WhatsApp message, and a call without consent triggers none.
+- Workflow builder: `src/components/app/WorkflowBuilder.tsx`, executed by `src/lib/automation.server.ts` (trigger `call.completed`, conditions, actions). Tests: `src/test/automation.test.ts`.
+- `messages` table (`channel`, `contact_id`, `recipient`, `subject`, `body`, `direction`, `status`) for logging.
+- Integrations page: `src/routes/_authenticated/_app/integrations.tsx`; WhatsApp page `whatsapp.tsx` (placeholder).
+- Stock agent answer `consent_to_share` (yes/no).
+
+### 3. Scope
+
+**In scope:** provider settings (server-side credentials), a template library per agent, a "Send WhatsApp template" automation action, consent and DNC checks, idempotency, timeline logging, delivery status if the provider sends it.
+
+**Out of scope:** two-way chat inbox, free-form messages, bulk broadcasts.
+
+### 4. What to build, point by point
+
+#### 4.1 Provider
+1. Agree on the provider with the lead (Meta WhatsApp Cloud API recommended; alternatives Gupshup, Twilio). Write a small interface so the provider can be swapped:
+   `interface WhatsAppProvider { sendTemplate(to: string, template: string, language: string, params: string[]): Promise<{ id: string }> }`
+2. Implement it in `src/lib/whatsapp/meta.server.ts` (`POST https://graph.facebook.com/v20.0/<phone_number_id>/messages` with `type: "template"`).
+3. Credentials (access token, phone number id, business account id) are saved per workspace from the Integrations page **through a server function**, stored server-side only (a table with RLS that never selects the token back to the client, or encrypted). The UI shows "Connected ✓ (…last 4 chars)".
+
+#### 4.2 Templates
+4. Table `whatsapp_templates`: `agent_id` (nullable = all agents), `name` (the provider's approved template name), `language` (`en`, `hi`), `body_preview`, `params` (an ordered list of sources: `contact.first_name`, `answers.product`, `answers.follow_up_time`, `=fixed text`), `active`.
+5. A templates screen (WhatsApp page): list, add, edit, deactivate, and a preview with sample data.
+6. Optional: a "Sync from provider" button that fetches approved template names.
+
+#### 4.3 Automation action
+7. Add the action type `send_whatsapp_template` to the workflow builder: pick a template, and see its params.
+8. In `automation.server.ts`, the executor:
+   - resolves the params from the contact and call answers
+   - **consent check:** send only if `answers.consent_to_share` is yes (`yes/true/haan/ha`), or the workflow explicitly has the condition "consent given". With no consent → skip and log the reason
+   - **DNC check:** skip blocked or inactive contacts (`isBlocked()` from #13, or `contacts.status = 'inactive'`)
+   - **idempotency:** a unique key `(call_id, template_id)` in `whatsapp_sends`, so a second run is skipped
+   - sends via the provider, then inserts a `messages` row (`channel = 'whatsapp'`, `direction = 'outbound'`, `status = 'sent'`, `body` = rendered preview)
+9. Errors: store `status = 'failed'` with the provider's error message. Don't retry endlessly (at most 2 retries).
+
+#### 4.4 Timeline and status
+10. The contact timeline shows WhatsApp messages with an icon, template name and status.
+11. Optional: a provider status webhook (`/api/public/whatsapp-status`) that updates `delivered`/`read`. Verify the signature.
+
+### 5. Data model
+
+```sql
+-- 00NN_whatsapp_followup.sql: approved WhatsApp templates and a send log that guarantees one message per call+template
+create table if not exists public.whatsapp_templates (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  agent_id uuid references public.voice_agents(id) on delete set null,
+  name text not null, language text not null default 'en',
+  body_preview text, params jsonb not null default '[]', active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.whatsapp_sends (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  call_id uuid references public.calls(id) on delete set null,
+  template_id uuid references public.whatsapp_templates(id) on delete set null,
+  contact_id uuid references public.contacts(id) on delete set null,
+  provider_message_id text, status text not null default 'queued', error text,
+  created_at timestamptz not null default now(),
+  unique (call_id, template_id)
+);
+-- enable RLS + tenant policies on both (copy the pattern from 0001_voice_automation_comms.sql)
+```
+
+The credentials table: `whatsapp_connections` (organization_id unique, phone_number_id, business_account_id, access_token_encrypted). RLS with **no select policy** for `authenticated`; only server functions using the service role read it.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_whatsapp_followup.sql` | **new** |
+| `src/lib/whatsapp/provider.ts`, `meta.server.ts`, `render.ts` | **new** |
+| `src/lib/whatsapp.functions.ts` | **new**: save credentials, templates CRUD |
+| `src/lib/automation.server.ts` | new action executor |
+| `src/components/app/WorkflowBuilder.tsx` | new action UI |
+| `src/routes/_authenticated/_app/whatsapp.tsx`, `integrations.tsx` | templates, connection |
+| `src/test/whatsapp.test.ts`, `src/test/automation.test.ts` | **new** / extend |
+
+### 7. Rules, edge cases, security
+
+- **Approved templates only.** No free text to customers.
+- **Consent required**, and DNC respected. If in doubt, don't send.
+- **Exactly one** message per call+template (the unique constraint does the work, not just an if-check).
+- The access token never reaches the browser and is never logged.
+- Phone numbers in E.164 (`normalizePhoneNumber`); skip numbers that aren't valid mobiles.
+- **Test only with the provider's sandbox/test number and your own phone.**
+
+### 8. Testing
+
+**Unit tests:**
+- `render.ts` fills params from contact, answers and fixed values; a missing value → `""` plus a warning
+- consent parsing: yes/true/haan → send; no/missing → skip
+- executor: an interested call with consent → one provider call and one `messages` row; the same call again → no provider call; no consent → none; DNC → none (mock the provider)
+
+**Manual:**
+1. Connect the provider's test number in Integrations.
+2. Add a template (an approved test template) for the stock agent.
+3. Create a workflow: on `call.completed` where `disposition = interested` → send the template.
+4. Simulate a webhook with `consent_to_share: yes` → your phone gets **one** message; the timeline shows it.
+5. Replay the webhook → no second message.
+6. Simulate one with `consent_to_share: no` → no message; the log shows "skipped: no consent".
+
+```bash
+npx vitest run src/test/whatsapp.test.ts src/test/automation.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] Provider credentials are saved server-side only
+- [ ] Templates can be managed per agent with param mapping
+- [ ] An interested test call with consent triggers exactly one WhatsApp message
+- [ ] A call without consent (or to a DNC number) triggers none
+- [ ] Every message is logged on the contact timeline
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/12-whatsapp-followup
+git add db/migrations/00NN_whatsapp_followup.sql src/lib/whatsapp
+git commit -m "WhatsApp: provider interface and template sends"
+git push -u origin feature/12-whatsapp-followup
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#12 WhatsApp follow-up after calls" --body "Closes #12 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #12`; the migration to apply; which provider was chosen and why
+- A screenshot of the received test message (with your number hidden)
+
+### 12. Settle with the lead before starting
+
+- Which provider, and who creates the business account and test number.
+- Which templates the business needs (brochure, company profile, quote options).
 
 ---
 
 ## #15: Agent analytics and A/B testing of scripts
 
-**Assignee:** Tejaswini · **Branch:** `feature/15-agent-analytics` · **Depends on:** #9 (version data) helps
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/15 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/15-agent-analytics` |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 5th issue |
+| **Depends on** | #9 (`calls.agent_version`, version history) |
+| **Blocks** | nothing |
+| **Size** | ~5–6 days |
 
-**Why:** know which agent and which script version converts best.
+### 1. Summary
 
-**Build:**
-1. Per-agent and per-version dashboard (Recharts): calls, connect rate, average duration, interested %, consultations booked, opt-out rate, top objections (from the `objections` answer).
-2. Funnel: dialled → connected → interested → deal → won, filterable by agent, campaign and date.
-3. A/B test: split a campaign between two agent versions (store the version on every `calls` row) and show the result with sample sizes. Show "not enough data" below a minimum (for example 30 connected calls per arm). No winner on tiny samples.
-4. Do the heavy aggregation in SQL (a view or RPC), not in the browser.
+Know which agent and which **script version** converts best. That means a dashboard per agent and per version (calls, connect rate, duration, interested %, consultations, opt-outs, top objections), a funnel from dialled to won, and the ability to **split a campaign 50/50** between two versions and compare the results honestly, with sample sizes.
 
-**Test:** pick a week, count by hand with SQL on `calls` (`select count(*) … where created_at between …`), and compare with the dashboard. Run a 50/50 split test campaign on test numbers and check each call records its version.
+### 2. What already exists
 
-**Done when:** the dashboard matches a manual count from the `calls` table for a chosen week, and a 50/50 campaign split records which version each call used.
+- `calls` with `agent_id`, `campaign_id`, `status`, `duration_seconds`, `answers` (jsonb), `created_at`; `agent_version` from #9.
+- `leads`, `deals` (`stage`, `status` won/lost) linked to contacts.
+- Analytics pages: `call-analytics.tsx`, `campaign-analytics.tsx`, `sales-analytics.tsx` (Recharts).
+- `classifyCallOutcome` for turning a disposition into interested/negative/neutral.
+
+### 3. Scope
+
+**In scope:** SQL aggregation (a view or RPC), the agent/version dashboard, the funnel with filters, A/B split on campaigns, the results view with a minimum sample size.
+
+**Out of scope:** automatic winner promotion, multi-armed bandits.
+
+### 4. What to build, point by point
+
+#### 4.1 SQL (fast and correct)
+1. An RPC `agent_metrics(org uuid, from_ts timestamptz, to_ts timestamptz, agent uuid default null, campaign uuid default null)` returning, per `agent_id, agent_version`: `dialled`, `connected` (`status = 'completed'`), `avg_duration` (connected only), `interested`, `consultations`, `opt_outs`.
+2. Derive interested/consultation/opt-out from `lower(answers->>'disposition')` with the same keywords as `crm-outcome.ts`. Document the mapping in a SQL comment and keep it in sync (or add a generated `calls.outcome_kind` column filled by the sync; agree with the lead).
+3. An RPC `top_objections(org, from, to, agent)`: `answers->>'objections'` grouped and counted (split comma lists).
+4. An RPC `agent_funnel(org, from, to, agent, campaign)`: dialled → connected → interested → deal created → won.
+5. Every RPC is `security invoker` (so RLS applies) **or** checks `is_org_member(org)` at the start.
+
+#### 4.2 Dashboard page (`agent-analytics.tsx`)
+6. Filters: date range (Last 7/30/90 days, custom), agent, campaign. Keep them in the URL search params.
+7. KPI cards: calls, connect rate, avg duration (mm:ss), interested %, consultations, opt-out rate.
+8. A table per agent → expand to its versions, with the same metrics.
+9. Charts: calls and interested % over time (line), top objections (horizontal bar), funnel (stepped bars with % conversion between steps).
+10. Empty state: "No calls in this range."
+
+#### 4.3 A/B split on campaigns
+11. In the campaign builder (`CampaignBuilder.tsx`): an "A/B test" toggle → pick version A and version B (from #9's `voice_agent_versions`) and a split (50/50 by default).
+12. Assign each target a variant **deterministically** (a hash of the target id mod 100 < split → A). Store it on `campaign_targets.variant` and `calls.agent_version`.
+13. When placing the call, pass the variant's `sarvam_app_version`.
+14. Results panel on the campaign page: per variant, connected calls, interested %, consultations %, with the sample size.
+15. **No winner on small samples:** fewer than 30 connected calls per arm → "Not enough data yet (n=12 / 30)". Otherwise show the difference and a simple two-proportion z-test p-value. Label "Likely better" only if p < 0.05.
+
+### 5. Data model
+
+```sql
+-- 00NN_agent_analytics.sql: A/B variant on campaign targets + metrics RPCs
+alter table public.campaign_targets add column if not exists variant text check (variant in ('A','B'));
+alter table public.call_campaigns add column if not exists ab_test jsonb; -- {"a_version":"7","b_version":"8","split":50}
+-- create or replace function public.agent_metrics(...) returns table(...) language sql stable security invoker as $$ ... $$;
+-- create or replace function public.agent_funnel(...) ...; create or replace function public.top_objections(...) ...;
+-- grant execute on function ... to authenticated;
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_agent_analytics.sql` | **new** |
+| `src/lib/ab-test.ts` | **new**: `assignVariant`, `twoProportionZTest`, `enoughData` |
+| `src/lib/analytics.functions.ts` | **new**: call the RPCs |
+| `src/routes/_authenticated/_app/agent-analytics.tsx` | **new** |
+| `src/components/app/CampaignBuilder.tsx`, campaign launch code | A/B option, variant assignment |
+| `src/routes/_authenticated/_app/call-campaigns.$campaignId.tsx` | results panel |
+| `src/test/ab-test.test.ts` | **new** |
+
+### 7. Rules and edge cases
+
+- Rates divide by the right denominator (interested % = interested / connected, not / dialled). State it in a tooltip.
+- Retries: count unique targets for "dialled" in the funnel, not every attempt (agree, and document it).
+- Time ranges in IST.
+- A campaign without A/B → no variant; the results panel is hidden.
+- Never show "winner" below the minimum sample.
+
+### 8. Testing
+
+**Unit tests:** `assignVariant` is deterministic and roughly 50/50 over 10,000 ids (±2%); `twoProportionZTest` against known values; `enoughData(29) = false`, `enoughData(30) = true`.
+
+**Manual check against SQL** (the acceptance criterion): pick a week and run
+
+```sql
+select agent_id, count(*) dialled,
+       count(*) filter (where status='completed') connected,
+       count(*) filter (where status='completed' and lower(answers->>'disposition') like '%interested%'
+                        and lower(answers->>'disposition') not like '%not interested%') interested
+from calls where organization_id = '<org>' and created_at >= '2026-11-16' and created_at < '2026-11-23'
+group by agent_id;
+```
+
+The dashboard must match. Then create a small A/B campaign on **test numbers** → each call row has `agent_version` A or B, split about evenly.
+
+```bash
+npx vitest run src/test/ab-test.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] The dashboard matches a manual SQL count for a chosen week
+- [ ] Per-version metrics, funnel and top objections are shown, with filters
+- [ ] A 50/50 split campaign records which version each call used
+- [ ] Results show sample sizes; no winner below the minimum
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull            # #9 merged first
+git checkout -b feature/15-agent-analytics
+git add db/migrations/00NN_agent_analytics.sql src/lib/ab-test.ts src/test/ab-test.test.ts
+git commit -m "Analytics: metrics RPCs and A/B helpers"
+git push -u origin feature/15-agent-analytics
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#15 Agent analytics and A/B testing" --body "Closes #15 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #15`; the migration to apply
+- The SQL vs dashboard comparison for one week (numbers side by side); screenshots
+
+### 12. Settle with the lead before starting
+
+- The exact definition of interested / consultation / opt-out (keyword list).
+- The minimum sample size, and whether to show p-values or just "not enough data / likely better".
 
 ---
 
 ## #21: Transcript search and a synced recording player
 
-**Assignee:** Tejaswini · **Branch:** `feature/21-transcript-search` · **Depends on:** nothing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/21 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/21-transcript-search` |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 6th issue |
+| **Depends on** | nothing |
+| **Blocks** | nothing |
+| **Size** | ~5–6 days |
 
-**Why:** find any moment in any call, and hear it.
+### 1. Summary
 
-**Build:**
-1. Migration: a generated `tsvector` column on `calls` (transcript + summary) with a GIN index, plus an RPC `search_calls(q, filters)` that returns matches with `ts_headline` snippets.
-2. Transcripts page: search box, filters for agent, outcome, date and language, and highlighted matches.
-3. Call detail: a recording player with a waveform (for example `wavesurfer.js`). Clicking a transcript line seeks the audio there, and the current line highlights while it plays. Use Sarvam timestamps if available, otherwise estimate from turn order and length.
-4. Highlight objections and agreed next steps in the transcript (from the call answers).
+Find **any moment in any call** and hear it. That means full-text search across transcripts and summaries with filters and highlighted matches, and on the call detail a recording player with a waveform where clicking a transcript line jumps the audio there and the current line highlights while it plays.
 
-**Test:** search "renewal" and compare the matches with a manual `ilike` query. Click lines and check the audio jumps to the right place. Make sure orgs can't search each other's calls (the RPC must respect RLS / org id).
+### 2. What already exists
 
-**Done when:** searching "renewal" lists matching calls with the phrase highlighted, and clicking a line plays from that point.
+- `calls.transcript` (text), `calls.transcript_turns` (jsonb: the turns `[{ role, text, ... }]`, sometimes with timestamps from Sarvam), `calls.summary`, `calls.answers`, `calls.recording_path` / `recording_url`.
+- Pages: `transcripts.tsx`, `call-recordings.tsx`, call detail views (campaign contact drawer, call history).
+- Recordings are stored in Supabase Storage (signed URLs).
+
+### 3. Scope
+
+**In scope:** a Postgres full-text index plus a search RPC, the Transcripts page search/filters/highlights, a waveform player synced with the transcript, objection/next-step highlights.
+
+**Out of scope:** speaker diarisation, semantic/vector search (note it as a follow-up), editing transcripts.
+
+### 4. What to build, point by point
+
+#### 4.1 Search in Postgres
+1. Migration: a generated column
+   `search_tsv tsvector generated always as (setweight(to_tsvector('simple', coalesce(summary,'')), 'A') || setweight(to_tsvector('simple', coalesce(transcript,'')), 'B')) stored`
+   plus a GIN index. Use the `simple` config (transcripts mix Hindi/English; stemming for English only would miss things).
+2. An RPC `search_calls(org uuid, q text, agent uuid default null, outcome text default null, from_ts timestamptz default null, to_ts timestamptz default null, lang text default null, lim int default 25, off int default 0)` returning id, contact name, phone, agent, started_at, duration, outcome, `ts_rank`, and a **snippet** via `ts_headline('simple', transcript, query, 'StartSel=<mark>,StopSel=</mark>,MaxWords=30,MinWords=10,MaxFragments=2')`.
+3. Build the query with `websearch_to_tsquery('simple', q)`, so users can type `renewal "next week" -cancel`.
+4. `security invoker` (RLS applies), plus an explicit `organization_id = org` filter.
+
+#### 4.2 Transcripts page
+5. A search box (debounced 300 ms) and filters: agent, outcome (interested / not interested / callback / …), date range, language. Keep them in the URL.
+6. Results list: contact, date, agent, outcome badge, duration, and the snippet with `<mark>` highlights. **Sanitise:** only allow `<mark>` tags when rendering, and escape everything else.
+7. Empty query → the latest calls. No results → "No calls mention '<q>'". Paginate with "Load more".
+8. Clicking a result opens the call detail scrolled to the first matching line.
+
+#### 4.3 Synced player (call detail)
+9. `npm i wavesurfer.js`. A `RecordingPlayer` component: waveform, play/pause, ±10 s, speed (1×, 1.25×, 1.5×, 2×), current time / total. Load the **signed** recording URL from a server function.
+10. Transcript panel beside or under it: one row per turn with a speaker label (Agent / Customer), the text, and a timestamp.
+11. **Timestamps:** use the turn start times from `transcript_turns` if Sarvam provides them; otherwise **estimate**: distribute the total duration across turns in proportion to their text length. Mark estimated times with "≈".
+12. Click a line → `wavesurfer.setTime(start)` and play. While playing, highlight the current line (the last turn with `start ≤ currentTime`) and auto-scroll it into view (pause auto-scroll if the user scrolls manually).
+13. Search matches: when opened from search, highlight the query words in the transcript, with "Next match" / "Previous match" buttons.
+
+#### 4.4 Objections and next steps
+14. From `answers` (e.g. `objections`, `next_step`, `follow_up_time`, `callback_time`), find the turns that mention those phrases (a simple case-insensitive substring/keyword match) and mark them with coloured left borders and a legend: Objection (amber), Next step (green).
+
+### 5. Data model
+
+```sql
+-- 00NN_transcript_search.sql: full-text search over call summaries and transcripts
+alter table public.calls add column if not exists search_tsv tsvector
+  generated always as (
+    setweight(to_tsvector('simple', coalesce(summary, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(transcript, '')), 'B')
+  ) stored;
+create index if not exists calls_search_tsv_idx on public.calls using gin (search_tsv);
+-- create or replace function public.search_calls(...) returns table(...) language sql stable security invoker as $$ ... $$;
+-- grant execute on function public.search_calls(...) to authenticated;
+```
+
+Adding a stored generated column rewrites the table. On a large `calls` table, have the owner apply it at a quiet time; mention this in the PR.
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_transcript_search.sql` | **new** |
+| `src/lib/transcript.ts` | **new**: `estimateTurnTimes`, `currentTurnIndex`, `findHighlights`, `sanitizeSnippet` |
+| `src/lib/calls.functions.ts` | `searchCalls`, `getRecordingUrl` |
+| `src/routes/_authenticated/_app/transcripts.tsx` | search UI |
+| `src/components/app/RecordingPlayer.tsx`, `TranscriptView.tsx` | **new** |
+| `package.json` | `wavesurfer.js` |
+| `src/test/transcript.test.ts` | **new** |
+
+### 7. Rules, edge cases, security
+
+- Search only returns the org's calls.
+- Render snippets safely: only `<mark>` is allowed (no `dangerouslySetInnerHTML` of raw transcript text).
+- Calls without a recording → a transcript-only view; without a transcript → "No transcript".
+- Signed recording URLs expire. Refresh one if playback fails with 403.
+- Long transcripts (100+ turns) must stay smooth (virtualise only if needed).
+
+### 8. Testing
+
+**Unit tests:** `estimateTurnTimes` sums to the duration and is monotonic; `currentTurnIndex` at the boundaries; `findHighlights` finds objection phrases case-insensitively; `sanitizeSnippet` strips every tag except `<mark>`.
+
+**Manual:**
+1. Search "renewal" → compare with `select id from calls where transcript ilike '%renewal%'` for your org; the results match, with the phrase highlighted.
+2. Try `"next week"` (phrase) and `renewal -cancel` (exclude).
+3. Open a call → click the 5th line → audio jumps there; the highlight follows playback; speed control works.
+4. A call without timestamps shows ≈ times, and clicking is roughly right.
+5. Objection/next-step lines are coloured on a call that has those answers.
+
+```bash
+npx vitest run src/test/transcript.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] Searching "renewal" lists matching calls with the phrase highlighted; filters work
+- [ ] Clicking a transcript line plays from that point; the current line highlights during playback
+- [ ] Objections and next steps are highlighted
+- [ ] Search is org-scoped; snippets render safely
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/21-transcript-search
+git add db/migrations/00NN_transcript_search.sql src/lib/transcript.ts src/test/transcript.test.ts
+git commit -m "Transcripts: full-text search index and helpers"
+git push -u origin feature/21-transcript-search
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#21 Transcript search and synced player" --body "Closes #21 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #21`; the migration to apply (with the table-rewrite note); a GIF of click-to-seek
+
+### 12. Settle with the lead before starting
+
+- Whether Sarvam returns turn timestamps (check a real `transcript_turns` value together).
+- Which languages to filter by.
 
 ---
 
 ## #24: Email sync on the contact timeline
 
-**Assignee:** Tejaswini · **Branch:** `feature/24-email-sync` · **Depends on:** nothing
+| | |
+|---|---|
+| **Issue** | https://github.com/yulabs-in/CRM-Based-Voice-Agents/issues/24 |
+| **Assignee** | Tejaswini (`Tejaswini2706`) |
+| **Branch** | `feature/24-email-sync` (split if large: `feature/24-gmail-connect`, `feature/24-email-timeline`) |
+| **PR into** | `dev` |
+| **Order** | Tejaswini's 7th issue |
+| **Depends on** | OAuth app credentials (Google Cloud and/or Microsoft Entra) from the lead |
+| **Blocks** | nothing |
+| **Size** | ~7–8 days |
 
-**Why:** see emails next to calls and tasks on each contact.
+### 1. Summary
 
-**Build:**
-1. Connect a Gmail or Outlook account per user (OAuth). Tokens are stored server-side, **encrypted**, and never sent to the browser.
-2. Sync messages to and from contacts' email addresses into the `messages` table (it exists). Show them on the contact timeline with calls and tasks.
-3. Send an email from the contact page using templates, and log it on the timeline.
-4. Store only emails with known contacts. Disconnecting deletes the stored tokens.
+See **emails next to calls and tasks** on each contact. Each user connects their Gmail or Outlook. Emails to and from known contacts sync into the CRM and show on the timeline, and users can send templated emails from the contact page, which are logged too. Only emails with known contacts are stored, and disconnecting removes the tokens.
 
-**Test:** use a test Gmail account. Exchange an email with a test contact and check it appears within a few minutes. Send from the CRM and check it is delivered and logged. Disconnect and confirm the tokens are gone from the database.
+### 2. What already exists
 
-**Done when:** an email exchanged with a contact appears on their timeline within a few minutes, and one sent from the CRM is delivered and logged.
+- The `messages` table (`channel`, `contact_id`, `recipient`, `subject`, `body`, `direction`, `status`, `created_by`).
+- Contact timeline: `activity-timeline.tsx` / the contact page.
+- The email page `email.tsx` (placeholder), the Integrations page.
+- The cron route pattern (`/api/public/cron-sync`, migration `0017`) for periodic sync.
+
+### 3. Scope
+
+**In scope:** OAuth connect/disconnect per user (Gmail first; Outlook if time allows), encrypted token storage, periodic sync of messages with known contacts, timeline display, send with templates, logging.
+
+**Out of scope:** a full mail client, attachments storage (store names only), shared team inboxes.
+
+### 4. What to build, point by point
+
+#### 4.1 OAuth connect
+1. Google: an OAuth client (web) with the scopes `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/gmail.send` (plus `openid email`). Redirect URIs: `http://localhost:8080/api/oauth/google/callback` and `https://dev--yulabs-crm-1122.netlify.app/api/oauth/google/callback` (and prod later). **The lead creates the client**; you get the id and secret in `.env.local`.
+2. Routes: `GET /api/oauth/google/start` (signed-in user → builds the auth URL with a `state` = signed random value stored in a cookie, `access_type=offline`, `prompt=consent`) and `GET /api/oauth/google/callback` (verify `state`, exchange the code, store the tokens, redirect to Settings → Email with a success toast).
+3. Outlook (optional): the same with Microsoft identity (`Mail.Read`, `Mail.Send`, `offline_access`).
+
+#### 4.2 Token storage
+4. Table `email_accounts` (§5). Encrypt tokens with AES-256-GCM in `src/lib/crypto.server.ts`, using the key `EMAIL_TOKEN_KEY` (32 bytes base64, server env). Store `iv` and `ciphertext`. **No select policy for `authenticated`** on the token columns; the client reads account status through a server function that returns only `{ provider, email, connected_at, last_synced_at }`.
+5. Refresh the access token automatically when it expires. If refresh fails → mark it `needs_reconnect` and show a banner to that user.
+
+#### 4.3 Sync
+6. `syncEmailAccount(accountId)` in `src/lib/email-sync.server.ts`:
+   - first run: the last 30 days. Later: incremental (Gmail `historyId`; store it on the account)
+   - for each message: extract from/to/cc addresses → match against the org's `contacts.email` (lowercased). **No match → skip (don't store it).**
+   - match → upsert `messages` by `(organization_id, external_id)`: `channel = 'email'`, `direction` (inbound if from the contact), `subject`, a plain-text `body` (strip HTML, cap ~20 KB), `contact_id`, the sent time, and `thread_id`
+7. Schedule: every 5 minutes via the existing cron mechanism (add a step in `cron-sync`, or a separate scheduled route). Also a "Sync now" button.
+8. Respect provider rate limits; process accounts in small batches.
+
+#### 4.4 Timeline and sending
+9. The timeline shows emails with a mail icon, direction, subject, a 2-line snippet, time, and expand to read the full plain text.
+10. A **Send email** dialog on the contact page: from (the user's connected account), to (the contact's email), template ▾, subject, body (variables `{{first_name}}`, `{{company_name}}`), Send.
+11. Templates: a simple `email_templates` table (name, subject, body) with a management UI on the Email page.
+12. Send via the Gmail API (`users.messages.send` with an RFC 2822 message, base64url), then log it to `messages` (`direction = 'outbound'`, `status = 'sent'`, `external_id`).
+
+#### 4.5 Disconnect
+13. "Disconnect" → revoke the token at the provider (best effort) → **delete** the token row (or null the tokens). Synced messages stay unless the user ticks "Also delete synced emails".
+
+### 5. Data model
+
+```sql
+-- 00NN_email_sync.sql: per-user connected mailboxes (encrypted tokens), email templates, message dedupe
+create table if not exists public.email_accounts (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  provider text not null check (provider in ('google','microsoft')),
+  email text not null,
+  token_iv text, token_ciphertext text,           -- encrypted {access_token, refresh_token, expiry}
+  sync_cursor text, status text not null default 'connected',
+  connected_at timestamptz not null default now(), last_synced_at timestamptz,
+  unique (organization_id, user_id, provider)
+);
+alter table public.email_accounts enable row level security;   -- no policies for authenticated: server only
+
+create table if not exists public.email_templates (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  name text not null, subject text not null, body text not null,
+  created_by uuid default auth.uid(), created_at timestamptz not null default now()
+);
+-- RLS tenant policies for email_templates
+
+alter table public.messages add column if not exists external_id text,
+  add column if not exists thread_id text, add column if not exists sent_at timestamptz;
+create unique index if not exists messages_external_id_key on public.messages (organization_id, external_id) where external_id is not null;
+```
+
+### 6. Files
+
+| File | Change |
+|---|---|
+| `db/migrations/00NN_email_sync.sql` | **new** |
+| `src/lib/crypto.server.ts` | **new**: AES-GCM encrypt/decrypt |
+| `src/lib/email/google.server.ts` (+ `microsoft.server.ts`) | **new**: OAuth, list, get, send |
+| `src/lib/email-sync.server.ts` | **new** |
+| `src/routes/api/oauth/google/start.ts`, `callback.ts` | **new** |
+| `src/lib/email.functions.ts` | **new**: status, disconnect, send, templates |
+| `email.tsx`, `integrations.tsx`, contact page / timeline | UI |
+| `src/routes/api/public/cron-sync.ts` | add the email sync step (or a new scheduled route) |
+| `src/test/email-sync.test.ts`, `src/test/crypto.test.ts` | **new** |
+
+### 7. Rules, edge cases, security
+
+- **Tokens are encrypted, server-only, never sent to the browser or logged.**
+- **Only emails with known contacts are stored.** Everything else is skipped without being saved.
+- Verify the OAuth `state` (CSRF protection).
+- Dedupe by provider message id (no duplicates on re-sync).
+- HTML emails → sanitised plain text. Never render raw HTML from emails.
+- Disconnect removes the tokens; a failed refresh → the user is asked to reconnect.
+
+### 8. Testing
+
+**Unit tests:** encrypt/decrypt round trip, and a tampered ciphertext fails; address matching (case, display names `"Ravi" <ravi@x.com>`, multiple recipients); unknown sender → skipped; dedupe by external id; HTML → text; RFC 2822 builder for sending.
+
+**Manual (use a test Gmail account only):**
+1. Connect Gmail in Settings → Email → status Connected.
+2. From the test account, email a contact whose address is in the CRM; also email a stranger.
+3. "Sync now" (or wait 5 min) → only the contact's email appears on their timeline.
+4. Reply from the contact's side → it appears as inbound.
+5. Send from the CRM with a template → it's delivered (check the inbox) and logged on the timeline.
+6. Disconnect → the token row is gone (check in the Supabase table editor: no ciphertext).
+
+```bash
+npx vitest run src/test/email-sync.test.ts src/test/crypto.test.ts
+npx vitest run && npx tsc --noEmit && npm run build
+```
+
+### 9. Acceptance criteria
+
+- [ ] An email exchanged with a contact appears on their timeline within a few minutes
+- [ ] An email sent from the CRM is delivered and logged
+- [ ] Only emails with known contacts are stored; tokens are encrypted and server-only
+- [ ] Disconnecting removes the stored tokens
+
+### 10. Git workflow for this issue
+
+```bash
+git checkout dev && git pull
+git checkout -b feature/24-email-sync
+git add db/migrations/00NN_email_sync.sql src/lib/crypto.server.ts src/lib/email
+git commit -m "Email: Google OAuth connect with encrypted tokens"
+git push -u origin feature/24-email-sync
+git fetch origin && git rebase origin/dev && git push --force-with-lease
+gh pr create --base dev --title "#24 Email sync on the contact timeline" --body "Closes #24 ..."
+```
+
+### 11. In the pull request
+
+- `Closes #24`; the migration to apply; the env var names (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `EMAIL_TOKEN_KEY`; no values)
+- Screenshots of the timeline with emails; the redirect URIs the lead must register
+
+### 12. Settle with the lead before starting
+
+- Gmail only, or Outlook too in v1.
+- Who creates the OAuth apps (Google verification can take time for sensitive scopes, so start early).
