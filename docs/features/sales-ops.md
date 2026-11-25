@@ -10,30 +10,39 @@ the Manager > Team Lead > Sales Rep hierarchy, renewal reminders and the Reports
 | `db/migrations/0020_sales_hierarchy.sql` | Adds the `team_lead` role and `memberships.reports_to` (with loop and same-workspace checks). **Run it alone.** Postgres won't let a new enum value be used in the transaction that adds it. |
 | `db/migrations/0021_sales_orders_kyc_payments.sql` | `sales_orders`, `payments`, `client_kyc`, `renewal_reminders`, order numbers (`SO-00001` per workspace), `amount_paid` kept in sync with payments, RLS, realtime, and a daily pg_cron job at 09:00 IST that creates renewal reminder tasks. |
 | `db/migrations/0022_insurance_script_v3.sql` | Updates the CRM's copy of the insurance agent script (silence handling, KYC with consent, order capture). |
+| `db/migrations/0024_sales_ops_hardening.sql` | Locks down the new trigger functions (security advisor). |
+| `db/migrations/0025_live_agent_scripts_v6.sql` | Stores the committed v6 scripts of both live agents and points every workspace at v6. Supersedes the script copies in 0022 and 0023. |
+| `db/migrations/0023_stock_script_v2.sql` | Stores the stock agent script in the CRM (`public.stock_advisory_script()`) with the same silence handling, KYC with consent (no nominee) and order capture. Orders from it get product type `other`. |
 
 `0019` is taken by the notifications PR (#14).
 
 The app keeps working before these are applied. KYC and order capture in the call sync never fails the
 lead/deal update; it just logs `KYC not saved: …`. The new pages show empty lists until then.
 
-## 2. Update the live Sarvam agent (needed for the call changes)
+## 2. Live Sarvam agents (done: v6, 25 Nov 2026)
 
-The agent runs on Sarvam, not in the CRM. Migration 0022 only updates the CRM's copy. On agent
-`YULabs-Insu-13e07aa4-48c0`:
+Both agents run on Sarvam. They were updated through the Sarvam Voice Agents MCP and committed as **version 6**;
+`voice_agents.sarvam_app_version` is 6 for every workspace (migration 0025).
 
-1. **Script:** paste `public.yulabs_insurance_script()` from 0022, changing `{var}` to `{{var}}`.
-2. **Output variables:** add `order_confirmed`, `order_plan`, `order_insurer`, `order_sum_insured`,
-   `order_budget`, `order_payment_frequency`, `kyc_consent`, `kyc_full_name`, `kyc_dob`, `kyc_email`,
-   `kyc_address`, `kyc_city`, `kyc_pincode`, `kyc_nominee_name`, `kyc_nominee_relation`, `kyc_pan`.
-3. **Silence settings:** the script tells the agent to wait, ask "are you there?" after about 10 seconds,
-   and close politely after about 10 more. The agent can only follow that if the platform doesn't hang up
-   first. In the agent's call/interaction settings, set the user-silence (inactivity) timeout to about
-   **10 seconds with a re-prompt**, allow **at least 2 re-prompts**, and make sure any "end call on
-   silence" limit is **at least 25–30 seconds**. Setting names differ between Sarvam versions; look for
-   silence, inactivity or no-input timeouts.
-4. **Commit a new version**, then set `voice_agents.sarvam_app_version` to it (Voice Agents page or SQL).
-5. Place a test call and stay silent: you should hear "Hello, are you there?" once, then a polite goodbye.
-   The call should end as `no_answer` (or `callback` if you had spoken).
+| | Insurance `YULabs-Insu-13e07aa4-48c0` | Stock `Stock-Marke-53bad6ec-5d28` |
+|---|---|---|
+| Script | live v5 script + silence section, go-ahead (§6), KYC (§7), close (§8) | live v5 script + silence section, sign-up (§7), KYC (§8), close (§9) |
+| New post-call variables | `order_confirmed`, `order_plan`, `order_insurer`, `order_sum_insured`, `order_budget`, `order_payment_frequency`, `kyc_consent`, `kyc_full_name`, `kyc_dob`, `kyc_email`, `kyc_address`, `kyc_city`, `kyc_pincode`, `kyc_nominee_name`, `kyc_nominee_relation`, `kyc_pan` | same, without `order_insurer`, `order_sum_insured` and `kyc_nominee_*` |
+| Silence nudges | 10 s "Hello, are you there?", 10 s goodbye, then end call | same |
+| Max call length | 420 s (was 300) | 540 s (was 420) |
+
+**Why calls hung up on the first pause:** both agents had one silence nudge after 5 seconds with "end call after
+nudges" on, so a single 5-second pause ended the call whatever the script said. That setting is now the two
+10-second nudges above.
+
+The CRM keeps a copy of each script (`public.yulabs_insurance_script()`, `public.stock_advisory_script()`) with
+`{var}` placeholders; Sarvam stores the same text with `{{var}}`. 0025 replaces the older copies from 0022/0023,
+which predated the live persona, listening and compliance sections.
+
+**Changing a script later:** edit it on Sarvam (or through the MCP), commit a new version, copy the committed text
+into a new migration (with `{{var}}` changed to `{var}`), and raise `sarvam_app_version`. Test silence handling
+with a real call: stay silent and you should hear "Hello, are you there?" once, then the goodbye, and the call ends
+as `no_answer` (or `callback` if you had spoken).
 
 ## 3. What happens on a call
 
