@@ -6,11 +6,12 @@ import { CALLS_CHANGED_EVENT } from "./RecordingAutoFetch";
 
 /** Which cached queries each table feeds. Invalidating only refetches queries that are on screen. */
 const QUERIES_BY_TABLE: Record<string, string[]> = {
-  calls: ["calls", "live", "stats", "timeline", "campaigns"],
+  calls: ["calls", "live", "stats", "timeline", "campaigns", "meetings"],
   leads: ["leads", "stats", "timeline", "refs"],
   deals: ["deals", "stats", "timeline", "refs"],
   contacts: ["contacts", "refs", "projects"],
   tasks: ["tasks", "stats", "timeline"],
+  meetings: ["meetings", "timeline"],
   call_campaigns: ["campaigns", "live", "stats"],
   campaign_targets: ["campaigns", "live"],
   sales_orders: ["sales_orders", "sales", "stats"],
