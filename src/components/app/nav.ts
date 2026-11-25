@@ -2,11 +2,11 @@ import {
   LayoutDashboard, Users, UserPlus, Building2, Handshake, KanbanSquare, CheckSquare, CalendarDays,
   Bot, Megaphone, PhoneCall, Radio, FileText, Disc3, Brain, Workflow, Zap, ListChecks, Clock,
   Mail, MessageCircle, MessageSquare, History, BarChart3, LineChart, PieChart, Trophy, FileBarChart,
-  Plug, UsersRound, Settings, FolderKanban, ReceiptText, Wallet, IdCard, RefreshCw, FileSpreadsheet, type LucideIcon,
+  Plug, UsersRound, Settings, FolderKanban, ReceiptText, Wallet, IdCard, RefreshCw, FileSpreadsheet, type LucideIcon, Code2,
 } from "lucide-react";
 
 export type NavItem = { label: string; icon: LucideIcon; to?: string };
-export type NavGroup = { label?: string; items: NavItem[] };
+export type NavGroup = { label?: string; adminOnly?: boolean; items: NavItem[] };
 
 export const NAV: NavGroup[] = [
   { items: [{ label: "Overview", icon: LayoutDashboard, to: "/dashboard" }] },
@@ -56,6 +56,14 @@ export const NAV: NavGroup[] = [
       { label: "Campaign Analytics", icon: PieChart, to: "/campaign-analytics" }, { label: "Team Performance", icon: Trophy, to: "/team-performance" },
       { label: "Reports", icon: FileSpreadsheet, to: "/reports" },
       { label: "Custom Reports", icon: FileBarChart, to: "/custom-reports" },
+    ],
+  },
+  {
+    label: "Developers",
+    adminOnly: true,
+    items: [
+      { label: "API", icon: Code2, to: "/developers/api" },
+      { label: "MCP", icon: Bot, to: "/developers/mcp" },
     ],
   },
   {

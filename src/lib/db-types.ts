@@ -14,56 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      notifications: {
-        Row: {
-          id: string
-          organization_id: string
-          user_id: string
-          type: string
-          title: string
-          body: string | null
-          link: string | null
-          priority: string
-          dedupe_key: string | null
-          read_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          user_id: string
-          type: string
-          title: string
-          body?: string | null
-          link?: string | null
-          priority?: string
-          dedupe_key?: string | null
-          read_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          user_id?: string
-          type?: string
-          title?: string
-          body?: string | null
-          link?: string | null
-          priority?: string
-          dedupe_key?: string | null
-          read_at?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       api_keys: {
         Row: {
           created_at: string
@@ -74,6 +24,7 @@ export type Database = {
           last_used_at: string | null
           name: string
           organization_id: string
+          purpose: string
           revoked_at: string | null
           scopes: string[]
         }
@@ -86,6 +37,7 @@ export type Database = {
           last_used_at?: string | null
           name: string
           organization_id: string
+          purpose?: string
           revoked_at?: string | null
           scopes?: string[]
         }
@@ -98,6 +50,7 @@ export type Database = {
           last_used_at?: string | null
           name?: string
           organization_id?: string
+          purpose?: string
           revoked_at?: string | null
           scopes?: string[]
         }
@@ -1098,6 +1051,56 @@ export type Database = {
           },
           {
             foreignKeyName: "messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          link: string | null
+          organization_id: string
+          priority: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          organization_id: string
+          priority?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          link?: string | null
+          organization_id?: string
+          priority?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

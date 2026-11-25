@@ -1,28 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin.server";
+import { ALL_SCOPES, READ_ONLY_SCOPES, type Scope } from "@/lib/api-scopes";
 
-export type Scope =
-    | "contacts:read"
-    | "contacts:write"
-    | "leads:read"
-    | "deals:read"
-    | "calls:read"
-    | "calls:write";
-
-export const ALL_SCOPES: Scope[] = [
-    "contacts:read",
-    "contacts:write",
-    "leads:read",
-    "deals:read",
-    "calls:read",
-    "calls:write",
-];
-
-export const READ_ONLY_SCOPES: Scope[] = [
-    "contacts:read",
-    "leads:read",
-    "deals:read",
-    "calls:read",
-];
+export { ALL_SCOPES, READ_ONLY_SCOPES, type Scope };
 
 // Custom ApiError for standardized error handling
 export class ApiError extends Error {
@@ -154,6 +133,7 @@ export interface AuthContext {
     keyId: string;
     scopes: Scope[];
     rateLimit: {
+        allowed: boolean;
         limit: number;
         remaining: number;
     };

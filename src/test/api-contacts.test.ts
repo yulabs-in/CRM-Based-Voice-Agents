@@ -32,7 +32,7 @@ describe("API Pagination & Cross-Org Isolation", () => {
   describe("Pagination utilities", () => {
     it("encodes and decodes cursor properly", () => {
       const createdAt = "2026-11-24T10:00:00.000Z";
-      const id = "contact-uuid-1234";
+      const id = "33333333-3333-3333-3333-333333333333";
 
       const cursor = encodeCursor(createdAt, id);
       expect(typeof cursor).toBe("string");
@@ -43,10 +43,11 @@ describe("API Pagination & Cross-Org Isolation", () => {
       expect(decoded?.id).toBe(id);
     });
 
-    it("returns null for malformed or missing cursors", () => {
+    it("returns null for empty cursors and throws 400 ApiError for malformed cursors", () => {
       expect(decodeCursor(null)).toBeNull();
       expect(decodeCursor("")).toBeNull();
-      expect(decodeCursor("invalid_base64_string")).toBeNull();
+      expect(() => decodeCursor("invalid_base64_string")).toThrow(/Invalid pagination cursor/);
+      expect(() => decodeCursor(encodeCursor("not-a-date", "not-a-uuid"))).toThrow(/Invalid pagination cursor/);
     });
 
     it("clamps limit between 1 and 200, with default 50", () => {
@@ -140,6 +141,33 @@ describe("API Pagination & Cross-Org Isolation", () => {
           phone: "123", // invalid mobile
         })
       ).rejects.toThrow(/Invalid phone number/);
+    });
+
+    it("returns null for non-UUID contact ids without querying DB", async () => {
+      const result = await getContactById(orgA, "not-a-uuid");
+      expect(result).toBeNull();
+      expect(mockSelect).not.toHaveBeenCalled();
+    });
+
+    it("rejects cross-org project_id on contact creation with 404", async () => {
+      const foreignProjectId = "99999999-9999-9999-9999-999999999999";
+      const eqId = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValueOnce({ data: null, error: null }),
+        }),
+      });
+      mockSelect.mockReturnValue({ eq: eqId });
+
+      await expect(
+        createOrUpdateContact(orgA, {
+          first_name: "Cross Tenant",
+          phone: "9876543210",
+          project_id: foreignProjectId,
+        })
+      ).rejects.toMatchObject({
+        status: 404,
+        code: "not_found",
+      });
     });
   });
 });
