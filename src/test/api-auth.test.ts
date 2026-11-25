@@ -182,7 +182,7 @@ describe("api-auth.server", () => {
       expect(ctx.organizationId).toBe(validOrgId);
       expect(ctx.keyId).toBe(validKeyId);
       expect(ctx.scopes).toContain("contacts:read");
-      expect(ctx.rateLimit.allowed).toBe(true);
+      expect(ctx.rateLimit.remaining).toBeLessThan(ctx.rateLimit.limit);
     });
   });
 });
