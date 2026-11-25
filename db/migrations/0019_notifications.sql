@@ -14,7 +14,7 @@ create table if not exists public.notifications (
 );
 
 create index if not exists notifications_user_unread_idx on public.notifications (user_id, created_at desc) where read_at is null;
-create unique index if not exists notifications_dedupe_key on public.notifications (user_id, dedupe_key) where dedupe_key is not null;
+create unique index if not exists notifications_dedupe_key on public.notifications (user_id, dedupe_key);
 
 alter table public.notifications enable row level security;
 

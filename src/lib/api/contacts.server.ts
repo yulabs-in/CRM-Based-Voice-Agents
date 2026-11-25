@@ -109,9 +109,9 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
         city: input.city !== undefined ? input.city : existing.city,
         project_id: input.project_id !== undefined ? input.project_id : existing.project_id,
         custom_fields:
-          (input.custom_fields !== undefined
+          input.custom_fields !== undefined
             ? { ...((existing.custom_fields as object) ?? {}), ...input.custom_fields }
-            : existing.custom_fields) as never,
+            : existing.custom_fields,
         updated_at: new Date().toISOString(),
       })
       .eq("organization_id", orgId)
@@ -134,7 +134,7 @@ export async function createOrUpdateContact(orgId: string, input: ContactInput) 
       email: input.email ?? null,
       city: input.city ?? null,
       project_id: input.project_id ?? null,
-      custom_fields: (input.custom_fields ?? {}) as never,
+      custom_fields: input.custom_fields ?? {},
     })
     .select(CONTACT_COLUMNS)
     .single();
@@ -167,7 +167,7 @@ export async function updateContact(
 
   const { data, error } = await supabaseAdmin
     .from("contacts")
-    .update(payload as never)
+    .update(payload)
     .eq("organization_id", orgId)
     .eq("id", contactId)
     .select(CONTACT_COLUMNS)

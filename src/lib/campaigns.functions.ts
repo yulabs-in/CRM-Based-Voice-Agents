@@ -12,12 +12,12 @@ import { chunk, cohortName, fillGreeting, greetingValues, mapSarvamCampaignStatu
 
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
 
-async function requireCampaignRole(context: { supabase: unknown; userId: string }, organizationId: string) {
+async function requireCampaignRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string) {
   const { data } = await asApp(context.supabase).from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   if (!data || !CAMPAIGN_ROLES.includes(data.role)) throw new Error("Only owners, admins, sales managers and voice managers can run campaigns");
 }
 
-async function loadCampaign(context: { supabase: unknown }, campaignId: string) {
+async function loadCampaign(context: { supabase: SupabaseClient<Database> }, campaignId: string) {
   const { data, error } = await asApp(context.supabase).from("call_campaigns").select("*").eq("id", campaignId).maybeSingle();
   if (error || !data) throw new Error("Campaign not found");
   return data;

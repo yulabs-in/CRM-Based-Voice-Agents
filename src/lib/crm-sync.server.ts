@@ -102,7 +102,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         link: `/contacts?id=${contact.id}`,
         priority: "normal",
         recipients: dncRecipients,
-        dedupeKey: `contact.do_not_contact:${call.id}`,
+        dedupeKey: call.id,
       });
     }
 
@@ -211,7 +211,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         link: `/tasks`,
         priority: "high",
         recipients: escalationRecipients,
-        dedupeKey: `call.escalated:${call.id}`,
+        dedupeKey: call.id,
       });
     }
 
@@ -229,7 +229,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         link: `/meetings`,
         priority: "normal",
         recipients: consultRecipients,
-        dedupeKey: `consultation.booked:${call.id}`,
+        dedupeKey: call.id,
       });
     }
 
@@ -245,7 +245,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         link: `/leads?contact=${contact.id}`,
         priority: "normal",
         recipients: leadRecipients,
-        dedupeKey: `lead.interested:${call.id}`,
+        dedupeKey: call.id,
       });
     }
 

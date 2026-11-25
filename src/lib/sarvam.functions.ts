@@ -15,7 +15,7 @@ const NO_CONTACT = { first_name: "", last_name: null, email: null, city: null, j
 
 type SarvamSettings = { sarvam_organization_id: string; sarvam_workspace_id: string };
 
-async function requireRole(context: { supabase: unknown; userId: string }, organizationId: string, roles: string[], message: string) {
+async function requireRole(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string, roles: string[], message: string) {
   const { data, error } = await asApp(context.supabase).from("memberships").select("role")
     .eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   if (error || !data || !roles.includes(data.role)) throw new Error(message);

@@ -154,7 +154,6 @@ export interface AuthContext {
     keyId: string;
     scopes: Scope[];
     rateLimit: {
-        allowed?: boolean;
         limit: number;
         remaining: number;
     };

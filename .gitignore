@@ -36,4 +36,3 @@ dist-ssr
 
 # Netlify build output / local state
 .netlify/
-.vercel

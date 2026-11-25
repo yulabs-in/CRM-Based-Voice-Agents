@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { notify, recipientsFor } from "@/lib/notify.server";
+import { parseNotificationLink } from "@/lib/notifications-ui";
 
 // Mock supabaseAdmin
 const mockSelect = vi.fn();
@@ -54,6 +55,16 @@ describe("notify.server", () => {
       mockEq.mockResolvedValueOnce({ data: mockMembers, error: null });
 
       const recipients = await recipientsFor("org-1", "lead.interested");
+
+      expect(recipients).toEqual(["user-owner", "user-admin", "user-manager"]);
+    });
+
+    it("falls back to owner, admin, sales_manager when dealOwnerId left the workspace", async () => {
+      mockEq.mockResolvedValueOnce({ data: mockMembers, error: null });
+
+      const recipients = await recipientsFor("org-1", "lead.interested", {
+        dealOwnerId: "user-former-member",
+      });
 
       expect(recipients).toEqual(["user-owner", "user-admin", "user-manager"]);
     });
@@ -177,6 +188,20 @@ describe("notify.server", () => {
           recipients: ["user-1"],
         })
       ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("parseNotificationLink", () => {
+    it("splits pathname and search params for TanStack Router", () => {
+      expect(parseNotificationLink("/leads?contact=abc-123")).toEqual({
+        to: "/leads",
+        search: { contact: "abc-123" },
+      });
+      expect(parseNotificationLink("/contacts?id=xyz-789")).toEqual({
+        to: "/contacts",
+        search: { id: "xyz-789" },
+      });
+      expect(parseNotificationLink("/tasks")).toEqual({ to: "/tasks" });
     });
   });
 });

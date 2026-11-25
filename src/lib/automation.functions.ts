@@ -10,7 +10,7 @@ import { describeCondition, rulesMatch, type Condition } from "@/lib/automation"
 
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
 
-async function roleIn(context: { supabase: unknown; userId: string }, organizationId: string, roles: string[]) {
+async function roleIn(context: { supabase: SupabaseClient<Database>; userId: string }, organizationId: string, roles: string[]) {
   const { data } = await asApp(context.supabase).from("memberships").select("role").eq("organization_id", organizationId).eq("user_id", context.userId).maybeSingle();
   return !!data && roles.includes(data.role);
 }

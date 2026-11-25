@@ -44,10 +44,8 @@ export async function recipientsFor(
     const recipientSet = new Set<string>();
 
     if (event === "lead.interested" || event === "consultation.booked") {
-      if (context.dealOwnerId) {
-        if (members.some((m) => m.user_id === context.dealOwnerId)) {
-          recipientSet.add(context.dealOwnerId);
-        }
+      if (context.dealOwnerId && members.some((m) => m.user_id === context.dealOwnerId)) {
+        recipientSet.add(context.dealOwnerId);
       } else {
         for (const m of members) {
           if (["owner", "admin", "sales_manager"].includes(m.role)) {
