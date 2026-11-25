@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string
+          type: string
+          title: string
+          body: string | null
+          link: string | null
+          priority: string
+          dedupe_key: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id: string
+          type: string
+          title: string
+          body?: string | null
+          link?: string | null
+          priority?: string
+          dedupe_key?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          link?: string | null
+          priority?: string
+          dedupe_key?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string

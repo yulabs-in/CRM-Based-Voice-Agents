@@ -16,7 +16,10 @@ const DETAIL_KEYS = ["vehicle_model", "family_size", "current_insurer", "renewal
 type Row = Record<string, unknown> & { last_call?: { answers?: unknown; summary?: string | null; created_at?: string } | null };
 
 export const Route = createFileRoute("/_authenticated/_app/leads")({
-  validateSearch: (s: Record<string, unknown>): { new?: boolean } => ({ new: s.new === true || s.new === "true" ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { new?: boolean; contact?: string } => ({
+    new: s.new === true || s.new === "true" ? true : undefined,
+    contact: typeof s.contact === "string" ? s.contact : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Leads — Yulabs CRM" },
@@ -36,23 +39,38 @@ function Page() {
   const s = Route.useSearch();
   const nav = useNavigate();
   const [view, setView] = useState<"interested" | "all">("interested");
-  const rowFilter = useCallback((r: Record<string, unknown>) => view === "all" || INTERESTED.has(String(r.status)), [view]);
+  const rowFilter = useCallback(
+    (r: Record<string, unknown>) => Boolean(s.contact) || view === "all" || INTERESTED.has(String(r.status)),
+    [view, s.contact]
+  );
 
   return (
     <EntityPage table="leads" title="Leads" singular="Lead" icon={UserPlus}
       description="People interested in your services — added and updated from what they said on your AI calls."
       select="*, last_call:calls!leads_last_call_id_fkey(answers, summary, created_at)"
       order="updated_at"
+      filter={s.contact ? { contact_id: s.contact } : undefined}
       rowFilter={rowFilter}
       emptyHint={view === "interested" ? "When a caller says they're interested, they appear here automatically." : undefined}
       toolbar={
-        <div className="flex rounded-xl border bg-muted/40 p-0.5 text-xs font-medium" role="tablist" aria-label="Lead view">
-          {([["interested", "Interested"], ["all", "All"]] as const).map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={view === value} onClick={() => setView(value)}
-              className={cn("rounded-lg px-3 py-1.5 transition-colors", view === value ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}>
-              {label}
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-xl border bg-muted/40 p-0.5 text-xs font-medium" role="tablist" aria-label="Lead view">
+            {([["interested", "Interested"], ["all", "All"]] as const).map(([value, label]) => (
+              <button key={value} type="button" role="tab" aria-selected={view === value} onClick={() => setView(value)}
+                className={cn("rounded-lg px-3 py-1.5 transition-colors", view === value ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {s.contact && (
+            <button
+              type="button"
+              onClick={() => nav({ to: "/leads", search: {} })}
+              className="rounded-lg border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Show all leads
             </button>
-          ))}
+          )}
         </div>
       }
       openNew={s.new} onCloseNew={() => nav({ to: "/leads", search: {} })}
