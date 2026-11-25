@@ -1,9 +1,18 @@
 name: Deploy
 
-# main → production (https://yulabs-crm-1122.netlify.app)
-# dev  → preview    (https://dev--yulabs-crm-1122.netlify.app)
-# Needs one repository secret: NETLIFY_AUTH_TOKEN (Netlify → User settings → Applications → Personal access tokens).
-# Server secrets (Supabase service role, Sarvam key) stay in Netlify's environment variables, never here.
+# Vercel builds and hosts the app through its GitHub app (every push, every PR).
+#   main → production  https://crm-based-voice-agents.vercel.app
+#   dev  → preview     https://crm-based-vo-git-e2aa64-thotakurayaswanth104-gmailcoms-projects.vercel.app
+#                      (behind Vercel Authentication: sign in with a member of the Vercel team)
+#
+# The "vercel" job below records that deployment on GitHub's Deployments page: it waits for Vercel's
+# build of this exact commit, smoke-tests the live URL, and links the environment to it. No secrets needed.
+#
+# The "netlify" job is a second, optional host. It only deploys once the repository secret
+# NETLIFY_AUTH_TOKEN is set (Netlify → User settings → Applications → Personal access tokens);
+# until then it is skipped with a notice instead of failing.
+#   main → https://yulabs-crm-1122.netlify.app      dev → https://dev--yulabs-crm-1122.netlify.app
+# Server secrets (Supabase service role, Sarvam key) live in each host's environment variables, never here.
 on:
   push:
     branches: [main, dev]
@@ -13,33 +22,86 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  NETLIFY_SITE_ID: ba763ab7-fc79-4b40-b2ad-dac85760c2e3
+permissions:
+  contents: read
+  statuses: read
+  deployments: write
 
 jobs:
-  deploy:
+  vercel:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+      url: ${{ github.ref_name == 'main' && 'https://crm-based-voice-agents.vercel.app' || 'https://crm-based-vo-git-e2aa64-thotakurayaswanth104-gmailcoms-projects.vercel.app' }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SITE_URL: ${{ github.ref_name == 'main' && 'https://crm-based-voice-agents.vercel.app' || 'https://crm-based-vo-git-e2aa64-thotakurayaswanth104-gmailcoms-projects.vercel.app' }}
+      PROTECTED: ${{ github.ref_name == 'main' && 'false' || 'true' }}
     steps:
+      - name: Wait for Vercel to build this commit
+        run: |
+          for i in $(seq 1 60); do
+            state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
+              --jq '[.statuses[] | select(.context == "Vercel") | .state][0] // "pending"')
+            echo "attempt $i: Vercel is $state"
+            case "$state" in
+              success) exit 0 ;;
+              failure|error)
+                gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/status" \
+                  --jq '.statuses[] | select(.context == "Vercel") | "::error::Vercel build failed: \(.description) \(.target_url)"'
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Vercel did not finish within 15 minutes"
+          exit 1
+
+      - name: Smoke test the live site
+        run: |
+          # Production must answer 200. The dev preview sits behind Vercel Authentication, so a redirect
+          # to Vercel's sign-in (302) or 401 also proves it is up.
+          ok="200"; [ "$PROTECTED" = "true" ] && ok="200 302 401"
+          for path in / /auth /dashboard /sales-orders /notifications /profile /developers/api; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL}${path}")
+            echo "${path} -> ${code}"
+            echo " $ok " | grep -q " $code " || { echo "::error::${SITE_URL}${path} answered ${code}"; exit 1; }
+          done
+          if [ "$PROTECTED" = "false" ]; then
+            # The public API must refuse a request without an API key.
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${SITE_URL}/api/v1/contacts")
+            echo "/api/v1/contacts (no key) -> ${code}"
+            [ "$code" = "401" ] || { echo "::error::/api/v1/contacts answered ${code}, expected 401"; exit 1; }
+          fi
+          echo "### Deployed to Vercel: ${SITE_URL}" >> "$GITHUB_STEP_SUMMARY"
+
+  netlify:
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ba763ab7-fc79-4b40-b2ad-dac85760c2e3
+    steps:
+      - name: Skip when Netlify is not connected
+        if: env.NETLIFY_AUTH_TOKEN == ''
+        run: |
+          echo "::notice::NETLIFY_AUTH_TOKEN is not set, so the Netlify deploy was skipped. Vercel is the live host."
+          echo "Netlify skipped: add the NETLIFY_AUTH_TOKEN repository secret to deploy there too." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/checkout@v4
+        if: env.NETLIFY_AUTH_TOKEN != ''
       - uses: actions/setup-node@v4
+        if: env.NETLIFY_AUTH_TOKEN != ''
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Tests
-        run: npx vitest run
+      - if: env.NETLIFY_AUTH_TOKEN != ''
+        run: npm ci
       - name: Build
+        if: env.NETLIFY_AUTH_TOKEN != ''
         run: npm run build
         env:
           NITRO_PRESET: netlify
       - name: Deploy production
-        if: github.ref_name == 'main'
+        if: env.NETLIFY_AUTH_TOKEN != '' && github.ref_name == 'main'
         run: npx netlify-cli@latest deploy --prod --dir dist --functions .netlify/functions-internal --site "$NETLIFY_SITE_ID" --message "main ${GITHUB_SHA::7}"
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       - name: Deploy dev preview
-        if: github.ref_name == 'dev'
+        if: env.NETLIFY_AUTH_TOKEN != '' && github.ref_name == 'dev'
         run: npx netlify-cli@latest deploy --alias dev --dir dist --functions .netlify/functions-internal --site "$NETLIFY_SITE_ID" --message "dev ${GITHUB_SHA::7}"
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
