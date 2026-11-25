@@ -1,19 +1,22 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
 import { EntityPage } from "@/components/app/EntityPage";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import { shortDate } from "@/lib/format";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
+import { supabase } from "@/lib/supabase";
+import { useOrg } from "@/lib/org";
 import { cn } from "@/lib/utils";
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "unqualified", "converted"];
 /** People who said yes on a call (or were marked so by hand). */
 const INTERESTED = new Set(["qualified", "converted"]);
-/** Extra details the agent collected, shown under "Interested in". */
+/** Fallback details when the agent has no custom lead columns. */
 const DETAIL_KEYS = ["vehicle_model", "family_size", "current_insurer", "renewal_date", "trading_style", "experience_level", "consultation_mode", "preferred_language"];
 
-type Row = Record<string, unknown> & { last_call?: { answers?: unknown; summary?: string | null; created_at?: string } | null };
+type Row = Record<string, unknown> & { last_call?: { answers?: unknown; summary?: string | null; created_at?: string; agent_id?: string | null } | null };
 
 export const Route = createFileRoute("/_authenticated/_app/leads")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean; contact?: string } => ({
@@ -38,16 +41,32 @@ const answersOf = (r: Row) => asAnswers(r.last_call?.answers);
 function Page() {
   const s = Route.useSearch();
   const nav = useNavigate();
+  const { org } = useOrg();
   const [view, setView] = useState<"interested" | "all">("interested");
   const rowFilter = useCallback(
     (r: Record<string, unknown>) => Boolean(s.contact) || view === "all" || INTERESTED.has(String(r.status)),
     [view, s.contact]
   );
 
+  const agentCols = useQuery({
+    queryKey: ["voice_agents", org.id, "lead_columns"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("voice_agents").select("id, lead_columns").eq("organization_id", org.id);
+      if (error) throw error;
+      return new Map(((data ?? []) as Array<{ id: string; lead_columns: unknown }>).map((a) => [a.id, Array.isArray(a.lead_columns) ? a.lead_columns.filter((k): k is string => typeof k === "string" && k.trim().length > 0) : []]));
+    },
+  });
+
+  const detailKeysFor = useCallback((r: Row) => {
+    const agentId = r.last_call?.agent_id;
+    const cols = agentId ? agentCols.data?.get(agentId) : undefined;
+    return cols && cols.length > 0 ? cols : DETAIL_KEYS;
+  }, [agentCols.data]);
+
   return (
     <EntityPage table="leads" title="Leads" singular="Lead" icon={UserPlus}
       description="People interested in your services — added and updated from what they said on your AI calls."
-      select="*, last_call:calls!leads_last_call_id_fkey(answers, summary, created_at)"
+      select="*, last_call:calls!leads_last_call_id_fkey(answers, summary, created_at, agent_id)"
       order="updated_at"
       filter={s.contact ? { contact_id: s.contact } : undefined}
       rowFilter={rowFilter}
@@ -91,9 +110,10 @@ function Page() {
           </div>
         ) },
         { key: "interest", label: "Interested in", render: (r) => {
-          const a = answersOf(r as Row);
+          const row = r as Row;
+          const a = answersOf(row);
           const product = a.insurance_type ? `${humanize(a.insurance_type)} insurance` : a.service_interest || a.market_interest || a.interest;
-          const details = DETAIL_KEYS.filter((k) => a[k]).map((k) => `${humanize(k)}: ${a[k]}`);
+          const details = detailKeysFor(row).filter((k) => a[k]).map((k) => `${humanize(k)}: ${a[k]}`);
           if (!product && !details.length) return <span className="text-muted-foreground">—</span>;
           return (
             <div className="max-w-[14rem] space-y-1">
