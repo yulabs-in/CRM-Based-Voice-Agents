@@ -28,12 +28,17 @@ import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppDealsRouteImport } from './routes/_authenticated/_app/deals'
 import { Route as AuthenticatedAppEmailRouteImport } from './routes/_authenticated/_app/email'
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/_app/integrations'
+import { Route as AuthenticatedAppKycRouteImport } from './routes/_authenticated/_app/kyc'
 import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/_app/leads'
 import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
 import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
+import { Route as AuthenticatedAppPaymentsRouteImport } from './routes/_authenticated/_app/payments'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
+import { Route as AuthenticatedAppRenewalsRouteImport } from './routes/_authenticated/_app/renewals'
+import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/_app/reports'
 import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
 import { Route as AuthenticatedAppSalesAnalyticsRouteImport } from './routes/_authenticated/_app/sales-analytics'
+import { Route as AuthenticatedAppSalesOrdersRouteImport } from './routes/_authenticated/_app/sales-orders'
 import { Route as AuthenticatedAppScheduledActionsRouteImport } from './routes/_authenticated/_app/scheduled-actions'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/_app/settings'
 import { Route as AuthenticatedAppSmsRouteImport } from './routes/_authenticated/_app/sms'
@@ -165,6 +170,11 @@ const AuthenticatedAppIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppKycRoute = AuthenticatedAppKycRouteImport.update({
+  id: '/kyc',
+  path: '/kyc',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppLeadsRoute = AuthenticatedAppLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -182,12 +192,29 @@ const AuthenticatedAppMeetingsRoute =
     path: '/meetings',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppPaymentsRoute =
+  AuthenticatedAppPaymentsRouteImport.update({
+    id: '/payments',
+    path: '/payments',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPipelineRoute =
   AuthenticatedAppPipelineRouteImport.update({
     id: '/pipeline',
     path: '/pipeline',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppRenewalsRoute =
+  AuthenticatedAppRenewalsRouteImport.update({
+    id: '/renewals',
+    path: '/renewals',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppReportsRoute = AuthenticatedAppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppRulesRoute = AuthenticatedAppRulesRouteImport.update({
   id: '/rules',
   path: '/rules',
@@ -197,6 +224,12 @@ const AuthenticatedAppSalesAnalyticsRoute =
   AuthenticatedAppSalesAnalyticsRouteImport.update({
     id: '/sales-analytics',
     path: '/sales-analytics',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppSalesOrdersRoute =
+  AuthenticatedAppSalesOrdersRouteImport.update({
+    id: '/sales-orders',
+    path: '/sales-orders',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppScheduledActionsRoute =
@@ -363,12 +396,17 @@ export interface FileRoutesByFullPath {
   '/deals': typeof AuthenticatedAppDealsRoute
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
+  '/kyc': typeof AuthenticatedAppKycRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/payments': typeof AuthenticatedAppPaymentsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/renewals': typeof AuthenticatedAppRenewalsRoute
+  '/reports': typeof AuthenticatedAppReportsRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
+  '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
@@ -414,12 +452,17 @@ export interface FileRoutesByTo {
   '/deals': typeof AuthenticatedAppDealsRoute
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
+  '/kyc': typeof AuthenticatedAppKycRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/payments': typeof AuthenticatedAppPaymentsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/renewals': typeof AuthenticatedAppRenewalsRoute
+  '/reports': typeof AuthenticatedAppReportsRoute
   '/rules': typeof AuthenticatedAppRulesRoute
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
+  '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
@@ -468,12 +511,17 @@ export interface FileRoutesById {
   '/_authenticated/_app/deals': typeof AuthenticatedAppDealsRoute
   '/_authenticated/_app/email': typeof AuthenticatedAppEmailRoute
   '/_authenticated/_app/integrations': typeof AuthenticatedAppIntegrationsRoute
+  '/_authenticated/_app/kyc': typeof AuthenticatedAppKycRoute
   '/_authenticated/_app/leads': typeof AuthenticatedAppLeadsRoute
   '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
+  '/_authenticated/_app/payments': typeof AuthenticatedAppPaymentsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/_app/renewals': typeof AuthenticatedAppRenewalsRoute
+  '/_authenticated/_app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
   '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
+  '/_authenticated/_app/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
   '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRoute
   '/_authenticated/_app/sms': typeof AuthenticatedAppSmsRoute
@@ -521,12 +569,17 @@ export interface FileRouteTypes {
     | '/deals'
     | '/email'
     | '/integrations'
+    | '/kyc'
     | '/leads'
     | '/live-calls'
     | '/meetings'
+    | '/payments'
     | '/pipeline'
+    | '/renewals'
+    | '/reports'
     | '/rules'
     | '/sales-analytics'
+    | '/sales-orders'
     | '/scheduled-actions'
     | '/settings'
     | '/sms'
@@ -572,12 +625,17 @@ export interface FileRouteTypes {
     | '/deals'
     | '/email'
     | '/integrations'
+    | '/kyc'
     | '/leads'
     | '/live-calls'
     | '/meetings'
+    | '/payments'
     | '/pipeline'
+    | '/renewals'
+    | '/reports'
     | '/rules'
     | '/sales-analytics'
+    | '/sales-orders'
     | '/scheduled-actions'
     | '/settings'
     | '/sms'
@@ -625,12 +683,17 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/deals'
     | '/_authenticated/_app/email'
     | '/_authenticated/_app/integrations'
+    | '/_authenticated/_app/kyc'
     | '/_authenticated/_app/leads'
     | '/_authenticated/_app/live-calls'
     | '/_authenticated/_app/meetings'
+    | '/_authenticated/_app/payments'
     | '/_authenticated/_app/pipeline'
+    | '/_authenticated/_app/renewals'
+    | '/_authenticated/_app/reports'
     | '/_authenticated/_app/rules'
     | '/_authenticated/_app/sales-analytics'
+    | '/_authenticated/_app/sales-orders'
     | '/_authenticated/_app/scheduled-actions'
     | '/_authenticated/_app/settings'
     | '/_authenticated/_app/sms'
@@ -809,6 +872,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIntegrationsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/kyc': {
+      id: '/_authenticated/_app/kyc'
+      path: '/kyc'
+      fullPath: '/kyc'
+      preLoaderRoute: typeof AuthenticatedAppKycRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/leads': {
       id: '/_authenticated/_app/leads'
       path: '/leads'
@@ -830,11 +900,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppMeetingsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/payments': {
+      id: '/_authenticated/_app/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof AuthenticatedAppPaymentsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/pipeline': {
       id: '/_authenticated/_app/pipeline'
       path: '/pipeline'
       fullPath: '/pipeline'
       preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/renewals': {
+      id: '/_authenticated/_app/renewals'
+      path: '/renewals'
+      fullPath: '/renewals'
+      preLoaderRoute: typeof AuthenticatedAppRenewalsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/reports': {
+      id: '/_authenticated/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedAppReportsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/rules': {
@@ -849,6 +940,13 @@ declare module '@tanstack/react-router' {
       path: '/sales-analytics'
       fullPath: '/sales-analytics'
       preLoaderRoute: typeof AuthenticatedAppSalesAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/sales-orders': {
+      id: '/_authenticated/_app/sales-orders'
+      path: '/sales-orders'
+      fullPath: '/sales-orders'
+      preLoaderRoute: typeof AuthenticatedAppSalesOrdersRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/scheduled-actions': {
@@ -1050,12 +1148,17 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppDealsRoute: typeof AuthenticatedAppDealsRoute
   AuthenticatedAppEmailRoute: typeof AuthenticatedAppEmailRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRoute
+  AuthenticatedAppKycRoute: typeof AuthenticatedAppKycRoute
   AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
   AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
   AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
+  AuthenticatedAppPaymentsRoute: typeof AuthenticatedAppPaymentsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppRenewalsRoute: typeof AuthenticatedAppRenewalsRoute
+  AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
   AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
+  AuthenticatedAppSalesOrdersRoute: typeof AuthenticatedAppSalesOrdersRoute
   AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
   AuthenticatedAppSmsRoute: typeof AuthenticatedAppSmsRoute
@@ -1088,12 +1191,17 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppDealsRoute: AuthenticatedAppDealsRoute,
   AuthenticatedAppEmailRoute: AuthenticatedAppEmailRoute,
   AuthenticatedAppIntegrationsRoute: AuthenticatedAppIntegrationsRoute,
+  AuthenticatedAppKycRoute: AuthenticatedAppKycRoute,
   AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
   AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
   AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
+  AuthenticatedAppPaymentsRoute: AuthenticatedAppPaymentsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppRenewalsRoute: AuthenticatedAppRenewalsRoute,
+  AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
   AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
+  AuthenticatedAppSalesOrdersRoute: AuthenticatedAppSalesOrdersRoute,
   AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
   AuthenticatedAppSmsRoute: AuthenticatedAppSmsRoute,

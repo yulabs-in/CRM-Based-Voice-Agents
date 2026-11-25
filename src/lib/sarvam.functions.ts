@@ -75,7 +75,7 @@ export const startSarvamCall = createServerFn({ method: "POST" })
     const { sarvamJson, workspacePath, publicAppUrl, getOrgSarvamConfig, SarvamError } = await import("@/lib/sarvam.server");
     const phone = normalizePhoneNumber(data.phone);
     if (!phone) throw new Error("Enter a valid mobile number (e.g. 98765 43210 or +91…)");
-    await requireRole(context, data.organizationId, ["owner", "admin", "sales_manager", "sales_rep", "voice_manager", "support_agent"], "You don't have permission to place calls");
+    await requireRole(context, data.organizationId, ["owner", "admin", "sales_manager", "team_lead", "sales_rep", "voice_manager", "support_agent"], "You don't have permission to place calls");
 
     const { data: agent, error: agentError } = await asApp(context.supabase).from("voice_agents")
       .select("id, name, status, greeting, greeting_no_name, agent_variables, sarvam_agent_id, sarvam_app_version, sarvam_connection_id, sarvam_agent_phone_number")

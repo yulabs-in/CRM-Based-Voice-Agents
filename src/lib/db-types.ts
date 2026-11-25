@@ -852,6 +852,7 @@ export type Database = {
           id: string
           organization_id: string
           role: Database["public"]["Enums"]["org_role"]
+          reports_to: string | null
           user_id: string
         }
         Insert: {
@@ -859,6 +860,7 @@ export type Database = {
           id?: string
           organization_id: string
           role?: Database["public"]["Enums"]["org_role"]
+          reports_to?: string | null
           user_id: string
         }
         Update: {
@@ -866,6 +868,7 @@ export type Database = {
           id?: string
           organization_id?: string
           role?: Database["public"]["Enums"]["org_role"]
+          reports_to?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1089,6 +1092,335 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_orders: {
+        Row: {
+          id: string
+          organization_id: string
+          order_number: string
+          contact_id: string | null
+          deal_id: string | null
+          call_id: string | null
+          owner_id: string | null
+          product_type: string
+          plan_name: string | null
+          insurer: string | null
+          premium_amount: number
+          sum_insured: number | null
+          payment_frequency: string
+          payment_due_date: string | null
+          amount_paid: number
+          status: string
+          policy_number: string | null
+          policy_start_date: string | null
+          policy_end_date: string | null
+          renewed_from_order_id: string | null
+          source: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          order_number?: string
+          contact_id?: string | null
+          deal_id?: string | null
+          call_id?: string | null
+          owner_id?: string | null
+          product_type?: string
+          plan_name?: string | null
+          insurer?: string | null
+          premium_amount?: number
+          sum_insured?: number | null
+          payment_frequency?: string
+          payment_due_date?: string | null
+          amount_paid?: number
+          status?: string
+          policy_number?: string | null
+          policy_start_date?: string | null
+          policy_end_date?: string | null
+          renewed_from_order_id?: string | null
+          source?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          order_number?: string
+          contact_id?: string | null
+          deal_id?: string | null
+          call_id?: string | null
+          owner_id?: string | null
+          product_type?: string
+          plan_name?: string | null
+          insurer?: string | null
+          premium_amount?: number
+          sum_insured?: number | null
+          payment_frequency?: string
+          payment_due_date?: string | null
+          amount_paid?: number
+          status?: string
+          policy_number?: string | null
+          policy_start_date?: string | null
+          policy_end_date?: string | null
+          renewed_from_order_id?: string | null
+          source?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_renewed_from_order_id_fkey"
+            columns: ["renewed_from_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          id: string
+          organization_id: string
+          sales_order_id: string
+          amount: number
+          paid_on: string
+          mode: string
+          reference: string | null
+          status: string
+          notes: string | null
+          recorded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          sales_order_id: string
+          amount: number
+          paid_on?: string
+          mode?: string
+          reference?: string | null
+          status?: string
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          sales_order_id?: string
+          amount?: number
+          paid_on?: string
+          mode?: string
+          reference?: string | null
+          status?: string
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_kyc: {
+        Row: {
+          id: string
+          organization_id: string
+          contact_id: string
+          full_name: string | null
+          date_of_birth: string | null
+          email: string | null
+          address_line: string | null
+          city: string | null
+          state: string | null
+          pincode: string | null
+          nominee_name: string | null
+          nominee_relation: string | null
+          pan_masked: string | null
+          consent_given: boolean
+          consent_at: string | null
+          status: string
+          source: string
+          call_id: string | null
+          verified_by: string | null
+          verified_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          contact_id: string
+          full_name?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          address_line?: string | null
+          city?: string | null
+          state?: string | null
+          pincode?: string | null
+          nominee_name?: string | null
+          nominee_relation?: string | null
+          pan_masked?: string | null
+          consent_given?: boolean
+          consent_at?: string | null
+          status?: string
+          source?: string
+          call_id?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          contact_id?: string
+          full_name?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          address_line?: string | null
+          city?: string | null
+          state?: string | null
+          pincode?: string | null
+          nominee_name?: string | null
+          nominee_relation?: string | null
+          pan_masked?: string | null
+          consent_given?: boolean
+          consent_at?: string | null
+          status?: string
+          source?: string
+          call_id?: string | null
+          verified_by?: string | null
+          verified_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_kyc_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_kyc_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_kyc_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      renewal_reminders: {
+        Row: {
+          id: string
+          organization_id: string
+          sales_order_id: string
+          days_before: number
+          task_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          sales_order_id: string
+          days_before: number
+          task_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          sales_order_id?: string
+          days_before?: number
+          task_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renewal_reminders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_reminders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renewal_reminders_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -1434,6 +1766,7 @@ export type Database = {
         | "owner"
         | "admin"
         | "sales_manager"
+        | "team_lead"
         | "sales_rep"
         | "voice_manager"
         | "support_agent"
@@ -1570,6 +1903,7 @@ export const Constants = {
         "owner",
         "admin",
         "sales_manager",
+        "team_lead",
         "sales_rep",
         "voice_manager",
         "support_agent",
