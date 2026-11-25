@@ -35,6 +35,7 @@ import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppNotificationsRouteImport } from './routes/_authenticated/_app/notifications'
 import { Route as AuthenticatedAppPaymentsRouteImport } from './routes/_authenticated/_app/payments'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/_app/pipeline'
+import { Route as AuthenticatedAppProfileRouteImport } from './routes/_authenticated/_app/profile'
 import { Route as AuthenticatedAppRenewalsRouteImport } from './routes/_authenticated/_app/renewals'
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/_app/reports'
 import { Route as AuthenticatedAppRulesRouteImport } from './routes/_authenticated/_app/rules'
@@ -211,6 +212,11 @@ const AuthenticatedAppPipelineRoute =
     path: '/pipeline',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppProfileRoute = AuthenticatedAppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppRenewalsRoute =
   AuthenticatedAppRenewalsRouteImport.update({
     id: '/renewals',
@@ -410,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedAppNotificationsRoute
   '/payments': typeof AuthenticatedAppPaymentsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/renewals': typeof AuthenticatedAppRenewalsRoute
   '/reports': typeof AuthenticatedAppReportsRoute
   '/rules': typeof AuthenticatedAppRulesRoute
@@ -467,6 +474,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedAppNotificationsRoute
   '/payments': typeof AuthenticatedAppPaymentsRoute
   '/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/profile': typeof AuthenticatedAppProfileRoute
   '/renewals': typeof AuthenticatedAppRenewalsRoute
   '/reports': typeof AuthenticatedAppReportsRoute
   '/rules': typeof AuthenticatedAppRulesRoute
@@ -527,6 +535,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/notifications': typeof AuthenticatedAppNotificationsRoute
   '/_authenticated/_app/payments': typeof AuthenticatedAppPaymentsRoute
   '/_authenticated/_app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/_app/profile': typeof AuthenticatedAppProfileRoute
   '/_authenticated/_app/renewals': typeof AuthenticatedAppRenewalsRoute
   '/_authenticated/_app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/_app/rules': typeof AuthenticatedAppRulesRoute
@@ -586,6 +595,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/payments'
     | '/pipeline'
+    | '/profile'
     | '/renewals'
     | '/reports'
     | '/rules'
@@ -643,6 +653,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/payments'
     | '/pipeline'
+    | '/profile'
     | '/renewals'
     | '/reports'
     | '/rules'
@@ -702,6 +713,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/notifications'
     | '/_authenticated/_app/payments'
     | '/_authenticated/_app/pipeline'
+    | '/_authenticated/_app/profile'
     | '/_authenticated/_app/renewals'
     | '/_authenticated/_app/reports'
     | '/_authenticated/_app/rules'
@@ -932,6 +944,13 @@ declare module '@tanstack/react-router' {
       path: '/pipeline'
       fullPath: '/pipeline'
       preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/profile': {
+      id: '/_authenticated/_app/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedAppProfileRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/renewals': {
@@ -1175,6 +1194,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppNotificationsRoute: typeof AuthenticatedAppNotificationsRoute
   AuthenticatedAppPaymentsRoute: typeof AuthenticatedAppPaymentsRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppProfileRoute: typeof AuthenticatedAppProfileRoute
   AuthenticatedAppRenewalsRoute: typeof AuthenticatedAppRenewalsRoute
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppRulesRoute: typeof AuthenticatedAppRulesRoute
@@ -1219,6 +1239,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppNotificationsRoute: AuthenticatedAppNotificationsRoute,
   AuthenticatedAppPaymentsRoute: AuthenticatedAppPaymentsRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppProfileRoute: AuthenticatedAppProfileRoute,
   AuthenticatedAppRenewalsRoute: AuthenticatedAppRenewalsRoute,
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppRulesRoute: AuthenticatedAppRulesRoute,
