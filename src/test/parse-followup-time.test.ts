@@ -19,6 +19,21 @@ describe("parseFollowUpTime (IST)", () => {
 
   const istIso = (text: string, ref = new Date()) => parseFollowUpTime(text, ref)?.start.toISOString() ?? null;
 
+  describe("machine-formatted times from Sarvam's extraction", () => {
+    it("reads YYYY-MM-DD HH:MM as IST", () => {
+      expect(istIso("2026-11-29 18:00")).toBe("2026-11-29T12:30:00.000Z");
+      expect(istIso("2026-11-29T18:00")).toBe("2026-11-29T12:30:00.000Z");
+      expect(istIso("2026-11-29 18:00:00")).toBe("2026-11-29T12:30:00.000Z");
+      expect(istIso("2026-11-29 6:00 pm")).toBe("2026-11-29T12:30:00.000Z");
+      expect(istIso("2026-12-01 09:30 IST")).toBe("2026-12-01T04:00:00.000Z");
+      expect(parseFollowUpTime("2026-11-29 18:00", new Date())?.confidence).toBe("exact");
+    });
+    it("rejects impossible values", () => {
+      expect(istIso("2026-13-01 10:00")).toBeNull();
+      expect(istIso("2026-11-29 25:00")).toBeNull();
+    });
+  });
+
   describe("IST helpers", () => {
     it("converts IST wall-clock time to UTC accurately", () => {
       expect(fromIst(2026, 11, 24, 11, 0).toISOString()).toBe("2026-11-24T05:30:00.000Z");
