@@ -14,6 +14,22 @@ describe("classifyCallOutcome", () => {
     expect(call("registration_help")).toMatchObject({ kind: "positive", leadStatus: "qualified", dealStage: "proposal" });
   });
 
+  it("treats bookings from the industry agents as proposals", () => {
+    for (const d of ["site_visit_booked", "counselling_booked", "test_drive_booked", "service_booked", "reservation_requested", "application_assistance", "appointment_requested", "quote_requested"]) {
+      expect(call(d), d).toMatchObject({ kind: "positive", leadStatus: "qualified", dealStage: "proposal" });
+    }
+  });
+
+  it("keeps service and support outcomes neutral (no deal created or moved)", () => {
+    for (const d of ["appointment_confirmed", "appointment_rescheduled", "appointment_cancelled", "booking_confirmed", "booking_changed", "booking_cancelled", "resolved", "ticket_raised", "return_requested", "complaint", "emergency_redirected", "enquiry_answered", "status_shared", "payment_promised", "feedback_given"]) {
+      expect(call(d), d).toMatchObject({ kind: "neutral", dealStage: null });
+    }
+  });
+
+  it("never reads a loan customer's 'already paid' as a won deal", () => {
+    expect(call("already_paid")).toMatchObject({ kind: "neutral", dealStage: null });
+  });
+
   it("never reads 'not interested' as interested", () => {
     expect(call("not_interested")).toMatchObject({ kind: "negative", leadStatus: "unqualified", dealStage: "lost" });
     expect(call("Not Interested")).toMatchObject({ kind: "negative" });
