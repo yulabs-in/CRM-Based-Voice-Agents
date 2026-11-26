@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_outcome_rules: {
+        Row: {
+          agent_id: string
+          block_contact: boolean
+          create_lead: boolean
+          create_task: boolean
+          deal_stage: string | null
+          disposition: string
+          id: string
+          lead_status: string | null
+          organization_id: string
+          probability: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id: string
+          block_contact?: boolean
+          create_lead?: boolean
+          create_task?: boolean
+          deal_stage?: string | null
+          disposition: string
+          id?: string
+          lead_status?: string | null
+          organization_id: string
+          probability?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string
+          block_contact?: boolean
+          create_lead?: boolean
+          create_task?: boolean
+          deal_stage?: string | null
+          disposition?: string
+          id?: string
+          lead_status?: string | null
+          organization_id?: string
+          probability?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_outcome_rules_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_outcome_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -905,42 +965,57 @@ export type Database = {
       }
       meetings: {
         Row: {
+          call_id: string | null
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           duration_minutes: number
+          external_event_id: string | null
           id: string
           location: string | null
           notes: string | null
           organization_id: string
+          owner_id: string | null
+          source: string
           starts_at: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id?: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title?: string
@@ -1142,6 +1217,7 @@ export type Database = {
           created_by: string
           id: string
           industry: string | null
+          meeting_assignment: Json
           name: string
           onboarding_completed: boolean
           onboarding_step: number
@@ -1160,6 +1236,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name: string
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -1178,6 +1255,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name?: string
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -1598,6 +1676,7 @@ export type Database = {
           id: string
           instructions: string | null
           language: string
+          lead_columns: string[]
           name: string
           organization_id: string
           purpose: string | null
@@ -1618,6 +1697,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           language?: string
+          lead_columns?: string[]
           name: string
           organization_id: string
           purpose?: string | null
@@ -1638,6 +1718,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           language?: string
+          lead_columns?: string[]
           name?: string
           organization_id?: string
           purpose?: string | null

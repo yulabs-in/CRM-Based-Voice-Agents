@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/app/PageHeader";
-import { isAdmin, useOrg } from "@/lib/org";
+import { isAdmin, ROLE_LABELS, useOrg, type OrgRole } from "@/lib/org";
 import { getUsageSettings, updateUsageSettings } from "@/lib/usage.functions";
 import type { UsageRounding } from "@/lib/usage";
 
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/_app/settings")({
 });
 
 const FIELDS = [["name", "Organization name"], ["website", "Website"], ["phone", "Phone"], ["industry", "Industry"], ["business_type", "Business type"], ["country", "Country"], ["timezone", "Timezone"]] as const;
+const ASSIGNABLE_ROLES: OrgRole[] = ["sales_rep", "sales_manager", "voice_manager", "admin", "owner"];
 
 function Settings() {
   const { org, role } = useOrg();
@@ -37,12 +38,29 @@ function Settings() {
   const admin = isAdmin(role);
   const [f, setF] = useState(() => Object.fromEntries(FIELDS.map(([k]) => [k, org[k] ?? ""])) as Record<string, string>);
   const [busy, setBusy] = useState(false);
+  const initialRole = ((org as { meeting_assignment?: { role?: string } }).meeting_assignment?.role as OrgRole | undefined) ?? "sales_rep";
+  const [assignRole, setAssignRole] = useState<OrgRole>(ASSIGNABLE_ROLES.includes(initialRole) ? initialRole : "sales_rep");
+  const [savingBooking, setSavingBooking] = useState(false);
+
   async function save(e: FormEvent) {
     e.preventDefault(); setBusy(true);
     const { error } = await supabase.from("organizations").update(f as Record<(typeof FIELDS)[number][0], string>).eq("id", org.id);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Settings saved");
+    qc.invalidateQueries({ queryKey: ["memberships"] });
+  }
+
+  async function saveMeetingAssignment(nextRole: OrgRole) {
+    setAssignRole(nextRole);
+    setSavingBooking(true);
+    const { error } = await supabase
+      .from("organizations")
+      .update({ meeting_assignment: { mode: "deal_owner_then_round_robin", role: nextRole } })
+      .eq("id", org.id);
+    setSavingBooking(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Consultation assignment updated");
     qc.invalidateQueries({ queryKey: ["memberships"] });
   }
   return (
@@ -75,6 +93,36 @@ function Settings() {
 
       {admin && (
         <UsageSettingsSection orgId={org.id} />
+      )}
+
+      {admin && (
+        <div className="max-w-2xl rounded-2xl border bg-card p-6 shadow-soft space-y-3">
+          <div>
+            <h2 className="text-base font-semibold">Consultation booking</h2>
+            <p className="text-sm text-muted-foreground">
+              Choose who receives AI-booked consultations when no deal owner is assigned.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span>Consultations are assigned to: Deal owner, else round-robin among</span>
+            <Select
+              value={assignRole}
+              onValueChange={(v) => void saveMeetingAssignment(v as OrgRole)}
+              disabled={savingBooking}
+            >
+              <SelectTrigger className="w-44 h-9 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       )}
 
       {admin && (

@@ -905,42 +905,57 @@ export type Database = {
       }
       meetings: {
         Row: {
+          call_id: string | null
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           duration_minutes: number
+          external_event_id: string | null
           id: string
           location: string | null
           notes: string | null
           organization_id: string
+          owner_id: string | null
+          source: string
           starts_at: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id?: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title?: string
@@ -1142,6 +1157,7 @@ export type Database = {
           created_by: string
           id: string
           industry: string | null
+          meeting_assignment: Json
           name: string
           onboarding_completed: boolean
           onboarding_step: number
@@ -1160,6 +1176,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name: string
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -1178,6 +1195,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name?: string
           onboarding_completed?: boolean
           onboarding_step?: number

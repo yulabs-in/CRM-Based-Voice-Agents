@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Bot } from "lucide-react";
-import { EntityPage } from "@/components/app/EntityPage";
+import { Bot, SlidersHorizontal } from "lucide-react";
+import { EntityPage, type Row } from "@/components/app/EntityPage";
+import { OutcomeRulesDialog } from "@/components/app/agents/OutcomeRules";
 import { SupportCallTest } from "@/components/app/SupportCallTest";
 import { StatusBadge } from "@/components/app/StatusBadge";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { pageHead, opts, fmtDuration } from "@/lib/seo";
 import { shortDate } from "@/lib/format";
 import { DEFAULT_AGENT } from "@/lib/sarvam-defaults";
@@ -15,11 +18,15 @@ export const Route = createFileRoute("/_authenticated/_app/voice-agents")({
 
 function Page() {
   void StatusBadge; void opts; void fmtDuration; void shortDate;
+  const [rulesAgent, setRulesAgent] = useState<Row | null>(null);
   return (
     <div className="space-y-5">
     <SupportCallTest />
     <EntityPage table="voice_agents" title="Voice Agents" singular="Agent" icon={Bot} description="Configure the AI voices that call and answer for you."
       searchKeys={["name", "purpose", "language"]}
+      rowMenuItems={(r) => (
+        <DropdownMenuItem onClick={() => setRulesAgent(r)}><SlidersHorizontal /> Outcome rules</DropdownMenuItem>
+      )}
       fields={[
         { key: "name", label: "Agent name", required: true },
         { key: "language", label: "Language", type: "select", options: [["hi-IN","Hindi"],["en-IN","English (India)"],["ta-IN","Tamil"],["te-IN","Telugu"],["kn-IN","Kannada"],["ml-IN","Malayalam"],["mr-IN","Marathi"],["bn-IN","Bengali"],["gu-IN","Gujarati"],["pa-IN","Punjabi"],["od-IN","Odia"]].map(([value, label]) => ({ value: value!, label: label! })) },
@@ -44,6 +51,7 @@ function Page() {
         { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
       ]}
     />
+    <OutcomeRulesDialog agent={rulesAgent} open={!!rulesAgent} onOpenChange={(open) => { if (!open) setRulesAgent(null); }} />
     </div>
   );
 }
