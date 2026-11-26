@@ -93,9 +93,53 @@ export async function pickOwner(orgId: string, dealOwnerId?: string | null): Pro
   return sorted[0] ?? null;
 }
 
+/** Where each agent puts the time it agreed with the caller, most specific first. */
+export const BOOKING_TIME_KEYS = [
+  "site_visit_time",
+  "appointment_time",
+  "counselling_time",
+  "consultation_time",
+  "preferred_slot",
+  "reservation_date",
+  "follow_up_time",
+  "callback_time",
+] as const;
+
+export function bookingTime(answers: Record<string, string>): string {
+  for (const key of BOOKING_TIME_KEYS) {
+    const value = (answers[key] || "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+export type BookingKind = { label: string; inPerson: boolean };
+
 /**
- * Books a consultation meeting in IST when a call's disposition is `consultation_booked`,
- * or `callback` with a `follow_up_time` answer. Idempotent on `call_id`.
+ * What kind of meeting (if any) a finished call asks for, across every agent:
+ * a booked consultation, site visit, test drive, counselling session, vehicle service, hospital appointment
+ * or reservation, a callback with a time, or any positive call where the caller agreed a time with the agent.
+ */
+export function bookingKind(disposition: string, verdictKind: CallVerdict["kind"], hasTime: boolean): BookingKind | null {
+  const d = disposition.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  if (/\bcancell?ed\b/.test(d)) return null;
+  if (/\bconsultation\b/.test(d)) return { label: "Consultation", inPerson: false };
+  if (/\bsite visit\b/.test(d)) return { label: "Site visit", inPerson: true };
+  if (/\btest drive\b/.test(d)) return { label: "Test drive", inPerson: true };
+  if (/\bcounsell?ing\b/.test(d)) return { label: "Counselling session", inPerson: false };
+  if (/\bservice booked\b/.test(d)) return { label: "Vehicle service", inPerson: true };
+  if (/\bappointment (requested|rescheduled)\b/.test(d)) return { label: "Appointment", inPerson: true };
+  if (/\breservation requested\b/.test(d)) return { label: "Reservation", inPerson: true };
+  if (!hasTime) return null;
+  if (/\b(callback|call back)\b/.test(d)) return { label: "Call back", inPerson: false };
+  if (verdictKind === "positive" || verdictKind === "won") return { label: "Advisor call", inPerson: false };
+  return null;
+}
+
+/**
+ * Books a meeting in IST for any call where the caller agreed a time with the agent (see bookingKind).
+ * Idempotent on `call_id`. A time more than an hour in the past (e.g. when an old call is re-synced)
+ * isn't booked.
  */
 export async function maybeBookConsultation(
   call: BookingCallInput,
@@ -105,22 +149,10 @@ export async function maybeBookConsultation(
   dealOwnerId?: string | null
 ): Promise<{ booked: boolean; taskCreated: boolean }> {
   const answers = asAnswers(call.answers);
-  const disposition = (answers.disposition || answers.outcome || verdict.label || "")
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .trim();
-
-  const rawTime = (
-    answers.follow_up_time ||
-    answers.callback_time ||
-    answers.consultation_time ||
-    ""
-  ).trim();
-
-  const isConsultation = /\bconsultation\b/.test(disposition);
-  const isCallbackWithTime = /\b(callback|call back)\b/.test(disposition) && rawTime.length > 0;
-
-  if (!isConsultation && !isCallbackWithTime) {
+  const disposition = answers.disposition || answers.outcome || verdict.label || "";
+  const rawTime = bookingTime(answers);
+  const kind = bookingKind(disposition, verdict.kind, rawTime.length > 0);
+  if (!kind) {
     return { booked: false, taskCreated: false };
   }
 
@@ -133,6 +165,10 @@ export async function maybeBookConsultation(
   const parsed = rawTime ? parseFollowUpTime(rawTime, reference) : null;
   const ownerId = await pickOwner(orgId, dealOwnerId);
 
+  if (parsed && parsed.start.getTime() < Date.now() - 3600 * 1000) {
+    return { booked: false, taskCreated: false };
+  }
+
   if (parsed) {
     const outsideHours = isOutsideBusinessHoursIst(parsed.start);
     const noteParts = [
@@ -141,7 +177,7 @@ export async function maybeBookConsultation(
       outsideHours ? "Outside business hours" : null,
     ].filter(Boolean);
 
-    const location = (answers.consultation_mode || "phone").trim() || "phone";
+    const location = (answers.consultation_mode || (kind.inPerson ? "in person" : "phone")).trim() || "phone";
 
     const { data: inserted, error } = await supabaseAdmin
       .from("meetings")
@@ -153,7 +189,7 @@ export async function maybeBookConsultation(
           owner_id: ownerId,
           call_id: call.id,
           source: "call",
-          title: `Consultation: ${displayName}`.slice(0, 200),
+          title: `${kind.label}: ${displayName}`.slice(0, 200),
           starts_at: parsed.start.toISOString(),
           duration_minutes: 30,
           location,
