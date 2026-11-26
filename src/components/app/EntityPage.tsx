@@ -7,13 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { canDelete, canWrite, useOrg } from "@/lib/org";
 import { downloadCsv } from "@/lib/csv";
 import { PageHeader } from "./PageHeader";
+import { EmptyState } from "./EmptyState";
+import { ErrorState } from "./ErrorState";
+import { TableSkeleton } from "./TableSkeleton";
 
 export type Row = Record<string, unknown> & { id: string };
 export type Field = {
@@ -63,6 +75,7 @@ export function EntityPage(props: {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Row | null>(null);
+  const [deleting, setDeleting] = useState<Row | null>(null);
   const [creating, setCreating] = useState(!!props.openNew && canWrite(role));
   const refTables = [...new Set(props.fields.filter((f) => f.refTable).map((f) => f.refTable!))];
   const refs = useRefs(refTables);
@@ -121,42 +134,53 @@ export function EntityPage(props: {
       </PageHeader>
 
       <div className="rounded-2xl border bg-card shadow-soft">
-        <div className="flex items-center gap-3 border-b p-3">
-          <div className="relative w-full max-w-xs">
+        <div className="flex flex-wrap items-center gap-3 border-b p-3">
+          <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${props.title.toLowerCase()}…`} className="h-9 rounded-xl pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} aria-label={`Search ${props.title.toLowerCase()}`} placeholder={`Search ${props.title.toLowerCase()}…`} className="h-9 rounded-xl pl-9" />
           </div>
           {props.toolbar}
-          <span className="ml-auto text-xs text-muted-foreground">{rows.length} {rows.length === 1 ? "record" : "records"}</span>
+          <span className="ml-auto text-xs text-muted-foreground tabular-nums">{rows.length} {rows.length === 1 ? "record" : "records"}</span>
         </div>
         {list.isLoading ? (
-          <div className="space-y-2 p-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+          <TableSkeleton rows={5} columns={Math.min(5, props.columns.length)} />
+        ) : list.isError ? (
+          <ErrorState error={list.error} onRetry={() => void list.refetch()} />
         ) : rows.length === 0 ? (
-          <div className="dot-canvas m-3 rounded-xl border border-dashed py-16 text-center">
-            <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-accent text-accent-foreground"><props.icon /></span>
-            <p className="mt-4 font-semibold">{q ? "No matches" : `No ${props.title.toLowerCase()} yet`}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{q ? "Try a different search." : props.emptyHint ?? `Add your first ${props.singular.toLowerCase()} to get started.`}</p>
-            {!q && canWrite(role) && <Button variant="hero" className="mt-5" onClick={() => setCreating(true)}><Plus /> New {props.singular.toLowerCase()}</Button>}
-          </div>
+          <EmptyState
+            icon={props.icon}
+            title={q ? "No matches" : `No ${props.title.toLowerCase()} yet`}
+            description={q ? "Try a different search." : props.emptyHint ?? `Add your first ${props.singular.toLowerCase()} to get started.`}
+            actionLabel={!q && canWrite(role) ? `New ${props.singular.toLowerCase()}` : undefined}
+            onAction={!q && canWrite(role) ? () => setCreating(true) : undefined}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
-                {props.columns.map((c) => <th key={c.key} className="px-4 py-2.5 font-semibold">{c.label}</th>)}
+              <thead className="sticky top-0 z-10 bg-card"><tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                {props.columns.map((c) => <th key={c.key} className="whitespace-nowrap px-4 py-2.5 font-semibold">{c.label}</th>)}
                 <th className="w-10" />
               </tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className={"border-b last:border-0 transition-colors hover:bg-muted/60" + (props.onRowClick ? " cursor-pointer" : "")} onClick={() => props.onRowClick?.(r)}>
-                    {props.columns.map((c) => <td key={c.key} className={c.className ?? "px-4 py-3"}>{c.render ? c.render(r, refMap) : String(r[c.key] ?? "—")}</td>)}
+                    {props.columns.map((c) => {
+                      const content = c.render ? c.render(r, refMap) : String(r[c.key] ?? "—");
+                      const titleText = typeof content === "string" ? content : undefined;
+                      return (
+                        <td key={c.key} className={c.className ?? "max-w-[240px] truncate px-4 py-3"} title={titleText}>
+                          {content}
+                        </td>
+                      );
+                    })}
                     <td className="pr-3" onClick={(event) => event.stopPropagation()}>
                       {(canWrite(role) || props.rowMenuItems) && (
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Row actions"><MoreHorizontal /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {props.rowMenuItems?.(r)}
                             {canWrite(role) && <DropdownMenuItem onClick={() => setEditing(r)}><Pencil /> Edit</DropdownMenuItem>}
-                            {canDelete(role) && <DropdownMenuItem className="text-destructive" onClick={() => confirm(`Delete this ${props.singular.toLowerCase()}?`) && del.mutate(r.id)}><Trash2 /> Delete</DropdownMenuItem>}
+                            {canDelete(role) && <DropdownMenuItem className="text-destructive" onClick={() => setDeleting(r)}><Trash2 /> Delete</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -168,6 +192,29 @@ export function EntityPage(props: {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {props.singular.toLowerCase()}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove this {props.singular.toLowerCase()}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleting) del.mutate(deleting.id);
+                setDeleting(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={creating || !!editing} onOpenChange={(o) => !o && close()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-xl">

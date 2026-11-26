@@ -39,24 +39,24 @@ function Landing() {
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-4">
-        <section className="animate-rise py-24 text-center md:py-32">
+        <section className="animate-rise py-16 text-center md:py-28">
           <span className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground shadow-soft">
             <span className="size-1.5 rounded-full bg-success" /> AI calling, built into your CRM
           </span>
-          <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold tracking-tight text-foreground md:text-6xl">
+          <h1 className="mx-auto mt-6 max-w-3xl text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-6xl">
             Every customer, call and deal — <span className="bg-gradient-primary bg-clip-text text-transparent">in one place.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
             Yulabs CRM combines pipelines, voice agents and analytics so your sales team closes faster.
           </p>
-          <div className="mt-8 flex justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button variant="hero" size="lg" asChild>
               <Link to="/auth" search={{ mode: "signup" }}>Create your workspace <ArrowRight /></Link>
             </Button>
             <Button variant="outline" size="lg" asChild><Link to="/auth">Sign in</Link></Button>
           </div>
         </section>
-        <section className="grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="animate-rise grid gap-4 pb-24 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {features.map((f) => (
             <div key={f.title} className="rounded-2xl border bg-card p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-float">
               <span className="grid size-10 place-items-center rounded-xl bg-accent text-accent-foreground"><f.icon className="size-5" /></span>
