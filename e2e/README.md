@@ -38,7 +38,13 @@ Add these 5 repository secrets under **Settings -> Secrets and variables -> Acti
 - `E2E_USER_EMAIL`
 - `E2E_USER_PASSWORD`
 
-CI checks for missing settings before installing Chromium. A configuration failure means none of the five CRM flows was exercised. After configuring Actions secrets, rerun the failed job. A successful run lists five passing Chromium scenarios.
+CI checks these settings before installing Chromium:
+
+- **None of the five set** (the current state, until a test Supabase project exists): the `e2e` job is skipped with a notice. It shows as passing, but **no CRM flow was exercised**.
+- **Some set, some missing:** the job fails and names the missing ones.
+- **All five set:** the full suite runs. A successful run lists five passing Chromium scenarios.
+
+Use a dedicated test Supabase project, never production: the suite creates its own workspaces and users.
 
 ## Verifying Regression Detection
 

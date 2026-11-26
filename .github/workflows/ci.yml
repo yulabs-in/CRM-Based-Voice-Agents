@@ -43,21 +43,34 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The suite needs a dedicated test Supabase project (never production) and a test user, given as
+      # repository secrets (see e2e/README.md). None set yet: skip with a notice (agreed with the repo owner
+      # until the test project exists). Some set but not all: a broken setup, so fail and name what's missing.
       - name: Check E2E configuration
+        id: config
         shell: bash
         run: |
           missing=()
           for key in E2E_SUPABASE_URL E2E_SUPABASE_PUBLISHABLE_KEY E2E_SUPABASE_SERVICE_ROLE_KEY E2E_USER_EMAIL E2E_USER_PASSWORD; do
             if [[ -z "${!key//[[:space:]]/}" ]]; then missing+=("$key"); fi
           done
-          if (( ${#missing[@]} )); then
+          if (( ${#missing[@]} == 5 )); then
+            echo "::notice::E2E suite skipped: the E2E_* repository secrets for the test Supabase project are not set yet. See e2e/README.md."
+            echo "E2E skipped: add the five E2E_* secrets (test Supabase project + test user) to run the Playwright suite." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif (( ${#missing[@]} )); then
             echo "::error::Missing E2E settings: ${missing[*]}. See e2e/README.md."
             exit 1
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
-      - run: npm ci
+      - if: steps.config.outputs.ready == 'true'
+        run: npm ci
       - name: Install Playwright Chromium
+        if: steps.config.outputs.ready == 'true'
         run: npx playwright install --with-deps chromium
       - name: Run Playwright E2E suite
+        if: steps.config.outputs.ready == 'true'
         run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: failure()
