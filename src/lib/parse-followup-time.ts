@@ -238,6 +238,23 @@ export function parseFollowUpTime(
 
   if (!work) return null;
 
+  // 0. Machine-formatted date and time, as Sarvam's post-call extraction writes it: "2026-11-29 18:00",
+  //    "2026-11-29T18:00" or "2026-11-29 6:00 pm". Read as IST wall-clock time.
+  const iso = work.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ t](\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?$/);
+  if (iso) {
+    const [, y, mo, d, h, mi, ampm] = iso;
+    let hour = Number(h);
+    if (ampm === "pm" && hour < 12) hour += 12;
+    if (ampm === "am" && hour === 12) hour = 0;
+    const month = Number(mo);
+    const day = Number(d);
+    const minute = Number(mi);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && hour <= 23 && minute <= 59) {
+      return { start: fromIst(Number(y), month, day, hour, minute), confidence: "exact" };
+    }
+    return null;
+  }
+
   const dayPart = extractDayPart(work);
   let targetDate: { year: number; month: number; day: number } | null = null;
   let explicitDate = false;
