@@ -29,6 +29,7 @@ import { Route as AuthenticatedAppDealsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppEmailRouteImport } from './routes/_authenticated/_app/email'
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/_app/integrations'
 import { Route as AuthenticatedAppKycRouteImport } from './routes/_authenticated/_app/kyc'
+import { Route as AuthenticatedAppLeadWidgetRouteImport } from './routes/_authenticated/_app/lead-widget'
 import { Route as AuthenticatedAppLeadsRouteImport } from './routes/_authenticated/_app/leads'
 import { Route as AuthenticatedAppLiveCallsRouteImport } from './routes/_authenticated/_app/live-calls'
 import { Route as AuthenticatedAppMeetingsRouteImport } from './routes/_authenticated/_app/meetings'
@@ -70,7 +71,6 @@ import { Route as AuthenticatedAppDevelopersApiRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppDevelopersMcpRouteImport } from './routes/_authenticated/_app/developers.mcp'
 import { Route as AuthenticatedAppProjectsIndexRouteImport } from './routes/_authenticated/_app/projects.index'
 import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/_app/projects.$projectId'
-import { Route as AuthenticatedAppSettingsWidgetRouteImport } from './routes/_authenticated/_app/settings.widget'
 import { Route as ApiV1CallsIdRouteImport } from './routes/api/v1/calls.$id'
 import { Route as ApiV1ContactsIdRouteImport } from './routes/api/v1/contacts.$id'
 
@@ -183,6 +183,12 @@ const AuthenticatedAppKycRoute = AuthenticatedAppKycRouteImport.update({
   path: '/kyc',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppLeadWidgetRoute =
+  AuthenticatedAppLeadWidgetRouteImport.update({
+    id: '/lead-widget',
+    path: '/lead-widget',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppLeadsRoute = AuthenticatedAppLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -413,12 +419,6 @@ const AuthenticatedAppProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
-const AuthenticatedAppSettingsWidgetRoute =
-  AuthenticatedAppSettingsWidgetRouteImport.update({
-    id: '/widget',
-    path: '/widget',
-    getParentRoute: () => AuthenticatedAppSettingsRoute,
-  } as any)
 const ApiV1CallsIdRoute = ApiV1CallsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -449,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/kyc': typeof AuthenticatedAppKycRoute
+  '/lead-widget': typeof AuthenticatedAppLeadWidgetRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
@@ -462,7 +463,7 @@ export interface FileRoutesByFullPath {
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/settings': typeof AuthenticatedAppSettingsRouteWithChildren
+  '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
@@ -488,7 +489,6 @@ export interface FileRoutesByFullPath {
   '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
-  '/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -513,6 +513,7 @@ export interface FileRoutesByTo {
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/kyc': typeof AuthenticatedAppKycRoute
+  '/lead-widget': typeof AuthenticatedAppLeadWidgetRoute
   '/leads': typeof AuthenticatedAppLeadsRoute
   '/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/meetings': typeof AuthenticatedAppMeetingsRoute
@@ -526,7 +527,7 @@ export interface FileRoutesByTo {
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/settings': typeof AuthenticatedAppSettingsRouteWithChildren
+  '/settings': typeof AuthenticatedAppSettingsRoute
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
@@ -552,7 +553,6 @@ export interface FileRoutesByTo {
   '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
-  '/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -580,6 +580,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/email': typeof AuthenticatedAppEmailRoute
   '/_authenticated/_app/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/_authenticated/_app/kyc': typeof AuthenticatedAppKycRoute
+  '/_authenticated/_app/lead-widget': typeof AuthenticatedAppLeadWidgetRoute
   '/_authenticated/_app/leads': typeof AuthenticatedAppLeadsRoute
   '/_authenticated/_app/live-calls': typeof AuthenticatedAppLiveCallsRoute
   '/_authenticated/_app/meetings': typeof AuthenticatedAppMeetingsRoute
@@ -593,7 +594,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/_authenticated/_app/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
+  '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRoute
   '/_authenticated/_app/sms': typeof AuthenticatedAppSmsRoute
   '/_authenticated/_app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/_app/team': typeof AuthenticatedAppTeamRoute
@@ -619,7 +620,6 @@ export interface FileRoutesById {
   '/_authenticated/_app/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/_authenticated/_app/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/_authenticated/_app/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
-  '/_authenticated/_app/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/_authenticated/_app/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -646,6 +646,7 @@ export interface FileRouteTypes {
     | '/email'
     | '/integrations'
     | '/kyc'
+    | '/lead-widget'
     | '/leads'
     | '/live-calls'
     | '/meetings'
@@ -685,7 +686,6 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/developers/mcp'
     | '/projects/$projectId'
-    | '/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/call-campaigns/'
@@ -710,6 +710,7 @@ export interface FileRouteTypes {
     | '/email'
     | '/integrations'
     | '/kyc'
+    | '/lead-widget'
     | '/leads'
     | '/live-calls'
     | '/meetings'
@@ -749,7 +750,6 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/developers/mcp'
     | '/projects/$projectId'
-    | '/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/call-campaigns'
@@ -776,6 +776,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/email'
     | '/_authenticated/_app/integrations'
     | '/_authenticated/_app/kyc'
+    | '/_authenticated/_app/lead-widget'
     | '/_authenticated/_app/leads'
     | '/_authenticated/_app/live-calls'
     | '/_authenticated/_app/meetings'
@@ -815,7 +816,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/developers/api'
     | '/_authenticated/_app/developers/mcp'
     | '/_authenticated/_app/projects/$projectId'
-    | '/_authenticated/_app/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/_authenticated/_app/call-campaigns/'
@@ -979,6 +979,13 @@ declare module '@tanstack/react-router' {
       path: '/kyc'
       fullPath: '/kyc'
       preLoaderRoute: typeof AuthenticatedAppKycRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/lead-widget': {
+      id: '/_authenticated/_app/lead-widget'
+      path: '/lead-widget'
+      fullPath: '/lead-widget'
+      preLoaderRoute: typeof AuthenticatedAppLeadWidgetRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/leads': {
@@ -1268,13 +1275,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/_app/settings/widget': {
-      id: '/_authenticated/_app/settings/widget'
-      path: '/widget'
-      fullPath: '/settings/widget'
-      preLoaderRoute: typeof AuthenticatedAppSettingsWidgetRouteImport
-      parentRoute: typeof AuthenticatedAppSettingsRoute
-    }
     '/api/v1/calls/$id': {
       id: '/api/v1/calls/$id'
       path: '/$id'
@@ -1292,20 +1292,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedAppSettingsRouteChildren {
-  AuthenticatedAppSettingsWidgetRoute: typeof AuthenticatedAppSettingsWidgetRoute
-}
-
-const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildren =
-  {
-    AuthenticatedAppSettingsWidgetRoute: AuthenticatedAppSettingsWidgetRoute,
-  }
-
-const AuthenticatedAppSettingsRouteWithChildren =
-  AuthenticatedAppSettingsRoute._addFileChildren(
-    AuthenticatedAppSettingsRouteChildren,
-  )
-
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppActivityTimelineRoute: typeof AuthenticatedAppActivityTimelineRoute
   AuthenticatedAppCallAnalyticsRoute: typeof AuthenticatedAppCallAnalyticsRoute
@@ -1321,6 +1307,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppEmailRoute: typeof AuthenticatedAppEmailRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRoute
   AuthenticatedAppKycRoute: typeof AuthenticatedAppKycRoute
+  AuthenticatedAppLeadWidgetRoute: typeof AuthenticatedAppLeadWidgetRoute
   AuthenticatedAppLeadsRoute: typeof AuthenticatedAppLeadsRoute
   AuthenticatedAppLiveCallsRoute: typeof AuthenticatedAppLiveCallsRoute
   AuthenticatedAppMeetingsRoute: typeof AuthenticatedAppMeetingsRoute
@@ -1334,7 +1321,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
   AuthenticatedAppSalesOrdersRoute: typeof AuthenticatedAppSalesOrdersRoute
   AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
-  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
   AuthenticatedAppSmsRoute: typeof AuthenticatedAppSmsRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
@@ -1369,6 +1356,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppEmailRoute: AuthenticatedAppEmailRoute,
   AuthenticatedAppIntegrationsRoute: AuthenticatedAppIntegrationsRoute,
   AuthenticatedAppKycRoute: AuthenticatedAppKycRoute,
+  AuthenticatedAppLeadWidgetRoute: AuthenticatedAppLeadWidgetRoute,
   AuthenticatedAppLeadsRoute: AuthenticatedAppLeadsRoute,
   AuthenticatedAppLiveCallsRoute: AuthenticatedAppLiveCallsRoute,
   AuthenticatedAppMeetingsRoute: AuthenticatedAppMeetingsRoute,
@@ -1382,7 +1370,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
   AuthenticatedAppSalesOrdersRoute: AuthenticatedAppSalesOrdersRoute,
   AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,
-  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
   AuthenticatedAppSmsRoute: AuthenticatedAppSmsRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,

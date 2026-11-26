@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, UserPlus, Building2, Handshake, KanbanSquare, CheckSquare, CalendarDays,
   Bot, Megaphone, PhoneCall, Radio, FileText, Disc3, Brain, Workflow, Zap, ListChecks, Clock,
   Mail, MessageCircle, MessageSquare, History, BarChart3, LineChart, PieChart, Trophy, FileBarChart,
-  Plug, UsersRound, Settings, FolderKanban, ReceiptText, Wallet, IdCard, RefreshCw, FileSpreadsheet, type LucideIcon, Code2,
+  Plug, UsersRound, Settings, FolderKanban, ReceiptText, Wallet, IdCard, RefreshCw, FileSpreadsheet, type LucideIcon, Code2, Globe,
 } from "lucide-react";
 
 export type NavItem = { label: string; icon: LucideIcon; to?: string };
@@ -70,6 +70,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Workspace",
     items: [
+      { label: "Lead Widget", icon: Globe, to: "/lead-widget" },
       { label: "Integrations", icon: Plug, to: "/integrations" },
       { label: "Team Management", icon: UsersRound, to: "/team" },
       { label: "Settings", icon: Settings, to: "/settings" },
