@@ -1,0 +1,15 @@
+{
+  "attempt_id": "mock_attempt_not_interested",
+  "status": "connected",
+  "app_id": "mock-insurance-agent",
+  "app_version": 1,
+  "duration": 42,
+  "final_agent_variables": {
+    "disposition": "not_interested",
+    "summary": "Caller already has coverage and is not interested."
+  },
+  "interaction_transcript": [
+    { "role": "agent", "en_text": "Hello, calling from Yulabs Insurance." },
+    { "role": "user", "en_text": "Not interested, I already have a policy." }
+  ]
+}
