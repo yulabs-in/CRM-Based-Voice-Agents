@@ -49,6 +49,7 @@ import { Route as AuthenticatedAppTeamRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAppTeamPerformanceRouteImport } from './routes/_authenticated/_app/team-performance'
 import { Route as AuthenticatedAppTranscriptsRouteImport } from './routes/_authenticated/_app/transcripts'
 import { Route as AuthenticatedAppTriggersRouteImport } from './routes/_authenticated/_app/triggers'
+import { Route as AuthenticatedAppUsageRouteImport } from './routes/_authenticated/_app/usage'
 import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authenticated/_app/voice-agents'
 import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
@@ -292,6 +293,11 @@ const AuthenticatedAppTriggersRoute =
     path: '/triggers',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppUsageRoute = AuthenticatedAppUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppVoiceAgentsRoute =
   AuthenticatedAppVoiceAgentsRouteImport.update({
     id: '/voice-agents',
@@ -444,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
+  '/usage': typeof AuthenticatedAppUsageRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -504,6 +511,7 @@ export interface FileRoutesByTo {
   '/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
+  '/usage': typeof AuthenticatedAppUsageRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -567,6 +575,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/team-performance': typeof AuthenticatedAppTeamPerformanceRoute
   '/_authenticated/_app/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/_authenticated/_app/triggers': typeof AuthenticatedAppTriggersRoute
+  '/_authenticated/_app/usage': typeof AuthenticatedAppUsageRoute
   '/_authenticated/_app/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -629,6 +638,7 @@ export interface FileRouteTypes {
     | '/team-performance'
     | '/transcripts'
     | '/triggers'
+    | '/usage'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
@@ -689,6 +699,7 @@ export interface FileRouteTypes {
     | '/team-performance'
     | '/transcripts'
     | '/triggers'
+    | '/usage'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
@@ -751,6 +762,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/team-performance'
     | '/_authenticated/_app/transcripts'
     | '/_authenticated/_app/triggers'
+    | '/_authenticated/_app/usage'
     | '/_authenticated/_app/voice-agents'
     | '/_authenticated/_app/whatsapp'
     | '/_authenticated/_app/workflows'
@@ -1070,6 +1082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppTriggersRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/usage': {
+      id: '/_authenticated/_app/usage'
+      path: '/usage'
+      fullPath: '/usage'
+      preLoaderRoute: typeof AuthenticatedAppUsageRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/voice-agents': {
       id: '/_authenticated/_app/voice-agents'
       path: '/voice-agents'
@@ -1248,6 +1267,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppTeamPerformanceRoute: typeof AuthenticatedAppTeamPerformanceRoute
   AuthenticatedAppTranscriptsRoute: typeof AuthenticatedAppTranscriptsRoute
   AuthenticatedAppTriggersRoute: typeof AuthenticatedAppTriggersRoute
+  AuthenticatedAppUsageRoute: typeof AuthenticatedAppUsageRoute
   AuthenticatedAppVoiceAgentsRoute: typeof AuthenticatedAppVoiceAgentsRoute
   AuthenticatedAppWhatsappRoute: typeof AuthenticatedAppWhatsappRoute
   AuthenticatedAppWorkflowsRoute: typeof AuthenticatedAppWorkflowsRoute
@@ -1295,6 +1315,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppTeamPerformanceRoute: AuthenticatedAppTeamPerformanceRoute,
   AuthenticatedAppTranscriptsRoute: AuthenticatedAppTranscriptsRoute,
   AuthenticatedAppTriggersRoute: AuthenticatedAppTriggersRoute,
+  AuthenticatedAppUsageRoute: AuthenticatedAppUsageRoute,
   AuthenticatedAppVoiceAgentsRoute: AuthenticatedAppVoiceAgentsRoute,
   AuthenticatedAppWhatsappRoute: AuthenticatedAppWhatsappRoute,
   AuthenticatedAppWorkflowsRoute: AuthenticatedAppWorkflowsRoute,

@@ -56,6 +56,7 @@ export const NAV: NavGroup[] = [
       { label: "Campaign Analytics", icon: PieChart, to: "/campaign-analytics" }, { label: "Team Performance", icon: Trophy, to: "/team-performance" },
       { label: "Reports", icon: FileSpreadsheet, to: "/reports" },
       { label: "Custom Reports", icon: FileBarChart, to: "/custom-reports" },
+      { label: "Usage & Cost", icon: Wallet, to: "/usage" },
     ],
   },
   {

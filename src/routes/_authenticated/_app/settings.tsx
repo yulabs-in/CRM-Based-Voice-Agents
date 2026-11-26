@@ -1,14 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Bot, Code2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/app/PageHeader";
 import { isAdmin, useOrg } from "@/lib/org";
+import { getUsageSettings, updateUsageSettings } from "@/lib/usage.functions";
+import type { UsageRounding } from "@/lib/usage";
 
 export const Route = createFileRoute("/_authenticated/_app/settings")({
   head: () => ({
@@ -69,6 +74,10 @@ function Settings() {
       </form>
 
       {admin && (
+        <UsageSettingsSection orgId={org.id} />
+      )}
+
+      {admin && (
         <div className="max-w-2xl rounded-2xl border bg-card p-6 shadow-soft flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold">Developer access</h2>
@@ -93,5 +102,138 @@ function Settings() {
         </div>
       )}
     </div>
+  );
+}
+
+function UsageSettingsSection({ orgId }: { orgId: string }) {
+  const qc = useQueryClient();
+  const fetchSettings = useServerFn(getUsageSettings);
+  const saveSettings = useServerFn(updateUsageSettings);
+
+  const query = useQuery({
+    queryKey: ["usage-settings", orgId],
+    queryFn: () => fetchSettings({ data: { organizationId: orgId } }),
+  });
+
+  const [costPerMinute, setCostPerMinute] = useState("0");
+  const [costPerAttempt, setCostPerAttempt] = useState("0");
+  const [monthlyBudget, setMonthlyBudget] = useState("");
+  const [hardStop, setHardStop] = useState(false);
+  const [rounding, setRounding] = useState<UsageRounding>("per_call_minute");
+
+  useEffect(() => {
+    const s = query.data?.settings;
+    if (!s) return;
+    setCostPerMinute(String(s.cost_per_minute));
+    setCostPerAttempt(String(s.cost_per_attempt));
+    setMonthlyBudget(s.monthly_budget != null ? String(s.monthly_budget) : "");
+    setHardStop(s.hard_stop);
+    setRounding(s.rounding);
+  }, [query.data]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      saveSettings({
+        data: {
+          organizationId: orgId,
+          cost_per_minute: Number(costPerMinute) || 0,
+          cost_per_attempt: Number(costPerAttempt) || 0,
+          monthly_budget: monthlyBudget.trim() ? Number(monthlyBudget) : null,
+          hard_stop: hardStop,
+          rounding,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Usage & budget settings saved");
+      void qc.invalidateQueries({ queryKey: ["usage-settings", orgId] });
+      void qc.invalidateQueries({ queryKey: ["usage-dashboard", orgId] });
+      void qc.invalidateQueries({ queryKey: ["budget-status", orgId] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <form
+      id="usage"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+      className="max-w-2xl rounded-2xl border bg-card p-6 shadow-soft space-y-5"
+    >
+      <div>
+        <h2 className="text-base font-semibold">Usage &amp; calling budget</h2>
+        <p className="text-sm text-muted-foreground">
+          Configure INR calling rates, minute rounding, and monthly budget alerts.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="cost_per_minute">Cost per minute (₹)</Label>
+          <Input
+            id="cost_per_minute"
+            type="number"
+            min="0"
+            step="0.01"
+            value={costPerMinute}
+            onChange={(e) => setCostPerMinute(e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cost_per_attempt">Cost per attempt (₹, optional)</Label>
+          <Input
+            id="cost_per_attempt"
+            type="number"
+            min="0"
+            step="0.01"
+            value={costPerAttempt}
+            onChange={(e) => setCostPerAttempt(e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="monthly_budget">Monthly budget (₹)</Label>
+          <Input
+            id="monthly_budget"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="No budget limit"
+            value={monthlyBudget}
+            onChange={(e) => setMonthlyBudget(e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="usage_rounding">Minute rounding</Label>
+          <Select value={rounding} onValueChange={(v) => setRounding(v as UsageRounding)}>
+            <SelectTrigger id="usage_rounding" className="rounded-xl">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="per_call_minute">Per-call minute (round up)</SelectItem>
+              <SelectItem value="exact">Exact seconds</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex items-start justify-between gap-4 rounded-xl border bg-muted/30 p-4">
+        <div className="space-y-1">
+          <Label htmlFor="hard_stop" className="font-medium">
+            Hard stop on new campaigns
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            When the month&apos;s estimated spend reaches the budget, new campaigns can&apos;t be launched. Running campaigns and test calls are not affected.
+          </p>
+        </div>
+        <Switch id="hard_stop" checked={hardStop} onCheckedChange={setHardStop} />
+      </div>
+
+      <Button variant="hero" type="submit" disabled={save.isPending}>
+        Save usage settings
+      </Button>
+    </form>
   );
 }
