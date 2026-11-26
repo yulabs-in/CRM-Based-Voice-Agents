@@ -34,7 +34,9 @@ export const Route = createFileRoute("/api/public/cron-sync")({
         if (!claimed?.length) return Response.json({ ok: true, skipped: "ran recently" });
 
         // Only workspaces with something to do: open calls, or finished calls not yet in the CRM / missing a recording.
-        const since = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+        // Same 14-day window as applyPendingCrmOutcomes, so calls re-queued for the CRM (or whose answers arrived
+        // late) are found; a 3-day window here silently skipped them.
+        const since = new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString();
         const { data: rows } = await supabaseAdmin.from("calls").select("organization_id")
           .gte("created_at", since)
           .or("status.in.(queued,in_progress),and(status.eq.completed,crm_synced_at.is.null),and(status.eq.completed,recording_path.is.null,sarvam_interaction_id.not.is.null)")
