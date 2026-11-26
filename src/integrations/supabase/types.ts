@@ -905,42 +905,57 @@ export type Database = {
       }
       meetings: {
         Row: {
+          call_id: string | null
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           duration_minutes: number
+          external_event_id: string | null
           id: string
           location: string | null
           notes: string | null
           organization_id: string
+          owner_id: string | null
+          source: string
           starts_at: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          call_id?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           duration_minutes?: number
+          external_event_id?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           organization_id?: string
+          owner_id?: string | null
+          source?: string
           starts_at?: string | null
           status?: string
           title?: string
@@ -1142,6 +1157,7 @@ export type Database = {
           created_by: string
           id: string
           industry: string | null
+          meeting_assignment: Json
           name: string
           onboarding_completed: boolean
           onboarding_step: number
@@ -1160,6 +1176,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name: string
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -1178,6 +1195,7 @@ export type Database = {
           created_by?: string
           id?: string
           industry?: string | null
+          meeting_assignment?: Json
           name?: string
           onboarding_completed?: boolean
           onboarding_step?: number
@@ -1834,6 +1852,50 @@ export type Database = {
           },
         ]
       }
+      usage_settings: {
+        Row: {
+          cost_per_attempt: number
+          cost_per_minute: number
+          currency: string
+          hard_stop: boolean
+          monthly_budget: number | null
+          organization_id: string
+          rounding: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id?: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1863,6 +1925,18 @@ export type Database = {
         Returns: undefined
       }
       stock_advisory_script: { Args: never; Returns: string }
+      usage_summary: {
+        Args: { from_ts: string; org: string; to_ts: string }
+        Returns: {
+          agent_id: string | null
+          attempts: number
+          billable_minutes: number
+          campaign_id: string | null
+          connected: number
+          day: string
+          seconds: number
+        }[]
+      }
       yulabs_insurance_script: { Args: never; Returns: string }
       yulabs_insurance_variables: { Args: never; Returns: Json }
     }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Clock, Loader2, Pause, Play, Rocket, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOrg } from "@/lib/org";
 import { launchCampaign, setCampaignStatus, updateCampaignSchedule } from "@/lib/campaigns.functions";
+import { getOrgBudgetStatus } from "@/lib/usage.functions";
+import { BUDGET_EXCEEDED_MESSAGE } from "@/lib/usage";
 
 const CAMPAIGN_ROLES = ["owner", "admin", "sales_manager", "voice_manager"];
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
@@ -33,11 +35,12 @@ export function outsideCallingHours(campaign: ControllableCampaign, now = new Da
 
 /** Launch / Pause / Resume / Stop / Edit calling hours for one campaign. `compact` = icon buttons for table rows. */
 export function CampaignControls({ campaign, compact = false }: { campaign: ControllableCampaign; compact?: boolean }) {
-  const { role } = useOrg();
+  const { org, role } = useOrg();
   const qc = useQueryClient();
   const launch = useServerFn(launchCampaign);
   const control = useServerFn(setCampaignStatus);
   const reschedule = useServerFn(updateCampaignSchedule);
+  const fetchBudget = useServerFn(getOrgBudgetStatus);
   const [editing, setEditing] = useState(false);
   const [hours, setHours] = useState({
     start: campaign.allowed_start_time ?? "09:00",
@@ -62,8 +65,17 @@ export function CampaignControls({ campaign, compact = false }: { campaign: Cont
     onSettled: () => { void qc.invalidateQueries({ queryKey: ["campaigns"] }); void qc.invalidateQueries({ queryKey: ["live"] }); },
   });
 
-  if (!CAMPAIGN_ROLES.includes(role)) return null;
+  const canRun = CAMPAIGN_ROLES.includes(role);
   const s = campaign.status;
+  const budgetQuery = useQuery({
+    queryKey: ["budget-status", org.id],
+    enabled: canRun && ["draft", "failed"].includes(s),
+    staleTime: 60_000,
+    queryFn: () => fetchBudget({ data: { organizationId: org.id } }),
+  });
+  const budgetBlocked = Boolean(budgetQuery.data?.hardStop && budgetQuery.data?.level === "exceeded");
+
+  if (!canRun) return null;
   const live = ["running", "scheduled", "launching"].includes(s);
   const size = compact ? "icon" : "sm";
   const busy = act.isPending || saveHours.isPending;
@@ -72,7 +84,20 @@ export function CampaignControls({ campaign, compact = false }: { campaign: Cont
   return (
     <div className="flex flex-wrap items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
       {["draft", "failed"].includes(s) && (
-        <Button size={size} variant="hero" disabled={busy || campaign.consent_confirmed === false} onClick={() => act.mutate("launch")} aria-label="Launch campaign" title={campaign.consent_confirmed === false ? "Saved without consent — create a new campaign" : "Launch"}>
+        <Button
+          size={size}
+          variant="hero"
+          disabled={busy || campaign.consent_confirmed === false || budgetBlocked}
+          onClick={() => act.mutate("launch")}
+          aria-label="Launch campaign"
+          title={
+            budgetBlocked
+              ? BUDGET_EXCEEDED_MESSAGE
+              : campaign.consent_confirmed === false
+                ? "Saved without consent — create a new campaign"
+                : "Launch"
+          }
+        >
           {spin("launch") ? <Loader2 className="animate-spin" /> : <Rocket />}{!compact && "Launch"}
         </Button>
       )}
