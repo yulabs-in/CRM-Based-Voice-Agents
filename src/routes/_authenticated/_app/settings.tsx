@@ -135,6 +135,11 @@ function Settings() {
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Link to="/settings/widget">
+                Lead Widget
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link to="/developers/api">
                 <Code2 className="h-4 w-4" />
                 API
