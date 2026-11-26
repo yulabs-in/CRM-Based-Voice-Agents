@@ -1959,6 +1959,73 @@ export type Database = {
           },
         ]
       }
+      widget_settings: {
+        Row: {
+          agent_id: string | null
+          allowed_domains: string[]
+          appearance: Json
+          calling_hours: Json
+          created_at: string
+          id: string
+          instant_callback: boolean
+          organization_id: string
+          privacy_url: string | null
+          project_id: string | null
+          updated_at: string
+          widget_key: string
+        }
+        Insert: {
+          agent_id?: string | null
+          allowed_domains?: string[]
+          appearance?: Json
+          calling_hours?: Json
+          created_at?: string
+          id?: string
+          instant_callback?: boolean
+          organization_id: string
+          privacy_url?: string | null
+          project_id?: string | null
+          updated_at?: string
+          widget_key: string
+        }
+        Update: {
+          agent_id?: string | null
+          allowed_domains?: string[]
+          appearance?: Json
+          calling_hours?: Json
+          created_at?: string
+          id?: string
+          instant_callback?: boolean
+          organization_id?: string
+          privacy_url?: string | null
+          project_id?: string | null
+          updated_at?: string
+          widget_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_settings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widget_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widget_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
