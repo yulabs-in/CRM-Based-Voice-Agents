@@ -58,6 +58,8 @@ import { Route as ApiPublicCronSyncRouteImport } from './routes/api/public/cron-
 import { Route as ApiPublicSarvamCallWebhookRouteImport } from './routes/api/public/sarvam-call-webhook'
 import { Route as ApiPublicSarvamCampaignWebhookRouteImport } from './routes/api/public/sarvam-campaign-webhook'
 import { Route as ApiPublicSarvamWebhookRouteImport } from './routes/api/public/sarvam-webhook'
+import { Route as ApiPublicWidgetConfigRouteImport } from './routes/api/public/widget-config'
+import { Route as ApiPublicWidgetSubmitRouteImport } from './routes/api/public/widget-submit'
 import { Route as ApiV1CallsRouteImport } from './routes/api/v1/calls'
 import { Route as ApiV1ContactsRouteImport } from './routes/api/v1/contacts'
 import { Route as ApiV1DealsRouteImport } from './routes/api/v1/deals'
@@ -68,6 +70,7 @@ import { Route as AuthenticatedAppDevelopersApiRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppDevelopersMcpRouteImport } from './routes/_authenticated/_app/developers.mcp'
 import { Route as AuthenticatedAppProjectsIndexRouteImport } from './routes/_authenticated/_app/projects.index'
 import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/_app/projects.$projectId'
+import { Route as AuthenticatedAppSettingsWidgetRouteImport } from './routes/_authenticated/_app/settings.widget'
 import { Route as ApiV1CallsIdRouteImport } from './routes/api/v1/calls.$id'
 import { Route as ApiV1ContactsIdRouteImport } from './routes/api/v1/contacts.$id'
 
@@ -344,6 +347,16 @@ const ApiPublicSarvamWebhookRoute = ApiPublicSarvamWebhookRouteImport.update({
   path: '/api/public/sarvam-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWidgetConfigRoute = ApiPublicWidgetConfigRouteImport.update({
+  id: '/api/public/widget-config',
+  path: '/api/public/widget-config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWidgetSubmitRoute = ApiPublicWidgetSubmitRouteImport.update({
+  id: '/api/public/widget-submit',
+  path: '/api/public/widget-submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiV1CallsRoute = ApiV1CallsRouteImport.update({
   id: '/api/v1/calls',
   path: '/api/v1/calls',
@@ -400,6 +413,12 @@ const AuthenticatedAppProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppSettingsWidgetRoute =
+  AuthenticatedAppSettingsWidgetRouteImport.update({
+    id: '/widget',
+    path: '/widget',
+    getParentRoute: () => AuthenticatedAppSettingsRoute,
+  } as any)
 const ApiV1CallsIdRoute = ApiV1CallsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -443,7 +462,7 @@ export interface FileRoutesByFullPath {
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/settings': typeof AuthenticatedAppSettingsRoute
+  '/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
@@ -459,6 +478,8 @@ export interface FileRoutesByFullPath {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/public/widget-config': typeof ApiPublicWidgetConfigRoute
+  '/api/public/widget-submit': typeof ApiPublicWidgetSubmitRoute
   '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
   '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
   '/api/v1/deals': typeof ApiV1DealsRoute
@@ -467,6 +488,7 @@ export interface FileRoutesByFullPath {
   '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -504,7 +526,7 @@ export interface FileRoutesByTo {
   '/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/settings': typeof AuthenticatedAppSettingsRoute
+  '/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/sms': typeof AuthenticatedAppSmsRoute
   '/tasks': typeof AuthenticatedAppTasksRoute
   '/team': typeof AuthenticatedAppTeamRoute
@@ -520,6 +542,8 @@ export interface FileRoutesByTo {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/public/widget-config': typeof ApiPublicWidgetConfigRoute
+  '/api/public/widget-submit': typeof ApiPublicWidgetSubmitRoute
   '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
   '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
   '/api/v1/deals': typeof ApiV1DealsRoute
@@ -528,6 +552,7 @@ export interface FileRoutesByTo {
   '/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/call-campaigns': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -568,7 +593,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/sales-analytics': typeof AuthenticatedAppSalesAnalyticsRoute
   '/_authenticated/_app/sales-orders': typeof AuthenticatedAppSalesOrdersRoute
   '/_authenticated/_app/scheduled-actions': typeof AuthenticatedAppScheduledActionsRoute
-  '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRoute
+  '/_authenticated/_app/settings': typeof AuthenticatedAppSettingsRouteWithChildren
   '/_authenticated/_app/sms': typeof AuthenticatedAppSmsRoute
   '/_authenticated/_app/tasks': typeof AuthenticatedAppTasksRoute
   '/_authenticated/_app/team': typeof AuthenticatedAppTeamRoute
@@ -584,6 +609,8 @@ export interface FileRoutesById {
   '/api/public/sarvam-call-webhook': typeof ApiPublicSarvamCallWebhookRoute
   '/api/public/sarvam-campaign-webhook': typeof ApiPublicSarvamCampaignWebhookRoute
   '/api/public/sarvam-webhook': typeof ApiPublicSarvamWebhookRoute
+  '/api/public/widget-config': typeof ApiPublicWidgetConfigRoute
+  '/api/public/widget-submit': typeof ApiPublicWidgetSubmitRoute
   '/api/v1/calls': typeof ApiV1CallsRouteWithChildren
   '/api/v1/contacts': typeof ApiV1ContactsRouteWithChildren
   '/api/v1/deals': typeof ApiV1DealsRoute
@@ -592,6 +619,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/developers/api': typeof AuthenticatedAppDevelopersApiRoute
   '/_authenticated/_app/developers/mcp': typeof AuthenticatedAppDevelopersMcpRoute
   '/_authenticated/_app/projects/$projectId': typeof AuthenticatedAppProjectsProjectIdRoute
+  '/_authenticated/_app/settings/widget': typeof AuthenticatedAppSettingsWidgetRoute
   '/api/v1/calls/$id': typeof ApiV1CallsIdRoute
   '/api/v1/contacts/$id': typeof ApiV1ContactsIdRoute
   '/_authenticated/_app/call-campaigns/': typeof AuthenticatedAppCallCampaignsIndexRoute
@@ -647,6 +675,8 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/public/widget-config'
+    | '/api/public/widget-submit'
     | '/api/v1/calls'
     | '/api/v1/contacts'
     | '/api/v1/deals'
@@ -655,6 +685,7 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/developers/mcp'
     | '/projects/$projectId'
+    | '/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/call-campaigns/'
@@ -708,6 +739,8 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/public/widget-config'
+    | '/api/public/widget-submit'
     | '/api/v1/calls'
     | '/api/v1/contacts'
     | '/api/v1/deals'
@@ -716,6 +749,7 @@ export interface FileRouteTypes {
     | '/developers/api'
     | '/developers/mcp'
     | '/projects/$projectId'
+    | '/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/call-campaigns'
@@ -771,6 +805,8 @@ export interface FileRouteTypes {
     | '/api/public/sarvam-call-webhook'
     | '/api/public/sarvam-campaign-webhook'
     | '/api/public/sarvam-webhook'
+    | '/api/public/widget-config'
+    | '/api/public/widget-submit'
     | '/api/v1/calls'
     | '/api/v1/contacts'
     | '/api/v1/deals'
@@ -779,6 +815,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/developers/api'
     | '/_authenticated/_app/developers/mcp'
     | '/_authenticated/_app/projects/$projectId'
+    | '/_authenticated/_app/settings/widget'
     | '/api/v1/calls/$id'
     | '/api/v1/contacts/$id'
     | '/_authenticated/_app/call-campaigns/'
@@ -794,6 +831,8 @@ export interface RootRouteChildren {
   ApiPublicSarvamCallWebhookRoute: typeof ApiPublicSarvamCallWebhookRoute
   ApiPublicSarvamCampaignWebhookRoute: typeof ApiPublicSarvamCampaignWebhookRoute
   ApiPublicSarvamWebhookRoute: typeof ApiPublicSarvamWebhookRoute
+  ApiPublicWidgetConfigRoute: typeof ApiPublicWidgetConfigRoute
+  ApiPublicWidgetSubmitRoute: typeof ApiPublicWidgetSubmitRoute
   ApiV1CallsRoute: typeof ApiV1CallsRouteWithChildren
   ApiV1ContactsRoute: typeof ApiV1ContactsRouteWithChildren
   ApiV1DealsRoute: typeof ApiV1DealsRoute
@@ -1145,6 +1184,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSarvamWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/widget-config': {
+      id: '/api/public/widget-config'
+      path: '/api/public/widget-config'
+      fullPath: '/api/public/widget-config'
+      preLoaderRoute: typeof ApiPublicWidgetConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/widget-submit': {
+      id: '/api/public/widget-submit'
+      path: '/api/public/widget-submit'
+      fullPath: '/api/public/widget-submit'
+      preLoaderRoute: typeof ApiPublicWidgetSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/calls': {
       id: '/api/v1/calls'
       path: '/api/v1/calls'
@@ -1215,6 +1268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/settings/widget': {
+      id: '/_authenticated/_app/settings/widget'
+      path: '/widget'
+      fullPath: '/settings/widget'
+      preLoaderRoute: typeof AuthenticatedAppSettingsWidgetRouteImport
+      parentRoute: typeof AuthenticatedAppSettingsRoute
+    }
     '/api/v1/calls/$id': {
       id: '/api/v1/calls/$id'
       path: '/$id'
@@ -1231,6 +1291,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedAppSettingsRouteChildren {
+  AuthenticatedAppSettingsWidgetRoute: typeof AuthenticatedAppSettingsWidgetRoute
+}
+
+const AuthenticatedAppSettingsRouteChildren: AuthenticatedAppSettingsRouteChildren =
+  {
+    AuthenticatedAppSettingsWidgetRoute: AuthenticatedAppSettingsWidgetRoute,
+  }
+
+const AuthenticatedAppSettingsRouteWithChildren =
+  AuthenticatedAppSettingsRoute._addFileChildren(
+    AuthenticatedAppSettingsRouteChildren,
+  )
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppActivityTimelineRoute: typeof AuthenticatedAppActivityTimelineRoute
@@ -1260,7 +1334,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppSalesAnalyticsRoute: typeof AuthenticatedAppSalesAnalyticsRoute
   AuthenticatedAppSalesOrdersRoute: typeof AuthenticatedAppSalesOrdersRoute
   AuthenticatedAppScheduledActionsRoute: typeof AuthenticatedAppScheduledActionsRoute
-  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRouteWithChildren
   AuthenticatedAppSmsRoute: typeof AuthenticatedAppSmsRoute
   AuthenticatedAppTasksRoute: typeof AuthenticatedAppTasksRoute
   AuthenticatedAppTeamRoute: typeof AuthenticatedAppTeamRoute
@@ -1308,7 +1382,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppSalesAnalyticsRoute: AuthenticatedAppSalesAnalyticsRoute,
   AuthenticatedAppSalesOrdersRoute: AuthenticatedAppSalesOrdersRoute,
   AuthenticatedAppScheduledActionsRoute: AuthenticatedAppScheduledActionsRoute,
-  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRouteWithChildren,
   AuthenticatedAppSmsRoute: AuthenticatedAppSmsRoute,
   AuthenticatedAppTasksRoute: AuthenticatedAppTasksRoute,
   AuthenticatedAppTeamRoute: AuthenticatedAppTeamRoute,
@@ -1381,6 +1455,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSarvamCallWebhookRoute: ApiPublicSarvamCallWebhookRoute,
   ApiPublicSarvamCampaignWebhookRoute: ApiPublicSarvamCampaignWebhookRoute,
   ApiPublicSarvamWebhookRoute: ApiPublicSarvamWebhookRoute,
+  ApiPublicWidgetConfigRoute: ApiPublicWidgetConfigRoute,
+  ApiPublicWidgetSubmitRoute: ApiPublicWidgetSubmitRoute,
   ApiV1CallsRoute: ApiV1CallsRouteWithChildren,
   ApiV1ContactsRoute: ApiV1ContactsRouteWithChildren,
   ApiV1DealsRoute: ApiV1DealsRoute,
