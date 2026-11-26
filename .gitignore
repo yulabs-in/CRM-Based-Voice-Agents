@@ -36,3 +36,8 @@ dist-ssr
 
 # Netlify build output / local state
 .netlify/
+
+# Playwright E2E reports & artifacts
+playwright-report/
+test-results/
+e2e/.auth/

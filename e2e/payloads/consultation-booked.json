@@ -1,0 +1,19 @@
+{
+  "attempt_id": "mock_attempt_consultation",
+  "status": "connected",
+  "app_id": "mock-stock-agent",
+  "app_version": 1,
+  "duration": 120,
+  "final_agent_variables": {
+    "disposition": "consultation_booked",
+    "service_interest": "Portfolio Advisory",
+    "consultation_mode": "video",
+    "follow_up_time": "tomorrow 11 AM",
+    "next_action": "Advisor consultation",
+    "summary": "Caller booked a stock advisory consultation for tomorrow at 11 AM."
+  },
+  "interaction_transcript": [
+    { "role": "agent", "en_text": "Hello, would you like to book a consultation?" },
+    { "role": "user", "en_text": "Yes, book it for tomorrow 11 AM." }
+  ]
+}

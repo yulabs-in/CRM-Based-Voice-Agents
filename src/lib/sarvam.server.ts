@@ -5,6 +5,11 @@ import { formatTranscript, toTranscriptTurns, type TranscriptTurn } from "@/lib/
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
 const SARVAM_BASE = "https://apps.sarvam.ai/api";
+const mockAttempts = new Set<string>();
+
+function isSarvamMock(): boolean {
+  return process.env["SARVAM_MOCK"] === "1" && process.env["NODE_ENV"] !== "production";
+}
 
 export class SarvamError extends Error {
   constructor(message: string, readonly status?: number) {
@@ -13,6 +18,7 @@ export class SarvamError extends Error {
 }
 
 export function sarvamApiKey(): string {
+  if (isSarvamMock()) return "mock-sarvam-key";
   const key = process.env["SARVAM_API_KEY"]?.trim();
   if (!key) throw new SarvamError("Sarvam API key is not configured. Add SARVAM_API_KEY (your Voice Agents workspace key) to the server environment.");
   return key;
@@ -23,6 +29,7 @@ export function publicAppUrl(requestOrigin?: string): string {
   const configured = process.env["PUBLIC_APP_URL"]?.trim().replace(/\/+$/, "");
   const origin = configured || requestOrigin?.replace(/\/+$/, "") || "";
   if (!origin) throw new SarvamError("PUBLIC_APP_URL is not set, so Sarvam has nowhere to send call results.");
+  if (isSarvamMock()) return origin;
   const host = new URL(origin).hostname;
   if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
     throw new SarvamError("Sarvam cannot reach a localhost callback. Set PUBLIC_APP_URL to your deployed https URL or a tunnel (e.g. cloudflared).");
@@ -76,6 +83,42 @@ function describeError(status: number, body: unknown): string {
 
 /** Authenticated JSON call to the Sarvam Voice Agents API with one retry on 429/503. */
 export async function sarvamJson<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  if (isSarvamMock()) {
+    if (path.includes("/outbounds") && init.method === "POST") {
+      const attemptId = `mock_attempt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      mockAttempts.add(attemptId);
+      return { attempt_id: attemptId } as T;
+    }
+    if (path.includes("/attempts")) {
+      const items = [...mockAttempts].map((attempt_id) => ({
+        attempt_id,
+        connectivity: "connected",
+        interaction_id: `mock_int_${attempt_id}`,
+        duration_seconds: 95,
+        started_at: new Date(Date.now() - 120_000).toISOString(),
+        ended_at: new Date(Date.now() - 25_000).toISOString(),
+      }));
+      return { items, total: items.length } as T;
+    }
+    if (path.includes("/interactions")) {
+      const items = [...mockAttempts].map((attempt_id) => ({
+        interaction_id: `mock_int_${attempt_id}`,
+        extracted_variables: {
+          disposition: "interested",
+          insurance_type: "Motor Insurance",
+          summary: "Caller is interested in comprehensive motor insurance",
+          next_action: "Send quote",
+        },
+        transcript: [
+          { role: "agent", en_text: "Hello, calling from Yulabs Insurance." },
+          { role: "user", en_text: "Yes, I am interested in motor insurance." },
+        ],
+      }));
+      return { items, total: items.length } as T;
+    }
+    return {} as T;
+  }
+
   const key = sarvamApiKey();
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let response: Response;
