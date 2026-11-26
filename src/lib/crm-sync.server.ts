@@ -6,13 +6,14 @@ import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
 import { isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
 import { resolveVerdict, type OutcomeRule } from "@/lib/outcome-rules";
+import { maybeBookConsultation } from "@/lib/booking.server";
 import { notify, recipientsFor } from "@/lib/notify.server";
 import { kycFromAnswers, mergeKyc, orderFromAnswers } from "@/lib/call-capture";
 import { inr } from "@/lib/format";
 
 type CallRow = {
   id: string; organization_id: string; agent_id: string | null; contact_id: string | null; phone: string | null; status: string;
-  outcome: string | null; sentiment: string | null; summary: string | null; answers: unknown; crm_synced_at: string | null;
+  outcome: string | null; sentiment: string | null; summary: string | null; answers: unknown; crm_synced_at: string | null; ended_at: string | null;
 };
 type LeadRow = { id: string; status: string; score: number; value: number; name?: string | null };
 type ContactRow = { id: string; first_name: string; last_name: string | null; phone: string | null; email: string | null; project_id: string | null };
@@ -104,7 +105,7 @@ async function saveOrderFromCall(org: string, contactId: string, dealId: string 
 /** Applies one finished call to the CRM. Safe to call repeatedly: only the first caller does the work. */
 export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResult> {
   const { data } = await supabaseAdmin.from("calls")
-    .select("id, organization_id, agent_id, contact_id, phone, status, outcome, sentiment, summary, answers, crm_synced_at").eq("id", callId).maybeSingle();
+    .select("id, organization_id, agent_id, contact_id, phone, status, outcome, sentiment, summary, answers, crm_synced_at, ended_at").eq("id", callId).maybeSingle();
   const call = data as CallRow | null;
   if (!call) return { applied: false, detail: "Call not found" };
   if (call.crm_synced_at) return { applied: false, detail: "Already applied" };
@@ -224,6 +225,8 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
       }
       if (verdict.kind === "won" && lead) await supabaseAdmin.from("leads").update({ status: "converted", updated_at: now } as never).eq("id", lead.id);
     }
+
+    await maybeBookConsultation(call, contact, dealId, verdict, dealOwnerId);
 
     // ---- Follow-up task from what the agent agreed with the customer
     const nextAction = (answers.next_action || "").trim();
