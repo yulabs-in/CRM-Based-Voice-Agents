@@ -1,4 +1,4 @@
--- 0031_lead_widget.sql: per-workspace website lead-capture widget settings
+-- 0032_lead_widget.sql (was 0031; renumbered because 0031 is the industry voice agents): per-workspace website lead-capture widget settings
 
 create table if not exists public.widget_settings (
   id uuid primary key default gen_random_uuid(),
