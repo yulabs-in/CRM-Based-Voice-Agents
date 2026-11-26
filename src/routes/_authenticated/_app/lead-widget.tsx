@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Check, Copy, Plus, RefreshCw, X } from "lucide-react";
+import { Check, Copy, Plus, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,7 +27,7 @@ import { pageHead } from "@/lib/seo";
 import { getWidgetSettings, regenerateWidgetKey, saveWidgetSettings } from "@/lib/widget.functions";
 import { DEFAULT_APPEARANCE, DEFAULT_CALLING_HOURS } from "@/lib/widget";
 
-export const Route = createFileRoute("/_authenticated/_app/settings/widget")({
+export const Route = createFileRoute("/_authenticated/_app/lead-widget")({
   head: () => pageHead("Lead Widget", "Embeddable website lead-capture form with instant AI callback."),
   component: WidgetSettingsPage,
 });
@@ -156,10 +156,6 @@ function WidgetSettingsPage() {
 
   return (
     <div className="animate-rise space-y-6">
-      <Link to="/settings" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Settings
-      </Link>
-
       <PageHeader
         title="Website Lead Widget"
         description="Embed a lead-capture form on any website with optional instant AI callback."
