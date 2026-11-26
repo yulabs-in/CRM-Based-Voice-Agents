@@ -31,25 +31,34 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    env:
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      E2E_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.E2E_SUPABASE_PUBLISHABLE_KEY }}
+      E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - name: Check E2E configuration
+        shell: bash
+        run: |
+          missing=()
+          for key in E2E_SUPABASE_URL E2E_SUPABASE_PUBLISHABLE_KEY E2E_SUPABASE_SERVICE_ROLE_KEY E2E_USER_EMAIL E2E_USER_PASSWORD; do
+            if [[ -z "${!key//[[:space:]]/}" ]]; then missing+=("$key"); fi
+          done
+          if (( ${#missing[@]} )); then
+            echo "::error::Missing E2E settings: ${missing[*]}. See e2e/README.md."
+            exit 1
+          fi
       - run: npm ci
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: Run Playwright E2E suite
         run: npx playwright test
-        env:
-          SARVAM_MOCK: "1"
-          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
-          E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
-          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.E2E_SUPABASE_SERVICE_ROLE_KEY }}
-          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
-          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

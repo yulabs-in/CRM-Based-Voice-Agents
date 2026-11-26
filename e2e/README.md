@@ -13,11 +13,14 @@ Create `.env.e2e.local` (git-ignored) pointing to your **dev/staging** Supabase 
 
 ```env
 E2E_SUPABASE_URL=https://your-dev-project.supabase.co
+E2E_SUPABASE_PUBLISHABLE_KEY=your-dev-publishable-key
 E2E_SUPABASE_SERVICE_ROLE_KEY=your-dev-service-role-key
 E2E_USER_EMAIL=e2e-bot@example.com
 E2E_USER_PASSWORD=your-test-user-password
 SARVAM_MOCK=1
 ```
+
+Use a dedicated test project with the repository migrations applied. The sync fixture changes the project-wide cron token. Use the same project for all three Supabase settings and a dedicated test account. Stop any existing app on port 8080 before starting the suite.
 
 Then run:
 
@@ -28,11 +31,14 @@ npm run e2e
 
 ## GitHub Actions CI Secrets
 
-Add these 4 repository secrets under **Settings -> Secrets and variables -> Actions** so the `e2e` job in `.github/workflows/ci.yml` can run on every PR:
+Add these 5 repository secrets under **Settings -> Secrets and variables -> Actions** so the `e2e` job in `.github/workflows/ci.yml` can run on every PR:
 - `E2E_SUPABASE_URL`
+- `E2E_SUPABASE_PUBLISHABLE_KEY`
 - `E2E_SUPABASE_SERVICE_ROLE_KEY`
 - `E2E_USER_EMAIL`
 - `E2E_USER_PASSWORD`
+
+CI checks for missing settings before installing Chromium. A configuration failure means none of the five CRM flows was exercised. After configuring Actions secrets, rerun the failed job. A successful run lists five passing Chromium scenarios.
 
 ## Verifying Regression Detection
 

@@ -6,7 +6,9 @@ export interface SeededWorkspace {
   userId: string;
   userEmail: string;
   insuranceAgentId: string;
+  insuranceAgentName: string;
   stockAgentId: string;
+  stockAgentName: string;
   contactId: string;
   contactPhone: string;
   contactName: string;
@@ -89,7 +91,7 @@ export async function seedTestWorkspace(suffix: string): Promise<SeededWorkspace
       sarvam_connection_id: "mock-conn-1",
       sarvam_agent_phone_number: "+919000099999",
     })
-    .select("id")
+    .select("id, name")
     .single();
 
   if (insErr || !insuranceAgent) {
@@ -107,7 +109,7 @@ export async function seedTestWorkspace(suffix: string): Promise<SeededWorkspace
       sarvam_connection_id: "mock-conn-1",
       sarvam_agent_phone_number: "+919000099999",
     })
-    .select("id")
+    .select("id, name")
     .single();
 
   if (stockErr || !stockAgent) {
@@ -142,7 +144,9 @@ export async function seedTestWorkspace(suffix: string): Promise<SeededWorkspace
     userId: user.id,
     userEmail: email,
     insuranceAgentId: insuranceAgent.id,
+    insuranceAgentName: insuranceAgent.name,
     stockAgentId: stockAgent.id,
+    stockAgentName: stockAgent.name,
     contactId: contact.id,
     contactPhone,
     contactName,
