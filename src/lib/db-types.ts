@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_outcome_rules: {
+        Row: {
+          agent_id: string
+          block_contact: boolean
+          create_lead: boolean
+          create_task: boolean
+          deal_stage: string | null
+          disposition: string
+          id: string
+          lead_status: string | null
+          organization_id: string
+          probability: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_id: string
+          block_contact?: boolean
+          create_lead?: boolean
+          create_task?: boolean
+          deal_stage?: string | null
+          disposition: string
+          id?: string
+          lead_status?: string | null
+          organization_id: string
+          probability?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_id?: string
+          block_contact?: boolean
+          create_lead?: boolean
+          create_task?: boolean
+          deal_stage?: string | null
+          disposition?: string
+          id?: string
+          lead_status?: string | null
+          organization_id?: string
+          probability?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_outcome_rules_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_outcome_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -1616,6 +1676,7 @@ export type Database = {
           id: string
           instructions: string | null
           language: string
+          lead_columns: string[]
           name: string
           organization_id: string
           purpose: string | null
@@ -1636,6 +1697,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           language?: string
+          lead_columns?: string[]
           name: string
           organization_id: string
           purpose?: string | null
@@ -1656,6 +1718,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           language?: string
+          lead_columns?: string[]
           name?: string
           organization_id?: string
           purpose?: string | null

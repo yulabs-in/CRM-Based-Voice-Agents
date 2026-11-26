@@ -4,14 +4,15 @@
 import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
-import { classifyCallOutcome, isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
+import { isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
+import { resolveVerdict, type OutcomeRule } from "@/lib/outcome-rules";
 import { maybeBookConsultation } from "@/lib/booking.server";
 import { notify, recipientsFor } from "@/lib/notify.server";
 import { kycFromAnswers, mergeKyc, orderFromAnswers } from "@/lib/call-capture";
 import { inr } from "@/lib/format";
 
 type CallRow = {
-  id: string; organization_id: string; contact_id: string | null; phone: string | null; status: string;
+  id: string; organization_id: string; agent_id: string | null; contact_id: string | null; phone: string | null; status: string;
   outcome: string | null; sentiment: string | null; summary: string | null; answers: unknown; crm_synced_at: string | null; ended_at: string | null;
 };
 type LeadRow = { id: string; status: string; score: number; value: number; name?: string | null };
@@ -104,11 +105,17 @@ async function saveOrderFromCall(org: string, contactId: string, dealId: string 
 /** Applies one finished call to the CRM. Safe to call repeatedly: only the first caller does the work. */
 export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResult> {
   const { data } = await supabaseAdmin.from("calls")
-    .select("id, organization_id, contact_id, phone, status, outcome, sentiment, summary, answers, crm_synced_at, ended_at").eq("id", callId).maybeSingle();
+    .select("id, organization_id, agent_id, contact_id, phone, status, outcome, sentiment, summary, answers, crm_synced_at, ended_at").eq("id", callId).maybeSingle();
   const call = data as CallRow | null;
   if (!call) return { applied: false, detail: "Call not found" };
   if (call.crm_synced_at) return { applied: false, detail: "Already applied" };
-  const verdict = classifyCallOutcome(call);
+  let rules: OutcomeRule[] | null = null;
+  if (call.agent_id) {
+    const { data: ruleRows, error: rulesError } = await supabaseAdmin.from("agent_outcome_rules").select("*").eq("agent_id", call.agent_id);
+    if (rulesError) console.error("[crm] could not load outcome rules, using defaults", call.agent_id, rulesError.message);
+    else rules = (ruleRows ?? []) as OutcomeRule[];
+  }
+  const verdict = resolveVerdict(call, rules);
   // Not-connected calls are final for the CRM too (nothing to apply), but completed ones may still be waiting
   // for their answers — leave those unclaimed so a later run sees the disposition.
   if (!verdict) {
@@ -132,7 +139,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     const displayName = nameOf(contact) || contact.phone || "Lead";
 
     // ---- Do not contact: block every future call to this person (campaigns skip inactive contacts).
-    if (isDoNotContact(verdict.label)) {
+    if (verdict.blockContact) {
       const { data: current } = await supabaseAdmin.from("contacts").select("tags").eq("id", contact.id).maybeSingle();
       const tags = Array.isArray(current?.tags) ? (current.tags as string[]) : [];
       await supabaseAdmin.from("contacts").update({
@@ -171,9 +178,8 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         ...(isPlaceholderName(lead.name) && !isPlaceholderName(contact.first_name) ? { name: displayName.slice(0, 120) } : {}),
       } as never).eq("id", lead.id);
       leadDetail = lead.status === status ? `Lead stays ${status}` : `Lead ${lead.status} → ${status}`;
-    } else if (verdict.kind === "negative" || verdict.kind === "neutral") {
-      // Leads are people who want insurance. Not interested / no real conversation stays a contact only.
-      leadDetail = "No lead (caller not interested)";
+    } else if (!verdict.createLead) {
+      leadDetail = verdict.kind === "negative" || verdict.kind === "neutral" ? "No lead (caller not interested)" : "No lead (rule disabled)";
     } else {
       const { data: created, error } = await supabaseAdmin.from("leads").insert({
         organization_id: org, contact_id: contact.id, name: displayName.slice(0, 120), phone: contact.phone, email: contact.email,
@@ -225,7 +231,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     // ---- Follow-up task from what the agent agreed with the customer
     const nextAction = (answers.next_action || "").trim();
     const followUp = (answers.follow_up_time || answers.callback_time || "").trim();
-    if (verdict.kind === "positive" && (nextAction || followUp)) {
+    if (verdict.createTask && verdict.kind === "positive" && (nextAction || followUp)) {
       const task = {
         title: `Follow up with ${displayName}${followUp ? ` — ${followUp}` : ""}`.slice(0, 200),
         description: [nextAction, call.summary].filter(Boolean).join("\n\n").slice(0, 2000) || null,
@@ -300,7 +306,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     // ---- KYC and order request the agent collected (sections 6 and 7 of the script)
     const extras: string[] = [];
     // Never fatal: a problem here (e.g. migration 0021 not applied yet) must not undo the lead/deal update above.
-    if (!isDoNotContact(verdict.label)) {
+    if (!verdict.blockContact) {
       for (const [label, save] of [
         ["KYC", () => saveKycFromCall(org, contact.id, call.id, answers)],
         ["Order", () => saveOrderFromCall(org, contact.id, dealId, call.id, answers, call.summary)],
