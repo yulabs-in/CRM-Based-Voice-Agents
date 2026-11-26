@@ -10,6 +10,10 @@ describe("classifyCallOutcome", () => {
     expect(classifyCallOutcome({ status: "failed" })).toBeNull();
   });
 
+  it("treats a request for registration help (matrimony agent) as a proposal", () => {
+    expect(call("registration_help")).toMatchObject({ kind: "positive", leadStatus: "qualified", dealStage: "proposal" });
+  });
+
   it("never reads 'not interested' as interested", () => {
     expect(call("not_interested")).toMatchObject({ kind: "negative", leadStatus: "unqualified", dealStage: "lost" });
     expect(call("Not Interested")).toMatchObject({ kind: "negative" });

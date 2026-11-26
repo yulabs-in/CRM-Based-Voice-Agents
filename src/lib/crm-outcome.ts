@@ -22,7 +22,7 @@ const LEAD_RANK: Record<LeadStatus, number> = { new: 0, contacted: 1, unqualifie
 const WON = /\b(converted|purchased|bought|paid|payment (done|made|received)|policy (issued|purchased)|sale|sold|closed won|won)\b/;
 const NEGATIVE = /\b(not interested|no interest|not looking|no need|wrong (number|person)|dnd|do not (call|disturb|contact)|don ?t (call|contact)|opt(ed)? out|declined|refused|rejected|already (has|have|got|insured|renewed|bought|covered)|renewed elsewhere|bought elsewhere|unqualified|not eligible|cold|negative|lost|hostile|abusive)\b/;
 const NEGOTIATION = /\b(accepted|accept|agreed|agree|confirmed|ready to (buy|pay|proceed)|will pay|send payment link|payment link|negotiat\w*|price (discussion|negotiation))\b/;
-const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|consultation|site visit|send (details|options|plans?)|requested (a )?quote)\b/;
+const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|consultation|site visit|send (details|options|plans?)|requested (a )?quote|registration help|wants? to register)\b/;
 const POSITIVE = /\b(interested|callback|call back|follow ?up|hot|warm|qualified|positive|yes|keen|considering)\b/;
 
 const norm = (text: string) => text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
