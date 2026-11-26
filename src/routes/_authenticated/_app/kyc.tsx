@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org";
 import { pageHead } from "@/lib/seo";
 import { KYC_STATUSES } from "@/lib/sales-ops";
 import { isSalesRole } from "@/lib/sales-data";
+import { KycDocuments } from "@/components/app/KycDocuments";
 
 export const Route = createFileRoute("/_authenticated/_app/kyc")({
   validateSearch: (s: Record<string, unknown>): { new?: boolean } => ({ new: s.new === true || s.new === "true" ? true : undefined }),
@@ -42,7 +43,7 @@ function Page() {
       <div className="flex items-start gap-3 rounded-2xl border bg-accent/40 p-4 text-sm">
         <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
         <p className="text-muted-foreground">
-          The AI agent only takes KYC after the client agrees on the call. It never asks for Aadhaar, OTPs, bank or card details, and only a masked PAN is stored.
+          The AI agent only takes KYC after the client agrees on the call. It never asks for Aadhaar, OTPs, bank or card details, and only a masked PAN is stored. Upload ID proofs in KYC documents below.
           Check each record against the client's ID, then edit it and set <span className="font-semibold text-foreground">Status → Verified</span>. Verified records are never overwritten by later calls.
         </p>
       </div>
@@ -80,6 +81,7 @@ function Page() {
           { key: "updated_at", label: "Updated", render: (r) => shortDate(r.updated_at) },
         ]}
       />
+      <KycDocuments />
     </div>
   );
 }

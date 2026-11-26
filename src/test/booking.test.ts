@@ -184,6 +184,9 @@ describe("booking.server", () => {
         },
       };
 
+      // Run "just after the call ended" so the agreed time is still in the future.
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-23T08:31:00.000Z"));
       const first = await maybeBookConsultation(call, CONTACT, "deal-1", VERDICT, "u-1");
       expect(first).toEqual({ booked: true, taskCreated: false });
       expect(upsertMock).toHaveBeenCalledWith(
@@ -200,6 +203,60 @@ describe("booking.server", () => {
 
       const replay = await maybeBookConsultation(call, CONTACT, "deal-1", VERDICT, "u-1");
       expect(replay).toEqual({ booked: false, taskCreated: false });
+      vi.useRealTimers();
+    });
+
+    it("doesn't book a time that has already passed (old call re-synced)", async () => {
+      const upsertMock = vi.fn();
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "memberships") {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [{ user_id: "u-1", role: "sales_rep" }] }) }) };
+        }
+        if (table === "meetings") return { upsert: upsertMock };
+        return {};
+      });
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-26T08:00:00.000Z")); // three days after the agreed time
+      const call = {
+        id: "44444444-4444-4444-4444-444444444444",
+        organization_id: ORG_ID,
+        ended_at: "2026-11-23T08:30:00.000Z",
+        summary: null,
+        answers: { disposition: "consultation_booked", follow_up_time: "tomorrow 11 AM" },
+      };
+      const result = await maybeBookConsultation(call, CONTACT, null, VERDICT, "u-1");
+      vi.useRealTimers();
+      expect(result).toEqual({ booked: false, taskCreated: false });
+      expect(upsertMock).not.toHaveBeenCalled();
+    });
+
+    it("books a site visit from the real estate agent's site_visit_time", async () => {
+      const upsertMock = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue({ data: { id: "m-2" }, error: null }) }),
+      });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === "memberships") {
+          return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [{ user_id: "u-1", role: "sales_rep" }] }) }) };
+        }
+        if (table === "meetings") return { upsert: upsertMock };
+        return {};
+      });
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-23T08:31:00.000Z"));
+      const call = {
+        id: "55555555-5555-5555-5555-555555555555",
+        organization_id: ORG_ID,
+        ended_at: "2026-11-23T08:30:00.000Z",
+        summary: "Wants a 3BHK in Kondapur",
+        answers: { disposition: "site_visit_booked", site_visit_time: "tomorrow 11 AM" },
+      };
+      const result = await maybeBookConsultation(call, CONTACT, null, { ...VERDICT, label: "site visit booked" }, "u-1");
+      vi.useRealTimers();
+      expect(result).toEqual({ booked: true, taskCreated: false });
+      expect(upsertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Site visit: Priya Patel", location: "in person", starts_at: "2026-11-24T05:30:00.000Z" }),
+        { onConflict: "call_id", ignoreDuplicates: true }
+      );
     });
 
     it("creates a confirm-time task (and no meeting) when follow_up_time cannot be parsed", async () => {

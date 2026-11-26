@@ -50,16 +50,29 @@ export function defaultRuleFor(disposition: string): OutcomeRule {
     lead_status: base.leadStatus,
     deal_stage: base.dealStage,
     probability: base.probability,
-    create_lead: base.kind === "positive" || base.kind === "won",
+    create_lead: createsLead(base),
     create_task: base.kind === "positive" || base.kind === "won",
     block_contact: block,
   };
 }
 
+/** Outcomes where nobody really talked to the agent: no answer, busy, voicemail, dropped, or no disposition at all. */
+const NOT_A_CONVERSATION = /\b(no answer|no response|unresponsive|voicemail|busy|disconnected|call dropped|connected)\b/;
+
+/**
+ * Every real conversation with any agent lands on the Leads page: positive ones as qualified, service and
+ * support calls (hospital, e-commerce, hotel, loan…) and escalations as contacted. Not interested, do-not-call,
+ * wrong person and calls where nobody really spoke create no new lead (an existing lead is still updated).
+ */
+export function createsLead(verdict: Pick<CallVerdict, "kind" | "label">): boolean {
+  if (verdict.kind === "negative") return false;
+  return !NOT_A_CONVERSATION.test(verdict.label);
+}
+
 const toResolved = (verdict: CallVerdict, rule?: OutcomeRule | null): ResolvedVerdict => {
   const base: ResolvedVerdict = {
     ...verdict,
-    createLead: verdict.kind === "positive" || verdict.kind === "won",
+    createLead: createsLead(verdict),
     createTask: verdict.kind === "positive" || verdict.kind === "won",
     blockContact: isDoNotContact(verdict.label),
   };
@@ -95,4 +108,17 @@ export function resolveVerdict(
 
   const rule = rules.find((r) => normDisposition(r.disposition) === key);
   return toResolved(verdict, rule);
+}
+
+/** How long a completed call may wait for its extracted answers before the CRM applies it anyway. */
+export const ANSWERS_GRACE_MS = 20 * 60 * 1000;
+
+/** True while a completed call has no disposition or summary yet and ended recently. */
+export function awaitingAnswers(call: { status: string; answers: unknown; summary: string | null; ended_at: string | null }, now = Date.now()): boolean {
+  if (call.status !== "completed") return false;
+  const answers = asAnswers(call.answers);
+  const hasOutcome = Boolean((answers.disposition || answers.outcome || answers.call_outcome || answers.summary || call.summary || "").trim());
+  if (hasOutcome) return false;
+  const ended = call.ended_at ? Date.parse(call.ended_at) : NaN;
+  return Number.isFinite(ended) ? now - ended < ANSWERS_GRACE_MS : true;
 }

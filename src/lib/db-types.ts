@@ -887,6 +887,75 @@ export type Database = {
           },
         ]
       }
+      kyc_documents: {
+        Row: {
+          contact_id: string
+          created_at: string
+          doc_type: string
+          file_name: string
+          id: string
+          mime_type: string
+          notes: string | null
+          organization_id: string
+          size_bytes: number
+          status: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          doc_type: string
+          file_name: string
+          id?: string
+          mime_type: string
+          notes?: string | null
+          organization_id: string
+          size_bytes: number
+          status?: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          doc_type?: string
+          file_name?: string
+          id?: string
+          mime_type?: string
+          notes?: string | null
+          organization_id?: string
+          size_bytes?: number
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kyc_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company_name: string | null
@@ -1023,10 +1092,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "meetings_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "meetings_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
             referencedColumns: ["id"]
           },
           {
@@ -1204,6 +1287,62 @@ export type Database = {
             foreignKeyName: "org_counters_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_verifications: {
+        Row: {
+          aadhaar_back_path: string | null
+          aadhaar_front_path: string | null
+          aadhaar_last4: string | null
+          legal_name: string | null
+          organization_id: string
+          pan_document_path: string | null
+          pan_masked: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhaar_back_path?: string | null
+          aadhaar_front_path?: string | null
+          aadhaar_last4?: string | null
+          legal_name?: string | null
+          organization_id: string
+          pan_document_path?: string | null
+          pan_masked?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhaar_back_path?: string | null
+          aadhaar_front_path?: string | null
+          aadhaar_last4?: string | null
+          legal_name?: string | null
+          organization_id?: string
+          pan_document_path?: string | null
+          pan_masked?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_verifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -1666,6 +1805,50 @@ export type Database = {
           },
         ]
       }
+      usage_settings: {
+        Row: {
+          cost_per_attempt: number
+          cost_per_minute: number
+          currency: string
+          hard_stop: boolean
+          monthly_budget: number | null
+          organization_id: string
+          rounding: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id?: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_agents: {
         Row: {
           agent_variables: Json
@@ -1736,6 +1919,73 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      widget_settings: {
+        Row: {
+          agent_id: string | null
+          allowed_domains: string[]
+          appearance: Json
+          calling_hours: Json
+          created_at: string
+          id: string
+          instant_callback: boolean
+          organization_id: string
+          privacy_url: string | null
+          project_id: string | null
+          updated_at: string
+          widget_key: string
+        }
+        Insert: {
+          agent_id?: string | null
+          allowed_domains?: string[]
+          appearance?: Json
+          calling_hours?: Json
+          created_at?: string
+          id?: string
+          instant_callback?: boolean
+          organization_id: string
+          privacy_url?: string | null
+          project_id?: string | null
+          updated_at?: string
+          widget_key: string
+        }
+        Update: {
+          agent_id?: string | null
+          allowed_domains?: string[]
+          appearance?: Json
+          calling_hours?: Json
+          created_at?: string
+          id?: string
+          instant_callback?: boolean
+          organization_id?: string
+          privacy_url?: string | null
+          project_id?: string | null
+          updated_at?: string
+          widget_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_settings_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "voice_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widget_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widget_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1915,117 +2165,6 @@ export type Database = {
           },
         ]
       }
-      usage_settings: {
-        Row: {
-          cost_per_attempt: number
-          cost_per_minute: number
-          currency: string
-          hard_stop: boolean
-          monthly_budget: number | null
-          organization_id: string
-          rounding: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          cost_per_attempt?: number
-          cost_per_minute?: number
-          currency?: string
-          hard_stop?: boolean
-          monthly_budget?: number | null
-          organization_id: string
-          rounding?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          cost_per_attempt?: number
-          cost_per_minute?: number
-          currency?: string
-          hard_stop?: boolean
-          monthly_budget?: number | null
-          organization_id?: string
-          rounding?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "usage_settings_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      widget_settings: {
-        Row: {
-          agent_id: string | null
-          allowed_domains: string[]
-          appearance: Json
-          calling_hours: Json
-          created_at: string
-          id: string
-          instant_callback: boolean
-          organization_id: string
-          privacy_url: string | null
-          project_id: string | null
-          updated_at: string
-          widget_key: string
-        }
-        Insert: {
-          agent_id?: string | null
-          allowed_domains?: string[]
-          appearance?: Json
-          calling_hours?: Json
-          created_at?: string
-          id?: string
-          instant_callback?: boolean
-          organization_id: string
-          privacy_url?: string | null
-          project_id?: string | null
-          updated_at?: string
-          widget_key: string
-        }
-        Update: {
-          agent_id?: string | null
-          allowed_domains?: string[]
-          appearance?: Json
-          calling_hours?: Json
-          created_at?: string
-          id?: string
-          instant_callback?: boolean
-          organization_id?: string
-          privacy_url?: string | null
-          project_id?: string | null
-          updated_at?: string
-          widget_key?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "widget_settings_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "voice_agents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "widget_settings_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "widget_settings_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -2045,6 +2184,7 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      matrimony_consultant_script: { Args: never; Returns: string }
       next_org_counter: {
         Args: { _name: string; _org: string }
         Returns: number
@@ -2055,13 +2195,14 @@ export type Database = {
         Returns: undefined
       }
       stock_advisory_script: { Args: never; Returns: string }
+      try_uuid: { Args: { _value: string }; Returns: string }
       usage_summary: {
         Args: { from_ts: string; org: string; to_ts: string }
         Returns: {
-          agent_id: string | null
+          agent_id: string
           attempts: number
           billable_minutes: number
-          campaign_id: string | null
+          campaign_id: string
           connected: number
           day: string
           seconds: number

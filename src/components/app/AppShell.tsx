@@ -17,6 +17,7 @@ import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
 import { RealtimeSync } from "./RealtimeSync";
 import { NotificationBell } from "./NotificationBell";
+import { OwnerVerificationBanner } from "./OwnerVerificationBanner";
 import { BudgetBanner } from "./BudgetBanner";
 
 
@@ -162,7 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </header>
-            <main className="px-3 py-6 md:px-6"><BudgetBanner />{children}<RecordingAutoFetch /><RealtimeSync /></main>
+            <main className="px-3 py-6 md:px-6"><BudgetBanner /><OwnerVerificationBanner />{children}<RecordingAutoFetch /><RealtimeSync /></main>
           </div>
         </div>
 
