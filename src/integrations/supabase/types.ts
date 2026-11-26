@@ -1852,6 +1852,50 @@ export type Database = {
           },
         ]
       }
+      usage_settings: {
+        Row: {
+          cost_per_attempt: number
+          cost_per_minute: number
+          currency: string
+          hard_stop: boolean
+          monthly_budget: number | null
+          organization_id: string
+          rounding: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cost_per_attempt?: number
+          cost_per_minute?: number
+          currency?: string
+          hard_stop?: boolean
+          monthly_budget?: number | null
+          organization_id?: string
+          rounding?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1881,6 +1925,18 @@ export type Database = {
         Returns: undefined
       }
       stock_advisory_script: { Args: never; Returns: string }
+      usage_summary: {
+        Args: { from_ts: string; org: string; to_ts: string }
+        Returns: {
+          agent_id: string | null
+          attempts: number
+          billable_minutes: number
+          campaign_id: string | null
+          connected: number
+          day: string
+          seconds: number
+        }[]
+      }
       yulabs_insurance_script: { Args: never; Returns: string }
       yulabs_insurance_variables: { Args: never; Returns: Json }
     }

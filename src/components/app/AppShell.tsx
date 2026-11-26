@@ -17,6 +17,7 @@ import { NAV } from "./nav";
 import { RecordingAutoFetch } from "./RecordingAutoFetch";
 import { RealtimeSync } from "./RealtimeSync";
 import { NotificationBell } from "./NotificationBell";
+import { BudgetBanner } from "./BudgetBanner";
 
 
 function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
@@ -161,7 +162,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </header>
-            <main className="px-3 py-6 md:px-6">{children}<RecordingAutoFetch /><RealtimeSync /></main>
+            <main className="px-3 py-6 md:px-6"><BudgetBanner />{children}<RecordingAutoFetch /><RealtimeSync /></main>
           </div>
         </div>
 
