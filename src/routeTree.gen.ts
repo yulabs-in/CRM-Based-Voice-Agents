@@ -51,6 +51,7 @@ import { Route as AuthenticatedAppTeamPerformanceRouteImport } from './routes/_a
 import { Route as AuthenticatedAppTranscriptsRouteImport } from './routes/_authenticated/_app/transcripts'
 import { Route as AuthenticatedAppTriggersRouteImport } from './routes/_authenticated/_app/triggers'
 import { Route as AuthenticatedAppUsageRouteImport } from './routes/_authenticated/_app/usage'
+import { Route as AuthenticatedAppVerificationRouteImport } from './routes/_authenticated/_app/verification'
 import { Route as AuthenticatedAppVoiceAgentsRouteImport } from './routes/_authenticated/_app/voice-agents'
 import { Route as AuthenticatedAppWhatsappRouteImport } from './routes/_authenticated/_app/whatsapp'
 import { Route as AuthenticatedAppWorkflowsRouteImport } from './routes/_authenticated/_app/workflows'
@@ -307,6 +308,12 @@ const AuthenticatedAppUsageRoute = AuthenticatedAppUsageRouteImport.update({
   path: '/usage',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppVerificationRoute =
+  AuthenticatedAppVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppVoiceAgentsRoute =
   AuthenticatedAppVoiceAgentsRouteImport.update({
     id: '/voice-agents',
@@ -471,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
   '/usage': typeof AuthenticatedAppUsageRoute
+  '/verification': typeof AuthenticatedAppVerificationRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -535,6 +543,7 @@ export interface FileRoutesByTo {
   '/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/triggers': typeof AuthenticatedAppTriggersRoute
   '/usage': typeof AuthenticatedAppUsageRoute
+  '/verification': typeof AuthenticatedAppVerificationRoute
   '/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -602,6 +611,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/transcripts': typeof AuthenticatedAppTranscriptsRoute
   '/_authenticated/_app/triggers': typeof AuthenticatedAppTriggersRoute
   '/_authenticated/_app/usage': typeof AuthenticatedAppUsageRoute
+  '/_authenticated/_app/verification': typeof AuthenticatedAppVerificationRoute
   '/_authenticated/_app/voice-agents': typeof AuthenticatedAppVoiceAgentsRoute
   '/_authenticated/_app/whatsapp': typeof AuthenticatedAppWhatsappRoute
   '/_authenticated/_app/workflows': typeof AuthenticatedAppWorkflowsRoute
@@ -668,6 +678,7 @@ export interface FileRouteTypes {
     | '/transcripts'
     | '/triggers'
     | '/usage'
+    | '/verification'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
@@ -732,6 +743,7 @@ export interface FileRouteTypes {
     | '/transcripts'
     | '/triggers'
     | '/usage'
+    | '/verification'
     | '/voice-agents'
     | '/whatsapp'
     | '/workflows'
@@ -798,6 +810,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/transcripts'
     | '/_authenticated/_app/triggers'
     | '/_authenticated/_app/usage'
+    | '/_authenticated/_app/verification'
     | '/_authenticated/_app/voice-agents'
     | '/_authenticated/_app/whatsapp'
     | '/_authenticated/_app/workflows'
@@ -1135,6 +1148,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppUsageRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/_app/verification': {
+      id: '/_authenticated/_app/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof AuthenticatedAppVerificationRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/_app/voice-agents': {
       id: '/_authenticated/_app/voice-agents'
       path: '/voice-agents'
@@ -1329,6 +1349,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppTranscriptsRoute: typeof AuthenticatedAppTranscriptsRoute
   AuthenticatedAppTriggersRoute: typeof AuthenticatedAppTriggersRoute
   AuthenticatedAppUsageRoute: typeof AuthenticatedAppUsageRoute
+  AuthenticatedAppVerificationRoute: typeof AuthenticatedAppVerificationRoute
   AuthenticatedAppVoiceAgentsRoute: typeof AuthenticatedAppVoiceAgentsRoute
   AuthenticatedAppWhatsappRoute: typeof AuthenticatedAppWhatsappRoute
   AuthenticatedAppWorkflowsRoute: typeof AuthenticatedAppWorkflowsRoute
@@ -1378,6 +1399,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppTranscriptsRoute: AuthenticatedAppTranscriptsRoute,
   AuthenticatedAppTriggersRoute: AuthenticatedAppTriggersRoute,
   AuthenticatedAppUsageRoute: AuthenticatedAppUsageRoute,
+  AuthenticatedAppVerificationRoute: AuthenticatedAppVerificationRoute,
   AuthenticatedAppVoiceAgentsRoute: AuthenticatedAppVoiceAgentsRoute,
   AuthenticatedAppWhatsappRoute: AuthenticatedAppWhatsappRoute,
   AuthenticatedAppWorkflowsRoute: AuthenticatedAppWorkflowsRoute,

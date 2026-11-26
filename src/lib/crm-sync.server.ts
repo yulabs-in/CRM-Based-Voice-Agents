@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin.server";
 import { asAnswers, humanize } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
 import { isDoNotContact, nextDealStage, nextLeadStatus, spokenName, type CallVerdict } from "@/lib/crm-outcome";
-import { resolveVerdict, type OutcomeRule } from "@/lib/outcome-rules";
+import { awaitingAnswers, resolveVerdict, type OutcomeRule } from "@/lib/outcome-rules";
 import { maybeBookConsultation } from "@/lib/booking.server";
 import { notify, recipientsFor } from "@/lib/notify.server";
 import { kycFromAnswers, mergeKyc, orderFromAnswers } from "@/lib/call-capture";
@@ -125,6 +125,12 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
     return { applied: false, detail: "Call did not connect" };
   }
 
+  // Sarvam marks a call completed a few seconds before the agent's extracted answers (disposition, summary,
+  // follow-up time) arrive. Applying it then classifies a real conversation as "connected, no outcome": no lead,
+  // no meeting, and the call is never revisited. Wait for the answers; the minute sweep retries. After a while,
+  // go ahead with whatever there is.
+  if (awaitingAnswers(call)) return { applied: false, detail: "Waiting for the call's answers" };
+
   // Claim the call so the webhook, the pull-sync and the sweep never apply it twice.
   const { data: claimed } = await supabaseAdmin.from("calls").update({ crm_synced_at: new Date().toISOString() } as never)
     .eq("id", call.id).is("crm_synced_at", null).select("id");
@@ -226,7 +232,16 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
       if (verdict.kind === "won" && lead) await supabaseAdmin.from("leads").update({ status: "converted", updated_at: now } as never).eq("id", lead.id);
     }
 
-    await maybeBookConsultation(call, contact, dealId, verdict, dealOwnerId);
+    // A booking problem must never undo the lead/deal update above.
+    let meetingDetail: string | null = null;
+    try {
+      const booking = await maybeBookConsultation(call, contact, dealId, verdict, dealOwnerId);
+      if (booking.booked) meetingDetail = "Meeting scheduled";
+      else if (booking.taskCreated) meetingDetail = "Task to confirm meeting time";
+    } catch (error) {
+      console.error("[crm] meeting booking failed", call.id, error);
+      meetingDetail = `Meeting not booked: ${error instanceof Error ? error.message : "unknown error"}`;
+    }
 
     // ---- Follow-up task from what the agent agreed with the customer
     const nextAction = (answers.next_action || "").trim();
@@ -321,7 +336,7 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
       }
     }
 
-    const detail = [leadDetail, dealDetail, ...extras].join("; ");
+    const detail = [leadDetail, dealDetail, meetingDetail, ...extras].filter(Boolean).join("; ");
     return { applied: true, verdict: verdict.kind, lead: leadDetail, deal: dealDetail, detail };
   } catch (error) {
     // Release the claim so the next sweep retries.
