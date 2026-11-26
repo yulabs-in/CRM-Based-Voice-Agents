@@ -55,6 +55,8 @@ export function EntityPage(props: {
   /** Extra controls shown next to the search box. */
   toolbar?: ReactNode;
   emptyHint?: string;
+  /** Extra items rendered inside each row's action menu. */
+  rowMenuItems?: (row: Row) => ReactNode;
 }) {
   const { org, role: realRole } = useOrg();
   const role = props.readOnly ? "read_only" : realRole;
@@ -148,11 +150,12 @@ export function EntityPage(props: {
                   <tr key={r.id} className={"border-b last:border-0 transition-colors hover:bg-muted/60" + (props.onRowClick ? " cursor-pointer" : "")} onClick={() => props.onRowClick?.(r)}>
                     {props.columns.map((c) => <td key={c.key} className={c.className ?? "px-4 py-3"}>{c.render ? c.render(r, refMap) : String(r[c.key] ?? "—")}</td>)}
                     <td className="pr-3" onClick={(event) => event.stopPropagation()}>
-                      {canWrite(role) && (
+                      {(canWrite(role) || props.rowMenuItems) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditing(r)}><Pencil /> Edit</DropdownMenuItem>
+                            {props.rowMenuItems?.(r)}
+                            {canWrite(role) && <DropdownMenuItem onClick={() => setEditing(r)}><Pencil /> Edit</DropdownMenuItem>}
                             {canDelete(role) && <DropdownMenuItem className="text-destructive" onClick={() => confirm(`Delete this ${props.singular.toLowerCase()}?`) && del.mutate(r.id)}><Trash2 /> Delete</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>

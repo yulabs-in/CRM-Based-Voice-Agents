@@ -37,6 +37,12 @@ export const launchCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const campaign = await loadCampaign(context, data.campaignId);
     await requireCampaignRole(context, campaign.organization_id);
+    const { getBudgetStatus } = await import("@/lib/usage.server");
+    const { BUDGET_EXCEEDED_MESSAGE } = await import("@/lib/usage");
+    const budget = await getBudgetStatus(asApp(context.supabase), campaign.organization_id);
+    if (budget.hardStop && budget.level === "exceeded") {
+      throw new Error(BUDGET_EXCEEDED_MESSAGE);
+    }
     const { runCampaignLaunch } = await import("@/lib/campaigns.server");
     return runCampaignLaunch(asApp(context.supabase), data.campaignId, new URL(getRequest().url).origin);
   });

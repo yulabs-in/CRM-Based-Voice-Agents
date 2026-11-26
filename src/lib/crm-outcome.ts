@@ -22,7 +22,8 @@ const LEAD_RANK: Record<LeadStatus, number> = { new: 0, contacted: 1, unqualifie
 const WON = /\b(converted|purchased|bought|paid|payment (done|made|received)|policy (issued|purchased)|sale|sold|closed won|won)\b/;
 const NEGATIVE = /\b(not interested|no interest|not looking|no need|wrong (number|person)|dnd|do not (call|disturb|contact)|don ?t (call|contact)|opt(ed)? out|declined|refused|rejected|already (has|have|got|insured|renewed|bought|covered)|renewed elsewhere|bought elsewhere|unqualified|not eligible|cold|negative|lost|hostile|abusive)\b/;
 const NEGOTIATION = /\b(accepted|accept|agreed|agree|confirmed|ready to (buy|pay|proceed)|will pay|send payment link|payment link|negotiat\w*|price (discussion|negotiation))\b/;
-const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|consultation|site visit|send (details|options|plans?)|requested (a )?quote)\b/;
+const PROPOSAL = /\b(quote|quotation|proposal|meeting|demo|appointment|consultation|site visit|send (details|options|plans?)|requested (a )?quote|registration help|wants? to register|site visit booked|counsell?ing booked|test drive( booked)?|service booked|reservation requested|application assistance)\b/;
+const SERVICE = /\b((appointment|booking) (confirmed|rescheduled|cancell?ed|changed)|cancell?ed|resolved|ticket raised|return requested|complaint|emergency redirected|enquiry answered|status shared|payment promised|already paid|feedback given)\b/;
 const POSITIVE = /\b(interested|callback|call back|follow ?up|hot|warm|qualified|positive|yes|keen|considering)\b/;
 
 const norm = (text: string) => text.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
@@ -42,6 +43,12 @@ export function classifyCallOutcome(input: { status: string | null; outcome?: st
   // Escalated: a human must follow up (complaint, regulatory or personal-advice question) — not a sales signal either way.
   if (/\b(no answer|no response|unresponsive|voicemail|busy|disconnected|call dropped|escalated)\b/.test(text)) {
     return { kind: "neutral", label, leadStatus: "contacted", dealStage: null, probability: 0, score: 20 };
+  }
+  // Service and support outcomes from the hospital, e-commerce, loan and hotel agents: they're about an existing
+  // customer or booking, not a sales signal. Checked before WON/NEGOTIATION so "already paid" isn't a won deal and
+  // "booking confirmed" isn't a negotiation.
+  if (SERVICE.test(text)) {
+    return { kind: "neutral", label, leadStatus: "contacted", dealStage: null, probability: 0, score: 30 };
   }
   // Negative is checked before positive so "not interested" never reads as "interested".
   if (NEGATIVE.test(text)) return { kind: "negative", label, leadStatus: "unqualified", dealStage: "lost", probability: 0, score: 10 };

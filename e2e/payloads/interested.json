@@ -1,0 +1,18 @@
+{
+  "attempt_id": "mock_attempt_interested",
+  "status": "connected",
+  "app_id": "mock-insurance-agent",
+  "app_version": 1,
+  "duration": 95,
+  "final_agent_variables": {
+    "disposition": "interested",
+    "insurance_type": "Health Insurance",
+    "next_action": "Send family floater brochure and quote",
+    "follow_up_time": "tomorrow 11 AM",
+    "summary": "Caller is interested in health insurance for his parents."
+  },
+  "interaction_transcript": [
+    { "role": "agent", "en_text": "Hello, calling from Yulabs Insurance." },
+    { "role": "user", "en_text": "Yes, I am interested in health insurance for my parents." }
+  ]
+}

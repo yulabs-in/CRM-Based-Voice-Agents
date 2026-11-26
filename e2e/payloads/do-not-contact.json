@@ -1,0 +1,15 @@
+{
+  "attempt_id": "mock_attempt_dnc",
+  "status": "connected",
+  "app_id": "mock-insurance-agent",
+  "app_version": 1,
+  "duration": 25,
+  "final_agent_variables": {
+    "disposition": "do_not_contact",
+    "summary": "Caller asked not to be contacted again."
+  },
+  "interaction_transcript": [
+    { "role": "agent", "en_text": "Hello, calling from Yulabs Insurance." },
+    { "role": "user", "en_text": "Please do not call me again." }
+  ]
+}
