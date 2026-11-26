@@ -58,10 +58,10 @@ function Onboarding() {
   const canNext = step === 0 ? f.name.trim().length > 1 : step === 2 ? !!f.business_type : true;
 
   return (
-    <div className="dot-canvas min-h-screen px-4 py-10">
+    <div className="dot-canvas min-h-screen px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-xl animate-rise">
         <div className="mb-8 flex justify-center"><Logo /></div>
-        <ol className="mb-6 flex items-center gap-2">
+        <ol className="mb-6 flex items-center gap-2" aria-label="Onboarding steps">
           {STEPS.map((s, i) => (
             <li key={s} className="flex flex-1 items-center gap-2">
               <span className={cn("grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold", i < step ? "bg-success text-primary-foreground" : i === step ? "bg-gradient-primary text-primary-foreground" : "border bg-card text-muted-foreground")}>
