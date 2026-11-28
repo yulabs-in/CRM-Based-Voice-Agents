@@ -51,7 +51,13 @@ export function CampaignControls({ campaign, compact = false }: { campaign: Cont
 
   const act = useMutation({
     mutationFn: async (action: "launch" | "pause" | "resume" | "cancel") => {
-      if (action === "launch") return launch({ data: { campaignId: campaign.id } }).then((result) => `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam`);
+      if (action === "launch") {
+        return launch({ data: { campaignId: campaign.id } }).then((result) =>
+          result.skipped
+            ? `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam (${result.skipped.toLocaleString()} skipped: do-not-contact)`
+            : `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam`,
+        );
+      }
       return control({ data: { campaignId: campaign.id, action } }).then((result) => (action === "cancel" ? "Campaign stopped" : `Campaign ${result.status}`));
     },
     onSuccess: (text) => toast.success(text),

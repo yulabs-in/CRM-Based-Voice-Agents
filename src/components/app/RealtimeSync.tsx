@@ -17,6 +17,8 @@ const QUERIES_BY_TABLE: Record<string, string[]> = {
   sales_orders: ["sales_orders", "sales", "stats"],
   payments: ["payments", "sales_orders", "sales", "stats"],
   client_kyc: ["client_kyc", "sales"],
+  dnc_numbers: ["dnc", "contacts"],
+  compliance_log: ["dnc"],
 };
 
 /**

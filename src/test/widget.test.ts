@@ -138,6 +138,26 @@ function makeFakeClient({
           },
         };
       }
+      if (table === "dnc_numbers") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                is: () => ({
+                  limit: () => ({
+                    maybeSingle: async () => ({ data: null, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "compliance_log") {
+        return {
+          insert: async () => ({ error: null }),
+        };
+      }
       throw new Error(`Unexpected table: ${table}`);
     },
   } as unknown as SupabaseClient<Database>;

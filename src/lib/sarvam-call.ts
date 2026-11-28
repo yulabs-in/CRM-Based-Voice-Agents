@@ -3,7 +3,7 @@ import { redactAnswers } from "@/lib/call-capture";
 
 export type SarvamAttemptStatus = "connected" | "no_answer" | "busy" | "failed";
 export type CallStatus = "queued" | "in_progress" | "completed" | "no_answer" | "failed";
-export type TargetStatus = "pending" | "queued" | "calling" | "retrying" | "completed" | "no_answer" | "busy" | "failed" | "excluded";
+export type TargetStatus = "pending" | "queued" | "calling" | "retrying" | "completed" | "no_answer" | "busy" | "failed" | "excluded" | "skipped";
 export type TranscriptTurn = { role: "agent" | "customer"; text: string };
 export type Answers = Record<string, string>;
 

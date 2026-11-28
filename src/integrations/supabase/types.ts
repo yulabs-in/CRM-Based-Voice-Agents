@@ -600,6 +600,64 @@ export type Database = {
           },
         ]
       }
+      compliance_log: {
+        Row: {
+          actor: string | null
+          call_id: string | null
+          contact_id: string | null
+          created_at: string
+          details: Json
+          event: string
+          id: string
+          organization_id: string
+          phone_e164: string | null
+        }
+        Insert: {
+          actor?: string | null
+          call_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          details?: Json
+          event: string
+          id?: string
+          organization_id: string
+          phone_e164?: string | null
+        }
+        Update: {
+          actor?: string | null
+          call_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          details?: Json
+          event?: string
+          id?: string
+          organization_id?: string
+          phone_e164?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_log_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           city: string | null
@@ -770,6 +828,63 @@ export type Database = {
           },
           {
             foreignKeyName: "deals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dnc_numbers: {
+        Row: {
+          call_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          phone_e164: string
+          reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          removed_reason: string | null
+          source: string
+        }
+        Insert: {
+          call_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          phone_e164: string
+          reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          source?: string
+        }
+        Update: {
+          call_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          phone_e164?: string
+          reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          removed_reason?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dnc_numbers_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dnc_numbers_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2189,6 +2304,7 @@ export type Database = {
         Args: { _name: string; _org: string }
         Returns: number
       }
+      normalize_phone_e164: { Args: { _raw: string }; Returns: string }
       queue_renewal_reminders: { Args: never; Returns: number }
       refresh_project_contact_counts: {
         Args: { _projects: string[] }

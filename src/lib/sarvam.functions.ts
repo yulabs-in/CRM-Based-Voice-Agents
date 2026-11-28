@@ -8,6 +8,7 @@ import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { asVariableMap, nameVariables, greetingValues, openingLine, phoneKey, pickContactForPhone, resolveVariables } from "@/lib/campaign-vars";
+import { DNC_REFUSAL_MESSAGE } from "@/lib/dnc";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 
 // No CRM contact for this number: contact fields go out empty, fixed "=" values still apply.
@@ -96,11 +97,21 @@ export const startSarvamCall = createServerFn({ method: "POST" })
       throw new Error(error instanceof Error ? error.message : "Sarvam is not configured");
     }
 
-    // Someone at this number asked not to be called again (or was marked inactive): never dial it.
+    // Someone at this number asked not to be called again (phone-level DNC registry or inactive contact): never dial it.
+    const { isBlocked, logBlockedAttempt } = await import("@/lib/dnc.server");
+    const registryBlocked = await isBlocked(data.organizationId, phone);
     const { data: blocked } = await asApp(context.supabase).from("contacts").select("phone")
       .eq("organization_id", data.organizationId).eq("status", "inactive").ilike("phone", `%${phoneKey(phone)}`).limit(20);
-    if ((blocked ?? []).some((row) => phoneKey(row.phone) === phoneKey(phone))) {
-      throw new Error("This number is marked do-not-call. Reactivate the contact first if they've asked to be called.");
+    const contactInactive = (blocked ?? []).some((row) => phoneKey(row.phone) === phoneKey(phone));
+    if (registryBlocked || contactInactive) {
+      await logBlockedAttempt({
+        orgId: data.organizationId,
+        phone,
+        where: "one_off_call",
+        actor: context.userId,
+        contactId: data.contactId ?? null,
+      });
+      throw new Error(DNC_REFUSAL_MESSAGE);
     }
 
     const { data: active } = await asApp(context.supabase).from("calls").select("id")

@@ -5,6 +5,8 @@ import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
+import { filterCampaignTargetsByDnc } from "@/lib/dnc";
+import { getBlockedPhoneSet, logBlockedAttempt } from "@/lib/dnc.server";
 import { asVariableMap, nameVariables, chunk, cohortName, greetingValues, noNameLine, openingLine, pickContactForPhone, resolveVariables, type CohortContact, type VariableMap } from "@/lib/campaign-vars";
 
 async function loadCampaign(context: { supabase: SupabaseClient<Database> }, campaignId: string) {
@@ -70,10 +72,58 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
       if (!phone) continue;
       byPhone.set(phone, [...(byPhone.get(phone) ?? []), contact]);
     }
-    const callable = [...byPhone.entries()].map(([phone, group]) => ({ ...group[0]!, phone, nameConflict: !pickContactForPhone(group) }));
-    if (!callable.length) throw new Error("This project has no contacts with a valid phone number");
+    const candidates = [...byPhone.entries()].map(([phone, group]) => ({ ...group[0]!, phone, nameConflict: !pickContactForPhone(group) }));
+    if (!candidates.length) throw new Error("This project has no contacts with a valid phone number");
+
+    const blockedSet = await getBlockedPhoneSet(campaign.organization_id, candidates.map((c) => c.phone), client);
+    const { callable, skipped } = filterCampaignTargetsByDnc(candidates, blockedSet);
 
     await client.from("campaign_targets").delete().eq("campaign_id", campaign.id); // relaunch after a failed attempt
+
+    if (skipped.length > 0) {
+      for (const part of chunk(skipped, 1000)) {
+        const rowsWithSkipped = part.map((contact) => ({
+          organization_id: campaign.organization_id,
+          campaign_id: campaign.id,
+          contact_id: contact.id,
+          phone: contact.phone,
+          status: "skipped",
+          last_outcome: "do_not_contact",
+        }));
+        const { error: skipError } = await client.from("campaign_targets").insert(rowsWithSkipped);
+        if (skipError) {
+          // Fallback to 'excluded' if migration 0034 has not been applied on the database yet.
+          if (skipError.code === "23514") {
+            const fallbackRows = rowsWithSkipped.map((r) => ({ ...r, status: "excluded" }));
+            const { error: fallbackErr } = await client.from("campaign_targets").insert(fallbackRows);
+            if (fallbackErr) throw new Error(`Could not record skipped DNC targets: ${fallbackErr.message}`);
+          } else {
+            throw new Error(`Could not record skipped DNC targets: ${skipError.message}`);
+          }
+        }
+      }
+      for (const contact of skipped) {
+        await logBlockedAttempt({
+          orgId: campaign.organization_id,
+          phone: contact.phone,
+          where: "campaign",
+          contactId: contact.id,
+          details: { campaign_id: campaign.id, campaign_name: campaign.name, reason: "do_not_contact" },
+          client,
+        });
+      }
+    }
+
+    if (!callable.length) {
+      await client.from("call_campaigns").update({
+        status: "completed",
+        target_count: 0,
+        launched_at: new Date().toISOString(),
+        last_error: null,
+      }).eq("id", campaign.id);
+      return { sarvamCampaignId: null, contacts: 0, skipped: skipped.length, cohorts: 0, errors: [] };
+    }
+
     const targetIds = new Map<string, string>();
     for (const part of chunk(callable, 1000)) {
       const { data: inserted, error } = await client.from("campaign_targets")
@@ -188,5 +238,5 @@ export async function runCampaignLaunch(client: SupabaseClient<Database>, campai
       await sarvamJson(`${path}/${encodeURIComponent(sarvamCampaignId)}/status`, { method: "PUT", body: { action: "cancel" } }).catch(() => null);
       throw new Error(errors[0] ?? "Sarvam did not accept the contact list");
     }
-    return { sarvamCampaignId, contacts: callable.length, cohorts: cohortIds.length, errors };
+    return { sarvamCampaignId, contacts: callable.length, skipped: skipped.length, cohorts: cohortIds.length, errors };
 }

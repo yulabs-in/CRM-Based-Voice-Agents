@@ -9,7 +9,7 @@ const map: Record<string, keyof typeof tone> = {
   new: "info", qualification: "info", open: "info", contacted: "info", queued: "info", scheduled: "info", pending: "info", processing: "info", outbound: "info", inbound: "info", calling: "info",
   proposal: "warn", negotiation: "warn", medium: "warn", in_progress: "warn", retrying: "warn", paused: "warn", no_answer: "warn", busy: "warn", neutral: "warn", launching: "warn",
   high: "bad", lost: "bad", unqualified: "bad", failed: "bad", negative: "bad", cancelled: "bad", revoked: "bad",
-  inactive: "muted", low: "muted", draft: "muted", archived: "muted", excluded: "muted", ended: "muted",
+  inactive: "muted", low: "muted", draft: "muted", archived: "muted", excluded: "muted", skipped: "muted", ended: "muted",
   // sales orders, payments, KYC
   issued: "good", paid: "good", verified: "good", received: "good", confirmed: "info", collected: "info",
   partial: "warn", partly_paid: "warn", refunded: "warn", overdue: "bad", rejected: "bad", lapsed: "bad", not_set: "muted",

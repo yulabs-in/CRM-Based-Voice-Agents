@@ -26,6 +26,7 @@ import { Route as AuthenticatedAppContactsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppCustomReportsRouteImport } from './routes/_authenticated/_app/custom-reports'
 import { Route as AuthenticatedAppDashboardRouteImport } from './routes/_authenticated/_app/dashboard'
 import { Route as AuthenticatedAppDealsRouteImport } from './routes/_authenticated/_app/deals'
+import { Route as AuthenticatedAppDoNotContactRouteImport } from './routes/_authenticated/_app/do-not-contact'
 import { Route as AuthenticatedAppEmailRouteImport } from './routes/_authenticated/_app/email'
 import { Route as AuthenticatedAppIntegrationsRouteImport } from './routes/_authenticated/_app/integrations'
 import { Route as AuthenticatedAppKycRouteImport } from './routes/_authenticated/_app/kyc'
@@ -168,6 +169,12 @@ const AuthenticatedAppDealsRoute = AuthenticatedAppDealsRouteImport.update({
   path: '/deals',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppDoNotContactRoute =
+  AuthenticatedAppDoNotContactRouteImport.update({
+    id: '/do-not-contact',
+    path: '/do-not-contact',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppEmailRoute = AuthenticatedAppEmailRouteImport.update({
   id: '/email',
   path: '/email',
@@ -453,6 +460,7 @@ export interface FileRoutesByFullPath {
   '/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
+  '/do-not-contact': typeof AuthenticatedAppDoNotContactRoute
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/kyc': typeof AuthenticatedAppKycRoute
@@ -518,6 +526,7 @@ export interface FileRoutesByTo {
   '/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/dashboard': typeof AuthenticatedAppDashboardRoute
   '/deals': typeof AuthenticatedAppDealsRoute
+  '/do-not-contact': typeof AuthenticatedAppDoNotContactRoute
   '/email': typeof AuthenticatedAppEmailRoute
   '/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/kyc': typeof AuthenticatedAppKycRoute
@@ -586,6 +595,7 @@ export interface FileRoutesById {
   '/_authenticated/_app/custom-reports': typeof AuthenticatedAppCustomReportsRoute
   '/_authenticated/_app/dashboard': typeof AuthenticatedAppDashboardRoute
   '/_authenticated/_app/deals': typeof AuthenticatedAppDealsRoute
+  '/_authenticated/_app/do-not-contact': typeof AuthenticatedAppDoNotContactRoute
   '/_authenticated/_app/email': typeof AuthenticatedAppEmailRoute
   '/_authenticated/_app/integrations': typeof AuthenticatedAppIntegrationsRoute
   '/_authenticated/_app/kyc': typeof AuthenticatedAppKycRoute
@@ -653,6 +663,7 @@ export interface FileRouteTypes {
     | '/custom-reports'
     | '/dashboard'
     | '/deals'
+    | '/do-not-contact'
     | '/email'
     | '/integrations'
     | '/kyc'
@@ -718,6 +729,7 @@ export interface FileRouteTypes {
     | '/custom-reports'
     | '/dashboard'
     | '/deals'
+    | '/do-not-contact'
     | '/email'
     | '/integrations'
     | '/kyc'
@@ -785,6 +797,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_app/custom-reports'
     | '/_authenticated/_app/dashboard'
     | '/_authenticated/_app/deals'
+    | '/_authenticated/_app/do-not-contact'
     | '/_authenticated/_app/email'
     | '/_authenticated/_app/integrations'
     | '/_authenticated/_app/kyc'
@@ -971,6 +984,13 @@ declare module '@tanstack/react-router' {
       path: '/deals'
       fullPath: '/deals'
       preLoaderRoute: typeof AuthenticatedAppDealsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/_app/do-not-contact': {
+      id: '/_authenticated/_app/do-not-contact'
+      path: '/do-not-contact'
+      fullPath: '/do-not-contact'
+      preLoaderRoute: typeof AuthenticatedAppDoNotContactRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/_app/email': {
@@ -1324,6 +1344,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCustomReportsRoute: typeof AuthenticatedAppCustomReportsRoute
   AuthenticatedAppDashboardRoute: typeof AuthenticatedAppDashboardRoute
   AuthenticatedAppDealsRoute: typeof AuthenticatedAppDealsRoute
+  AuthenticatedAppDoNotContactRoute: typeof AuthenticatedAppDoNotContactRoute
   AuthenticatedAppEmailRoute: typeof AuthenticatedAppEmailRoute
   AuthenticatedAppIntegrationsRoute: typeof AuthenticatedAppIntegrationsRoute
   AuthenticatedAppKycRoute: typeof AuthenticatedAppKycRoute
@@ -1374,6 +1395,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCustomReportsRoute: AuthenticatedAppCustomReportsRoute,
   AuthenticatedAppDashboardRoute: AuthenticatedAppDashboardRoute,
   AuthenticatedAppDealsRoute: AuthenticatedAppDealsRoute,
+  AuthenticatedAppDoNotContactRoute: AuthenticatedAppDoNotContactRoute,
   AuthenticatedAppEmailRoute: AuthenticatedAppEmailRoute,
   AuthenticatedAppIntegrationsRoute: AuthenticatedAppIntegrationsRoute,
   AuthenticatedAppKycRoute: AuthenticatedAppKycRoute,

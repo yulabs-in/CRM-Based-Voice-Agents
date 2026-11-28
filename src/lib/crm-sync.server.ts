@@ -9,6 +9,8 @@ import { awaitingAnswers, resolveVerdict, type OutcomeRule } from "@/lib/outcome
 import { maybeBookConsultation } from "@/lib/booking.server";
 import { notify, recipientsFor } from "@/lib/notify.server";
 import { kycFromAnswers, mergeKyc, orderFromAnswers } from "@/lib/call-capture";
+import { extractConsentFields } from "@/lib/dnc";
+import { blockNumber, logConsentGiven } from "@/lib/dnc.server";
 import { inr } from "@/lib/format";
 
 type CallRow = {
@@ -152,6 +154,22 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         status: "inactive", tags: tags.includes("do-not-call") ? tags : [...tags, "do-not-call"], updated_at: now,
       } as never).eq("id", contact.id);
 
+      const dncPhone = contact.phone ?? call.phone;
+      if (dncPhone) {
+        try {
+          await blockNumber({
+            orgId: org,
+            phone: dncPhone,
+            reason: call.summary?.slice(0, 300) || verdict.label || "Caller asked not to be contacted",
+            source: "call",
+            callId: call.id,
+            contactId: contact.id,
+          });
+        } catch (error) {
+          console.error("[crm] DNC registry update failed", call.id, error);
+        }
+      }
+
       const dncRecipients = await recipientsFor(org, "contact.do_not_contact");
       await notify({
         orgId: org,
@@ -163,6 +181,17 @@ export async function applyCallOutcomeToCrm(callId: string): Promise<CrmSyncResu
         recipients: dncRecipients,
         dedupeKey: call.id,
       });
+    } else {
+      const consentFields = extractConsentFields(answers);
+      if (consentFields.length > 0) {
+        await logConsentGiven({
+          orgId: org,
+          phone: contact.phone ?? call.phone,
+          contactId: contact.id,
+          callId: call.id,
+          details: { fields: consentFields },
+        });
+      }
     }
 
     // ---- Lead
