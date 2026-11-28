@@ -77,7 +77,13 @@ function Page() {
   const refresh = () => { void qc.invalidateQueries({ queryKey: ["campaigns"] }); };
   const act = useMutation({
     mutationFn: async (action: "launch" | "pause" | "resume" | "cancel" | "sync") => {
-      if (action === "launch") return launch({ data: { campaignId } }).then((result) => `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam`);
+      if (action === "launch") {
+        return launch({ data: { campaignId } }).then((result) =>
+          result.skipped
+            ? `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam (${result.skipped.toLocaleString()} skipped: do-not-contact)`
+            : `Launched — ${result.contacts.toLocaleString()} contacts sent to Sarvam`,
+        );
+      }
       if (action === "sync") return sync({ data: { campaignId } }).then((result) => `Sarvam status: ${result.status}`);
       return control({ data: { campaignId, action } }).then((result) => `Campaign ${result.status}`);
     },
@@ -173,7 +179,7 @@ function Page() {
             <SelectContent>
               <SelectItem value="all">All contacts</SelectItem>
               <SelectItem value="open">Not finished</SelectItem>
-              {["completed", "retrying", "no_answer", "busy", "failed", "queued", "excluded"].map((status) => <SelectItem key={status} value={status}>{humanize(status)}</SelectItem>)}
+              {["completed", "retrying", "no_answer", "busy", "failed", "queued", "skipped", "excluded"].map((status) => <SelectItem key={status} value={status}>{humanize(status)}</SelectItem>)}
             </SelectContent>
           </Select>
           <span className="ml-auto text-xs text-muted-foreground">{filtered.length.toLocaleString()} contacts</span>
@@ -191,7 +197,7 @@ function Page() {
                   <tr key={target.id} className={"border-b last:border-0 hover:bg-muted/60" + (target.last_call_id ? " cursor-pointer" : "")} onClick={() => target.last_call_id && setOpenCall(target.last_call_id)}>
                     <td className="px-4 py-2.5 font-semibold">{`${target.contact?.first_name ?? ""} ${target.contact?.last_name ?? ""}`.trim() || "—"}</td>
                     <td className="px-4 py-2.5 tabular-nums">{target.phone}</td>
-                    <td className="px-4 py-2.5"><StatusBadge value={target.status} /></td>
+                    <td className="px-4 py-2.5"><div className="flex flex-wrap items-center gap-1.5"><StatusBadge value={target.status} />{target.last_outcome === "do_not_contact" && <span className="rounded-md bg-danger-soft px-2 py-0.5 text-[11px] font-medium text-destructive">do_not_contact</span>}</div></td>
                     <td className="px-4 py-2.5 tabular-nums">{target.attempts}</td>
                     <td className="max-w-md px-4 py-2.5"><AnswerChips answers={target.answers} /></td>
                     <td className="pr-3">{target.last_call_id && <Button size="icon" variant="ghost" aria-label="Open call"><PhoneCall /></Button>}</td>

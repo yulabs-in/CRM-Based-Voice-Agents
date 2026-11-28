@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/api-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
 import { phoneKey } from "@/lib/campaign-vars";
 import { makeCallbackToken, hashCallbackToken } from "@/lib/sarvam-auth.server";
+import { isBlocked, logBlockedAttempt } from "@/lib/dnc.server";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 import { decodeCursor, encodeCursor, isUuid, parseLimit } from "./pagination";
 
@@ -165,7 +166,8 @@ export async function placeOutboundCall(
     }
   }
 
-  // Refuse do-not-contact / inactive numbers
+  // Refuse do-not-contact / inactive numbers (phone-level DNC registry + contact status)
+  const registryBlocked = await isBlocked(orgId, phone);
   const { data: blocked } = await supabaseAdmin
     .from("contacts")
     .select("phone")
@@ -174,7 +176,13 @@ export async function placeOutboundCall(
     .ilike("phone", `%${phoneKey(phone)}`)
     .limit(20);
 
-  if ((blocked ?? []).some((row) => phoneKey(row.phone) === phoneKey(phone))) {
+  if (registryBlocked || (blocked ?? []).some((row) => phoneKey(row.phone) === phoneKey(phone))) {
+    await logBlockedAttempt({
+      orgId,
+      phone,
+      where: "api_v1_calls",
+      contactId: input.contact_id ?? null,
+    });
     throw new ApiError(409, "do_not_contact", "This number is marked do-not-call");
   }
 

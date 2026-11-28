@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase";
 import { hashCallbackToken, makeCallbackToken } from "@/lib/sarvam-auth.server";
 import { normalizePhoneNumber } from "@/lib/sarvam-call";
+import { isBlocked as isDncBlocked, logBlockedAttempt } from "@/lib/dnc.server";
 import { SARVAM_DEFAULTS } from "@/lib/sarvam-defaults";
 import { asVariableMap, greetingValues, nameVariables, openingLine, phoneKey, resolveVariables } from "@/lib/campaign-vars";
 import {
@@ -124,15 +125,16 @@ export async function loadWidgetByKey(
 }
 
 /**
- * Fallback DNC check matching #13's `isBlocked(orgId, phone)` contract:
- * returns true if any contact with the same normalized phone in the org is `inactive`
- * or carries the `do-not-call` tag.
+ * DNC check using #13's phone-level registry (`dnc_numbers`) plus contact-level fallback:
+ * returns true if the normalised phone is in `dnc_numbers` or if any contact with the same
+ * phone in the org is `inactive` or carries the `do-not-call` tag.
  */
 export async function isBlocked(
   client: SupabaseClient<Database>,
   organizationId: string,
   phone: string
 ): Promise<boolean> {
+  if (await isDncBlocked(organizationId, phone, client)) return true;
   const key = phoneKey(phone);
   if (!key) return false;
   const { data } = await client
@@ -420,7 +422,15 @@ export async function handleWidgetSubmit({
   let callback: "now" | "scheduled" | "none" = "none";
   if (widget.instant_callback && data.consent === true) {
     const blocked = await isBlocked(client, widget.organization_id, normalizedPhone);
-    if (!blocked) {
+    if (blocked) {
+      await logBlockedAttempt({
+        orgId: widget.organization_id,
+        phone: normalizedPhone,
+        where: "lead_widget",
+        contactId,
+        client,
+      });
+    } else {
       if (!isWithinCallingHours(widget.calling_hours, now)) {
         const due = nextCallingWindowStart(widget.calling_hours, now);
         await client.from("tasks").insert({

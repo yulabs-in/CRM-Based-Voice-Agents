@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, UserPlus, Building2, Handshake, KanbanSquare, CheckSquare, CalendarDays,
-  Bot, Megaphone, PhoneCall, Radio, FileText, Disc3, Brain, Workflow, Zap, ListChecks, Clock,
+  Bot, Megaphone, PhoneCall, PhoneOff, Radio, FileText, Disc3, Brain, Workflow, Zap, ListChecks, Clock,
   Mail, MessageCircle, MessageSquare, History, BarChart3, LineChart, PieChart, Trophy, FileBarChart,
   Plug, UsersRound, Settings, FolderKanban, ReceiptText, Wallet, IdCard, RefreshCw, FileSpreadsheet, type LucideIcon, Code2, Globe, BadgeCheck,
 } from "lucide-react";
@@ -39,6 +39,7 @@ export const NAV: NavGroup[] = [
       { label: "Call History", icon: PhoneCall, to: "/call-history" }, { label: "Live Calls", icon: Radio, to: "/live-calls" },
       { label: "Transcripts", icon: FileText, to: "/transcripts" }, { label: "Call Recordings", icon: Disc3, to: "/call-recordings" },
       { label: "Call Intelligence", icon: Brain, to: "/call-intelligence" },
+      { label: "Do Not Contact", icon: PhoneOff, to: "/do-not-contact" },
     ],
   },
   {

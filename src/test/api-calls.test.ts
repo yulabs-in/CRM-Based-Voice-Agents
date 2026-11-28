@@ -183,4 +183,62 @@ describe("API Calls security & reliability", () => {
       })
     );
   });
+
+  it("refuses numbers in the phone-level dnc_numbers registry with 409 do_not_contact and logs blocked_attempt", async () => {
+    const logInsertMock = vi.fn().mockResolvedValue({ error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "dnc_numbers") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValueOnce({ data: { id: "dnc-1" }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "contacts") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                ilike: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValueOnce({ data: [] }),
+                }),
+              }),
+              ilike: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValueOnce({ data: [] }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "compliance_log") {
+        return { insert: logInsertMock };
+      }
+      return {};
+    });
+
+    await expect(
+      placeOutboundCall(orgA, {
+        phone: "09876543210",
+        agent_id: agentId,
+        consent_confirmed: true,
+      })
+    ).rejects.toMatchObject({ status: 409, code: "do_not_contact" });
+
+    expect(logInsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organization_id: orgA,
+        phone_e164: "+919876543210",
+        event: "blocked_attempt",
+      })
+    );
+  });
 });
